@@ -81,13 +81,8 @@ export default function GamePage() {
         return null;
       })()}
       {phase === 'CharacterSelect' ? (
-        <div className="fixed inset-0 flex items-center justify-center z-30 p-4 bg-black/50">
-          <div className="text-center">
-            <p className="text-white bg-red-600 p-2 mb-4 rounded font-bold">
-              DEBUG: In CharacterSelect Phase - AvatarPanel should be visible!
-            </p>
-            <AvatarPanel />
-          </div>
+        <div className="fixed inset-0 flex items-center justify-center z-30 p-4 bg-black/30 backdrop-blur-sm">
+          <AvatarPanel />
         </div>
       ) : (
         <ToolsIsland 
