@@ -47,7 +47,7 @@ export async function judgeFinalVideos(
     method: 'POST',
     headers,
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: 'gpt-5',
       response_format: { type: 'json_object' },
       messages: [
         { role: 'system', content: SYSTEM_PROMPT(theme) },

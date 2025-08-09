@@ -35,7 +35,6 @@ async function callOpenAIWithBlob(baseBlob: Blob, instruction: string): Promise<
   fd.append('prompt', `${EDIT_PROMPT_BASE}\n\nUSER REQUEST\n${instruction}`);
   fd.append('size', '1024x1024');
   fd.append('n', '1');
-  fd.append('response_format', 'b64_json');
   fd.append('image', baseBlob, 'base.jpg');
   const res = await fetch(`${OPENAI_BASE_URL}/v1/images/edits`, {
     method: 'POST',
@@ -46,10 +45,11 @@ async function callOpenAIWithBlob(baseBlob: Blob, instruction: string): Promise<
     const text = await res.text();
     throw new Error(`OpenAI error: ${res.status} ${text}`);
   }
-  const data = (await res.json()) as { data?: { b64_json?: string }[] };
-  const b64 = data?.data?.[0]?.b64_json;
-  if (!b64) throw new Error('No image data returned');
-  return `data:image/png;base64,${b64}`;
+  const data = (await res.json()) as { data?: { b64_json?: string; url?: string }[] };
+  const first = data?.data?.[0];
+  const image = first?.b64_json ? `data:image/png;base64,${first.b64_json}` : first?.url;
+  if (!image) throw new Error('No image data returned');
+  return image;
 }
 
 export async function POST(req: NextRequest) {

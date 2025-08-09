@@ -1,6 +1,5 @@
 "use client";
 import dynamic from 'next/dynamic';
-import type ReactWebcam from 'react-webcam';
 import { useCallback, useRef, useState } from 'react';
 import { generateAvatarFromSelfie } from '@/lib/adapters/avatar';
 import { useGameStore } from '@/lib/state/gameStore';
@@ -9,16 +8,20 @@ import { GlassButton } from '@/components/GlassButton';
 import { CameraPermissionHelper } from '../CameraPermissionHelper';
 import type { Character } from '@/types';
 
+// Use any typing to avoid complex react-webcam TypeScript issues
+// @ts-ignore TypeScript issues with react-webcam dynamic import
 const Webcam = dynamic(() => import('react-webcam'), { ssr: false });
 
 export default function AvatarPanel() {
-  const webcamRef = useRef<ReactWebcam>(null);
+  const webcamRef = useRef<any>(null);
   const [variants, setVariants] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [webcamError, setWebcamError] = useState<string | null>(null);
   const [webcamReady, setWebcamReady] = useState(false);
   const [isWebcamActive, setIsWebcamActive] = useState(false);
+  const [capturedFrame, setCapturedFrame] = useState<string | null>(null);
+  const [showFlash, setShowFlash] = useState(false);
   const setCharacter = useGameStore((s) => s.setCharacter);
   const setCurrentImage = useGameStore((s) => s.setCurrentImage);
   const setPhase = useGameStore((s) => s.setPhase);
@@ -104,6 +107,11 @@ export default function AvatarPanel() {
       return;
     }
     
+    // Visual feedback: flash and freeze on the captured frame
+    setCapturedFrame(imageSrc);
+    setShowFlash(true);
+    setTimeout(() => setShowFlash(false), 150);
+
     await processImage(imageSrc);
   }, [webcamError, isWebcamActive, webcamReady, processImage]);
 
@@ -198,17 +206,34 @@ export default function AvatarPanel() {
                       </div>
                     </div>
                   ) : (
-                    <Webcam 
-                      audio={false} 
-                      ref={webcamRef} 
-                      screenshotFormat="image/jpeg" 
-                      className="w-full aspect-[4/3] object-cover" 
-                      onUserMedia={handleWebcamReady}
-                      onUserMediaError={handleWebcamError}
-                      mirrored={true}
-                      videoConstraints={videoConstraints}
-                      playsInline
-                    />
+                    <div className="relative">
+                      {capturedFrame ? (
+                        <>
+                          <img
+                            src={capturedFrame}
+                            alt="Captured frame"
+                            className="w-full aspect-[4/3] object-cover"
+                          />
+                          <div className="absolute top-2 left-2 px-2 py-1 text-xs rounded bg-black/60 text-white">Using this photo</div>
+                        </>
+                      ) : (
+                        <Webcam 
+                          audio={false} 
+                          ref={webcamRef} 
+                          screenshotFormat="image/jpeg" 
+                          className="w-full aspect-[4/3] object-cover" 
+                          onUserMedia={handleWebcamReady}
+                          onUserMediaError={handleWebcamError}
+                          mirrored={true}
+                          videoConstraints={videoConstraints}
+                          playsInline
+                        />
+                      )}
+                      {/* Flash overlay */}
+                      {showFlash && (
+                        <div className="pointer-events-none absolute inset-0 bg-white animate-pulse opacity-80" />
+                      )}
+                    </div>
                   )}
                 </>
               )}
@@ -217,24 +242,34 @@ export default function AvatarPanel() {
           
           <div className="flex gap-3">
             {isWebcamActive && webcamReady && !webcamError && (
-              <GlassButton 
-                variant="primary" 
-                className="flex-1"
-                onClick={capture} 
-                disabled={loading}
-              >
-                {loading ? (
-                  <span className="flex items-center gap-2">
-                    <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Generating...
-                  </span>
-                ) : (
-                  <>Capture & Create</>
+              <>
+                <GlassButton 
+                  variant="primary" 
+                  className="flex-1"
+                  onClick={capture} 
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Generating...
+                    </span>
+                  ) : (
+                    <>{capturedFrame ? 'Create' : 'Capture & Create'}</>
+                  )}
+                </GlassButton>
+                {capturedFrame && !loading && (
+                  <GlassButton 
+                    variant="secondary"
+                    onClick={() => setCapturedFrame(null)}
+                  >
+                    Retake
+                  </GlassButton>
                 )}
-              </GlassButton>
+              </>
             )}
           </div>
 

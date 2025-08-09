@@ -6,14 +6,15 @@ const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'https://api.openai.com';
 
 const AVATAR_PROMPT = `ROLE
-You are a photo-editing AI. Transform the provided face photo into a single, full-body fashion model avatar.
+You are a professional photo-editing AI. Transform the provided face photo into a single, full-body fashion avatar suitable for family-friendly content.
 
 REQUIREMENTS
-1) Preserve the person’s facial likeness.
-2) Full-body, neutral forward-facing standing pose.
-3) Background: plain white seamless studio (#FFFFFF).
-4) Attire: simple, form-fitting, plain grey basics (tank top + leggings).
-5) Photorealistic, well-lit, high-resolution output.`;
+1) Preserve the person's facial likeness exactly.
+2) Full-body, neutral forward-facing standing pose in a professional manner.
+3) Background: plain white seamless studio background (#FFFFFF).
+4) Attire: modest, well-fitted, professional casual clothing (long-sleeve shirt + full-length pants or jeans).
+5) Photorealistic, well-lit, high-resolution output appropriate for all audiences.
+6) Keep the styling modest, professional, and family-appropriate.`;
 
 async function inputToBlob(imageInput: string): Promise<Blob> {
   if (imageInput.startsWith('data:')) {
@@ -36,7 +37,6 @@ async function callOpenAIWithBlob(imageBlob: Blob): Promise<string> {
   fd.append('prompt', AVATAR_PROMPT);
   fd.append('size', '1024x1024');
   fd.append('n', '1');
-  fd.append('response_format', 'b64_json');
   fd.append('image', imageBlob, 'input.jpg');
   const res = await fetch(`${OPENAI_BASE_URL}/v1/images/edits`, {
     method: 'POST',
@@ -48,10 +48,11 @@ async function callOpenAIWithBlob(imageBlob: Blob): Promise<string> {
     const text = await res.text();
     throw new Error(`OpenAI error: ${res.status} ${text}`);
   }
-  const data = (await res.json()) as { data?: { b64_json?: string }[] };
-  const b64 = data?.data?.[0]?.b64_json;
-  if (!b64) throw new Error('No image data returned');
-  return `data:image/png;base64,${b64}`;
+  const data = (await res.json()) as { data?: { b64_json?: string; url?: string }[] };
+  const first = data?.data?.[0];
+  const image = first?.b64_json ? `data:image/png;base64,${first.b64_json}` : first?.url;
+  if (!image) throw new Error('No image data returned');
+  return image;
 }
 
 export async function POST(req: NextRequest) {
