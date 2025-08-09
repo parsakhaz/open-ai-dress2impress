@@ -5,7 +5,7 @@ export default function CenterStage() {
   const currentImageUrl = useGameStore((s) => s.currentImageUrl);
   
   return (
-    <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 z-0">
       {currentImageUrl ? (
         <img 
           src={currentImageUrl} 

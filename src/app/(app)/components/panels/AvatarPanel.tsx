@@ -12,9 +12,13 @@ export default function AvatarPanel() {
   const [variants, setVariants] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [webcamError, setWebcamError] = useState<string | null>(null);
+  const [webcamReady, setWebcamReady] = useState(false);
   const setCharacter = useGameStore((s) => s.setCharacter);
   const setCurrentImage = useGameStore((s) => s.setCurrentImage);
   const setPhase = useGameStore((s) => s.setPhase);
+  
+  console.log('🎭 AVATAR PANEL: Component rendering', { variants: variants.length, loading, error, webcamError, webcamReady });
 
   const capture = useCallback(async () => {
     console.log('📷 AVATAR PANEL: Capture button clicked');
@@ -83,20 +87,65 @@ export default function AvatarPanel() {
     console.log('🎯 PHASE TRANSITION: CharacterSelect → ShoppingSpree');
   }
 
+  const handleWebcamError = (error: string | DOMException) => {
+    console.error('❌ AVATAR PANEL: Webcam error', error);
+    setWebcamError(typeof error === 'string' ? error : error.message);
+  };
+  
+  const handleWebcamReady = () => {
+    console.log('✅ AVATAR PANEL: Webcam is ready');
+    setWebcamReady(true);
+  };
+
   return (
-    <GlassPanel>
-      <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Create Your Avatar</h3>
+    <div className="w-full max-w-md bg-red-500 border-4 border-yellow-400 p-4 rounded-xl">
+      <GlassPanel>
+        <div className="space-y-4 bg-blue-200 p-2 rounded">
+        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 bg-green-300 p-2 rounded">
+          📹 Create Your Avatar (DEBUG: Component is rendering!)
+        </h3>
+        
+        {webcamError && (
+          <div className="p-3 rounded-lg bg-red-100 border-2 border-red-500 text-red-800">
+            <strong>Camera Error:</strong> {webcamError}
+          </div>
+        )}
+        
+        <div className="p-2 bg-purple-200 rounded text-sm">
+          <strong>DEBUG STATUS:</strong>
+          <br />Webcam Ready: {webcamReady ? '✅' : '❌'}
+          <br />Loading: {loading ? 'Yes' : 'No'}
+          <br />Variants: {variants.length}
+        </div>
         
         <div className="space-y-3">
-          <div className="relative rounded-xl overflow-hidden bg-black/5 dark:bg-white/5">
-            <Webcam 
-              audio={false} 
-              ref={webcamRef} 
-              screenshotFormat="image/jpeg" 
-              className="w-full aspect-[4/3] object-cover" 
-            />
+          <div className="relative rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border-2 border-orange-400">
+            {webcamError ? (
+              <div className="w-full aspect-[4/3] bg-red-100 border-2 border-red-500 flex items-center justify-center">
+                <div className="text-center p-4">
+                  <p className="text-red-800 font-bold">Camera Unavailable</p>
+                  <p className="text-red-600 text-sm mt-2">Please grant camera permissions or try refreshing</p>
+                </div>
+              </div>
+            ) : (
+              <Webcam 
+                audio={false} 
+                ref={webcamRef} 
+                screenshotFormat="image/jpeg" 
+                className="w-full aspect-[4/3] object-cover" 
+                onUserMedia={handleWebcamReady}
+                onUserMediaError={handleWebcamError}
+                mirrored={true}
+              />
+            )}
           </div>
+          
+          {!webcamReady && !webcamError && (
+            <div className="text-center p-3 bg-yellow-100 border-2 border-yellow-400 rounded">
+              <p className="text-yellow-800 font-semibold">Initializing camera...</p>
+              <p className="text-yellow-700 text-sm">Please allow camera access when prompted</p>
+            </div>
+          )}
           
           <GlassButton 
             variant="primary" 
@@ -146,8 +195,9 @@ export default function AvatarPanel() {
             </div>
           </div>
         )}
-      </div>
-    </GlassPanel>
+        </div>
+      </GlassPanel>
+    </div>
   );
 }
 

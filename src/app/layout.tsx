@@ -22,6 +22,8 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  console.log('🏠 ROOT LAYOUT: Rendering layout with children');
+  
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -39,6 +41,9 @@ export default function RootLayout({
           }}
         />
         
+        <script dangerouslySetInnerHTML={{
+          __html: `console.log('🌍 BROWSER: HTML body loaded, React hydrating...');`
+        }} />
         {children}
       </body>
     </html>
