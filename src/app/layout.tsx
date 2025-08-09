@@ -27,11 +27,8 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen antialiased text-slate-900 dark:text-slate-100`}
       >
-        {/* Base gradient */}
-        <div className="fixed inset-0 -z-50 bg-gradient-to-br from-white via-sky-50 to-slate-100 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950" />
-        
-        {/* Accent radial "bloom" */}
-        <div className="fixed inset-0 -z-40 bg-accent-radial dark:bg-accent-radial-dark" />
+        {/* Pure black background */}
+        <div className="fixed inset-0 -z-50 bg-black" />
         
         {/* Fine noise over everything (prevents plastic look) */}
         <div

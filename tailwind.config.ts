@@ -18,13 +18,15 @@ const config: Config = {
       },
       backgroundImage: {
         'accent-radial':
-          'radial-gradient(600px circle at 20% 0%, hsl(var(--accent) / 0.20), transparent 60%)',
+          'radial-gradient(600px circle at 20% 0%, rgba(0,0,0,0.1), transparent 60%)',
         'accent-radial-dark':
-          'radial-gradient(600px circle at 20% 0%, hsl(var(--accent) / 0.12), transparent 60%)',
+          'radial-gradient(600px circle at 20% 0%, rgba(255,255,255,0.1), transparent 60%)',
         'gradient-ambient-light': 
-          'linear-gradient(135deg, #ffffff 0%, #f0f9ff 25%, #e2e8f0 100%)',
+          'linear-gradient(135deg, #ffffff 0%, #f3f4f6 25%, #e5e7eb 100%)',
         'gradient-ambient-dark':
-          'linear-gradient(135deg, #0f172a 0%, #1e293b 25%, #334155 100%)',
+          'linear-gradient(135deg, #000000 0%, #111827 25%, #1f2937 100%)',
+        'gradient-radial': 
+          'radial-gradient(circle at center, var(--tw-gradient-stops))',
       },
       backdropBlur: {
         'glass': 'var(--blur)',

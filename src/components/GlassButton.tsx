@@ -29,24 +29,26 @@ export function GlassButton({
 
   const variantStyles = {
     primary: [
-      'bg-accent/90 text-white border border-accent/20',
-      'hover:bg-accent hover:scale-[1.02] hover:shadow-lg',
+      'bg-black text-white border border-black',
+      'dark:bg-white dark:text-black dark:border-white',
+      'hover:scale-[1.02] hover:shadow-xl',
       'active:scale-[0.98]',
     ].join(' '),
     
     secondary: [
-      'bg-white/70 border border-white/60 text-slate-900',
-      'dark:bg-white/10 dark:border-white/20 dark:text-white',
-      'hover:bg-white/80 hover:scale-[1.02] hover:shadow-md',
-      'dark:hover:bg-white/15',
+      'bg-white/90 border border-black/20 text-black',
+      'dark:bg-black/90 dark:border-white/20 dark:text-white',
+      'hover:bg-white hover:scale-[1.02] hover:shadow-lg hover:border-black/40',
+      'dark:hover:bg-black dark:hover:border-white/40',
       'active:scale-[0.98]',
       'backdrop-blur-sm backdrop-saturate-150',
     ].join(' '),
     
     ghost: [
-      'text-slate-700 dark:text-slate-300',
-      'hover:bg-white/50 hover:text-slate-900',
-      'dark:hover:bg-white/10 dark:hover:text-white',
+      'text-black/80 border border-transparent',
+      'dark:text-white/80',
+      'hover:bg-black/10 hover:text-black hover:border-black/20',
+      'dark:hover:bg-white/10 dark:hover:text-white dark:hover:border-white/20',
       'active:scale-[0.98]',
     ].join(' '),
   }

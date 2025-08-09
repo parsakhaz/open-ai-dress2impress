@@ -24,8 +24,8 @@ export function GlassPanel({
         // Layout & shape
         'relative border',
         variantStyles[variant],
-        // Surface & border taken from CSS vars so you can tune once
-        'bg-[var(--surface)] border-[var(--surface-border)]',
+        // Surface & border with high contrast
+        'bg-[var(--surface)] border-2 border-[var(--surface-border)]',
         // Backdrop material
         'backdrop-blur-[var(--blur)] backdrop-saturate-[var(--saturate)]',
         // Soft depth
