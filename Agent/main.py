@@ -56,6 +56,8 @@ import string
 import threading
 import time
 from dataclasses import dataclass
+from datetime import datetime
+import base64
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from typing import Dict, List, Literal, Optional, Tuple
@@ -81,11 +83,21 @@ try:
 except Exception:
     HAS_OPENAI = False
 
+# Optional dotenv loader
+try:
+    from dotenv import load_dotenv  # type: ignore
+
+    HAS_DOTENV = True
+except Exception:
+    HAS_DOTENV = False
+
 
 # ------------------------------------------------------------
 # Paths and constants
 # ------------------------------------------------------------
 BASE_DIR = Path(__file__).resolve().parent
+RESULTS_DIR = BASE_DIR / "results"
+LOG_FILE = BASE_DIR / "logs.txt"
 
 # Map categories to their local directories
 CATEGORY_TO_DIR: Dict[str, Path] = {
@@ -236,9 +248,110 @@ def _download_image_to(path: Path, url: str) -> None:
             data = resp.read()
         with open(path, "wb") as f:
             f.write(data)
+        _log_event(f"Saved image to {path}")
+    except Exception as e:
+        _log_event(f"Download failed for {url}: {e}")
+
+
+def _image_to_jpeg_data_uri(path: Path, max_dim_px: int = 512, target_max_bytes: int = 900_000) -> Optional[str]:
+    """Convert a local image file to a downscaled JPEG data URI under ~900KB if possible.
+    Requires Pillow. Returns None if conversion fails.
+    """
+    if not HAS_PIL:
+        return None
+    try:
+        img = Image.open(path)
+        img = img.convert("RGB")
+        w, h = img.size
+        scale = min(1.0, float(max_dim_px) / float(max(w, h)))
+        if scale < 1.0:
+            img = img.resize((int(w * scale), int(h * scale)))
+
+        # Try a few qualities to stay under target size
+        for quality in (75, 65, 55):
+            from io import BytesIO
+
+            buf = BytesIO()
+            img.save(buf, format="JPEG", quality=quality, optimize=True)
+            data = buf.getvalue()
+            if len(data) <= target_max_bytes:
+                b64 = base64.b64encode(data).decode("ascii")
+                return f"data:image/jpeg;base64,{b64}"
+        # As a fallback, return highest compression even if bigger
+        from io import BytesIO
+
+        buf = BytesIO()
+        img.save(buf, format="JPEG", quality=50, optimize=True)
+        data = buf.getvalue()
+        b64 = base64.b64encode(data).decode("ascii")
+        return f"data:image/jpeg;base64,{b64}"
     except Exception:
-        # Swallow errors; FASHN remote URL will still be returned to the model
+        return None
+
+
+def _local_url_to_data_uri(config: Config, url: str, max_dim_px: int = 512) -> Optional[str]:
+    """Map a local served URL to a base64 data URI for GPT image blocks."""
+    local = _resolve_local_path_from_url(config, url)
+    if not local or not local.exists():
+        return None
+    # Prefer JPEG conversion for compatibility and size control
+    data_uri = _image_to_jpeg_data_uri(local, max_dim_px=max_dim_px)
+    return data_uri
+
+
+def _save_image_any(path: Path, src: str) -> None:
+    """Save an image from an http(s) URL or a data URI to a local path."""
+    try:
+        if src.startswith("data:image/"):
+            header, b64 = src.split(",", 1)
+            data = base64.b64decode(b64)
+            _ensure_dir(path.parent)
+            with open(path, "wb") as f:
+                f.write(data)
+            _log_event(f"Saved data URI image to {path}")
+            return
+    except Exception as e:
+        _log_event(f"Failed to decode data URI: {e}")
+    # Fallback to HTTP download
+    _download_image_to(path, src)
+
+
+# ------------------------------------------------------------
+# Logging
+# ------------------------------------------------------------
+def _log_event(message: str) -> None:
+    ts = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    line = f"[{ts} UTC] {message}\n"
+    try:
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(line)
+    except Exception:
         pass
+    try:
+        print(f"[log] {message}")
+    except Exception:
+        pass
+
+
+def _truncate(obj: object, max_len: int = 4000) -> str:
+    s = obj if isinstance(obj, str) else json.dumps(obj, default=str)
+    return s if len(s) <= max_len else s[:max_len] + f"...(truncated +{len(s) - max_len})"
+
+
+def _summarize_content_blocks(blocks: List[Dict]) -> Dict:
+    text_count = 0
+    image_count = 0
+    data_uri_count = 0
+    for b in blocks or []:
+        t = b.get("type")
+        if t == "text":
+            text_count += 1
+        elif t == "image_url":
+            image_count += 1
+            url = ((b.get("image_url") or {}).get("url"))
+            if isinstance(url, str) and url.startswith("data:image/"):
+                data_uri_count += 1
+    return {"texts": text_count, "images": image_count, "dataURIs": data_uri_count}
 
 
 # ------------------------------------------------------------
@@ -270,6 +383,7 @@ def start_static_server(port: int = 8000) -> str:
 
     t = threading.Thread(target=httpd.serve_forever, daemon=True)
     t.start()
+    _log_event(f"Static server started on http://localhost:{chosen_port}")
     return f"http://localhost:{chosen_port}"
 
 
@@ -321,7 +435,10 @@ def build_wardrobe_image_blocks(config: Config, categories: Optional[List[Catego
             continue
         blocks.append({"type": "text", "text": f"Wardrobe {cat}s (showing up to {limit}):"})
         for p in items:
-            blocks.append({"type": "image_url", "image_url": {"url": p.image}})
+            data_uri = _local_url_to_data_uri(config, p.image, max_dim_px=512)
+            if data_uri:
+                blocks.append({"type": "image_url", "image_url": {"url": data_uri}})
+            # Skip if cannot convert; avoids invalid localhost URLs
     return blocks
 
 
@@ -529,6 +646,7 @@ class AIPlayer:
             "phase_result": phase_result,
         }
         print(json.dumps(envelope, indent=2))
+        _log_event(f"EMIT {phase}: {json.dumps(phase_result)[:800]}")
 
     # ---------- PLAN ----------
     def plan(self) -> Dict:
@@ -575,6 +693,7 @@ class AIPlayer:
             searchAmazon(self.config, q_dress, "dress", {"colorPalette": palette, "limit": 8}),
             getCurrentClothes(self.config, ["top", "bottom", "dress"]),
         ]
+        _log_event("GATHER: dispatching wardrobe and searches")
         results = await asyncio.gather(*search_tasks)
 
         # Unpack results
@@ -642,6 +761,7 @@ class AIPlayer:
             for v in gather_result["variations"]:
                 tasks.append(run_one(o["id"], o["items"], v))
 
+        _log_event(f"TRYON: launching {len(tasks)} try-on task(s)")
         results: List[Tuple[str, int, FashnResult]] = await asyncio.gather(*tasks)
 
         # Stash images per outfit
@@ -795,11 +915,14 @@ def parse_args() -> argparse.Namespace:
     p.add_argument("--port", type=int, default=8000, help="Static server port (auto-increments if busy)")
     p.add_argument("--duration-ms", type=int, default=120_000, help="Round duration in ms (default 120000)")
     p.add_argument("--mode", type=str, choices=["local", "gpt"], default="gpt", help="Run mode: local (mocked) or gpt (real OpenAI+FASHN)")
+    p.add_argument("--env-file", type=str, default="", help="Path to .env; if empty, auto-detect Agent/.env or project .env")
     return p.parse_args()
 
 
 def main() -> None:
     args = parse_args()
+    # Load environment variables from .env
+    _load_env_from_file(args.env_file)
     try:
         if args.mode == "gpt":
             asyncio.run(run_gpt_round(args.theme, args.avatar, args.port, args.duration_ms))
@@ -929,6 +1052,9 @@ def build_player_system_prompt() -> str:
 async def fashn_run_and_poll(config: Config, avatar_url: str, garment_url: str) -> str:
     """Start a FASHN try-on job and poll for result; return resulting image URL."""
     api_key = os.environ.get("FASHN_AI_API_KEY")
+    # Support alternate env var name from docs
+    if not api_key:
+        api_key = os.environ.get("FASHN_API_KEY")
     if not api_key:
         raise RuntimeError("FASHN_AI_API_KEY not set")
 
@@ -937,9 +1063,26 @@ async def fashn_run_and_poll(config: Config, avatar_url: str, garment_url: str) 
         "Authorization": f"Bearer {api_key}",
     }
 
+    # Convert localhost URLs to base64 data URIs for FASHN compatibility
+    def _maybe_to_data_uri(url: str) -> str:
+        try:
+            parsed = urlparse(url)
+            if parsed.scheme in {"http", "https"}:
+                base = urlparse(config.base_url)
+                if parsed.netloc == base.netloc:
+                    data = _local_url_to_data_uri(config, url, max_dim_px=1024)
+                    return data or url
+                return url
+            # Already a data URI; pass through
+            if url.startswith("data:image/"):
+                return url
+        except Exception:
+            pass
+        return url
+
     payload = {
         "model_name": config.fashn_model_name,
-        "inputs": {"model_image": avatar_url, "garment_image": garment_url},
+        "inputs": {"model_image": _maybe_to_data_uri(avatar_url), "garment_image": _maybe_to_data_uri(garment_url)},
     }
 
     # Use stdlib for HTTP in a worker thread
@@ -953,7 +1096,9 @@ async def fashn_run_and_poll(config: Config, avatar_url: str, garment_url: str) 
         with urllib.request.urlopen(req) as resp:  # nosec B310
             return json_lib.loads(resp.read().decode("utf-8"))
 
+    _log_event(f"FASHN /run: model={config.fashn_model_name}")
     run_data = await asyncio.to_thread(_post_run)
+    _log_event(f"FASHN /run response: {json.dumps(run_data)[:500]}")
     prediction_id = run_data.get("id")
     if not prediction_id:
         raise RuntimeError("FASHN: missing prediction id")
@@ -969,13 +1114,16 @@ async def fashn_run_and_poll(config: Config, avatar_url: str, garment_url: str) 
         return await asyncio.to_thread(_do_get)
 
     # Poll up to 90s (30 * 3s)
-    for _ in range(30):
+    for i in range(30):
         status = await _get_status()
         s = status.get("status")
+        _log_event(f"FASHN /status: {s} (poll {i+1}/30) body={json.dumps(status)[:500]}")
         if s == "completed" and status.get("output"):
+            _log_event("FASHN completed")
             return status["output"][0]
         if s in {"failed", "canceled"}:
             err = status.get("error") or "unknown"
+            _log_event(f"FASHN failed: {err}")
             raise RuntimeError(f"FASHN: job {s}. Reason: {err}")
         await asyncio.sleep(3)
 
@@ -1002,15 +1150,12 @@ async def tool_callFashnAPI_real(
         for garment in items:
             garment_url = garment["image"]
             try:
+                _log_event(f"callFashnAPI: variation={variation} garment={garment.get('id','?')}")
                 image_url = await fashn_run_and_poll(config, avatarImage, garment_url)
                 images.append(image_url)
-                # Save to character folder with version name
-                short = _hash_short(image_url, 6)
-                filename = f"{version_token}_v{variation}_{short}.jpg"
-                local_path = BASE_DIR / "character" / filename
-                await asyncio.to_thread(_download_image_to, local_path, image_url)
             except Exception:
                 # Continue with partial results
+                _log_event("callFashnAPI: error during try-on; continuing with partials")
                 continue
 
     latency_ms = int((time.perf_counter() - start) * 1000)
@@ -1018,7 +1163,74 @@ async def tool_callFashnAPI_real(
     if not images and items:
         # Fallback to garment URL so model still receives an image
         images = [items[0]["image"]]
+
+    # Save all result images (including fallbacks)
+    _ensure_dir(RESULTS_DIR)
+    seen: set = set()
+    for url in images:
+        if url in seen:
+            continue
+        seen.add(url)
+        short = _hash_short(url, 6)
+        filename = f"{version_token}_v{variation}_{short}.jpg"
+        local_path = RESULTS_DIR / filename
+        try:
+            await asyncio.to_thread(_save_image_any, local_path, url)
+            _log_event(f"Saved try-on result to {local_path}")
+        except Exception as e:
+            _log_event(f"Failed saving try-on result {url}: {e}")
+
+    _log_event(f"callFashnAPI done: renderId={rid} images={len(images)} latencyMs={latency_ms}")
     return {"renderId": rid, "images": images, "latencyMs": latency_ms}
+
+
+# ------------------------------------------------------------
+# .env support
+# ------------------------------------------------------------
+def _load_env_from_file(env_file_arg: str) -> None:
+    """Load environment variables from a .env file.
+    Priority: explicit --env-file > Agent/.env > project-root/.env
+    Supports both python-dotenv (if installed) and a simple fallback parser.
+    """
+    candidates: List[Path] = []
+    if env_file_arg:
+        candidates.append(Path(env_file_arg).expanduser())
+    candidates.append(BASE_DIR / ".env")
+    candidates.append(BASE_DIR.parent / ".env")
+
+    chosen: Optional[Path] = None
+    for p in candidates:
+        if p.exists() and p.is_file():
+            chosen = p
+            break
+
+    if not chosen:
+        return
+
+    try:
+        if HAS_DOTENV:
+            load_dotenv(dotenv_path=str(chosen), override=False)
+            _log_event(f"Loaded env from {chosen}")
+            return
+    except Exception as e:
+        _log_event(f"dotenv load failed for {chosen}: {e}")
+
+    # Fallback: simple parse KEY=VALUE
+    try:
+        with open(chosen, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith("#"):
+                    continue
+                if "=" not in line:
+                    continue
+                key, val = line.split("=", 1)
+                key = key.strip()
+                val = val.strip().strip('"').strip("'")
+                os.environ.setdefault(key, val)
+        _log_event(f"Loaded env (fallback) from {chosen}")
+    except Exception as e:
+        _log_event(f"Failed to parse env file {chosen}: {e}")
 
 
 async def tool_getCurrentClothes_real(config: Config, categories: Optional[List[str]]) -> Dict:
@@ -1051,9 +1263,11 @@ async def run_gpt_round(theme: str, avatar_arg: str, port: int, round_duration_m
 
     # Build messages with multimodal wardrobe gallery so GPT visually sees items
     system_msg = {"role": "system", "content": build_player_system_prompt()}
+    # Convert avatar to data URI so the model can see it (avoid localhost URL issues)
+    avatar_data_uri = _local_url_to_data_uri(config, avatar_url, max_dim_px=768)
     content_blocks: List[Dict] = [
         {"type": "text", "text": f'Theme: "{theme}". Categories: top|bottom|dress. Avatar attached.'},
-        {"type": "image_url", "image_url": {"url": avatar_url}},
+        {"type": "image_url", "image_url": {"url": avatar_data_uri or avatar_url}},
         {"type": "text", "text": "Below is the wardrobe gallery (tops, bottoms, dresses)."},
     ]
     content_blocks.extend(build_wardrobe_image_blocks(config, ["top", "bottom", "dress"], config.wardrobe_max_per_category))
@@ -1087,6 +1301,28 @@ async def run_gpt_round(theme: str, avatar_arg: str, port: int, round_duration_m
         if time.monotonic() - start_time > (round_duration_ms / 1000.0) + 10:
             break
 
+        # Log outbound GPT request shape (with counts for multimodal blocks)
+        _log_event(
+            "GPT request: "
+            + _truncate(
+                {
+                    "model": config.openai_model,
+                    "messages": [
+                        {
+                            "role": m.get("role"),
+                            "content_summary": _summarize_content_blocks(m.get("content", []))
+                            if isinstance(m.get("content"), list)
+                            else _truncate(m.get("content", ""), 500),
+                        }
+                        for m in messages
+                    ],
+                    "tools_count": len(tools),
+                    "tool_choice": "auto",
+                },
+                1200,
+            )
+        )
+
         resp = client.chat.completions.create(
             model=config.openai_model,
             messages=messages,
@@ -1095,6 +1331,8 @@ async def run_gpt_round(theme: str, avatar_arg: str, port: int, round_duration_m
             response_format={"type": "json_object"},
         )
 
+        # Log truncated full response
+        _log_event("GPT response meta: " + _truncate(resp.model_dump(exclude_none=True), 2000))
         msg = resp.choices[0].message
         tool_calls = msg.tool_calls or []
 
@@ -1111,6 +1349,7 @@ async def run_gpt_round(theme: str, avatar_arg: str, port: int, round_duration_m
                     "name": tc.function.name,
                     "content": json.dumps(res),
                 })
+            _log_event("Tools returned: " + _truncate({tc.function.name: res for tc, res in zip(tool_calls, results)}, 2000))
             continue
 
         # No tool calls: model returned an envelope JSON; print and check phase
