@@ -102,7 +102,7 @@ export default function GamePage() {
       {isAmazonPanelVisible && (
         <>
           <div 
-            className="fixed inset-0 z-25 bg-black/20" 
+            className="fixed inset-0 z-[25] bg-black/20" 
             onClick={() => setAmazonPanelVisible(false)}
           />
           {/* Desktop positioning */}
@@ -121,7 +121,7 @@ export default function GamePage() {
       {isEditPanelVisible && (
         <>
           <div 
-            className="fixed inset-0 z-25 bg-black/20" 
+            className="fixed inset-0 z-[25] bg-black/20" 
             onClick={() => setEditPanelVisible(false)}
           />
           {/* Desktop positioning */}
