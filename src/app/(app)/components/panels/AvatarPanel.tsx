@@ -22,14 +22,16 @@ export default function AvatarPanel() {
   const [isWebcamActive, setIsWebcamActive] = useState(false);
   const [capturedFrame, setCapturedFrame] = useState<string | null>(null);
   const [showFlash, setShowFlash] = useState(false);
+  const [showAvatarSelector, setShowAvatarSelector] = useState(false);
+  const [selectedAvatarIndex, setSelectedAvatarIndex] = useState<number | null>(null);
   const setCharacter = useGameStore((s) => s.setCharacter);
   const setCurrentImage = useGameStore((s) => s.setCurrentImage);
   const setPhase = useGameStore((s) => s.setPhase);
   
   const videoConstraints: MediaTrackConstraints = {
     facingMode: 'user',
-    width: { ideal: 1280 },
-    height: { ideal: 720 },
+    width: { ideal: 1920 },
+    height: { ideal: 1080 },
   };
   
   // Removed debug logging for cleaner production experience
@@ -60,6 +62,8 @@ export default function AvatarPanel() {
       });
       
       setVariants(urls);
+      setSelectedAvatarIndex(null); // Reset selection
+      setShowAvatarSelector(true); // Show fullscreen selector
       
       // Log to AI console for user visibility
       // logAIEvent({ type: 'tool_call', content: `Generated ${urls.length} avatar variants`, timestamp: Date.now() });
@@ -106,6 +110,18 @@ export default function AvatarPanel() {
       setError('Failed to capture image from webcam. Please ensure your camera is working.');
       return;
     }
+
+    // Log captured image details for debugging
+    const img = new Image();
+    img.onload = () => {
+      console.log('📊 AVATAR PANEL: Captured image details', {
+        width: img.width,
+        height: img.height,
+        dataUrlLength: imageSrc.length,
+        format: imageSrc.substring(0, imageSrc.indexOf(';'))
+      });
+    };
+    img.src = imageSrc;
     
     // Visual feedback: flash and freeze on the captured frame
     setCapturedFrame(imageSrc);
@@ -126,6 +142,8 @@ export default function AvatarPanel() {
     const c: Character = { id: `char-${Date.now()}`, avatarUrl: url };
     setCharacter(c);
     setCurrentImage(url);
+    setShowAvatarSelector(false); // Close fullscreen selector
+    setSelectedAvatarIndex(null); // Reset selection
     
     console.log('🔄 AVATAR PANEL: Transitioning to Shopping phase');
     setPhase('ShoppingSpree');
@@ -158,6 +176,7 @@ export default function AvatarPanel() {
   };
 
   return (
+    <>
     <div className="w-full max-w-lg">
       <GlassPanel variant="modal" className="overflow-hidden">
         <div className="space-y-6">
@@ -218,14 +237,24 @@ export default function AvatarPanel() {
                         </>
                       ) : (
                         <Webcam 
+                          // @ts-ignore
                           audio={false} 
+                          // @ts-ignore
                           ref={webcamRef} 
-                          screenshotFormat="image/jpeg" 
+                          // @ts-ignore
+                          screenshotFormat="image/png" 
+                          // @ts-ignore
+                          screenshotQuality={1.0}
                           className="w-full aspect-[4/3] object-cover" 
+                          // @ts-ignore
                           onUserMedia={handleWebcamReady}
+                          // @ts-ignore
                           onUserMediaError={handleWebcamError}
+                          // @ts-ignore
                           mirrored={true}
+                          // @ts-ignore
                           videoConstraints={videoConstraints}
+                          // @ts-ignore
                           playsInline
                         />
                       )}
@@ -284,37 +313,125 @@ export default function AvatarPanel() {
             </div>
           )}
 
-          {variants.length > 0 && (
-            <div className="space-y-4">
+          {variants.length > 0 && !showAvatarSelector && (
+            <div className="text-center space-y-4">
               <div className="text-center">
-                <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Choose Your Avatar</h3>
-                <p className="text-slate-600 dark:text-slate-400 text-sm">Select the avatar that best represents you</p>
+                <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Avatars Generated!</h3>
+                <p className="text-slate-600 dark:text-slate-400 text-sm">Click below to view and select your avatar</p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                {variants.map((u, i) => (
-                  <div key={i} className="group relative">
-                    <div className="relative rounded-xl overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 hover:border-black/20 dark:hover:border-white/20 transition-all duration-200 hover:scale-[1.02]">
-                      <img src={u} alt={`Avatar option ${i + 1}`} className="w-full aspect-square object-cover" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                      <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <GlassButton 
-                          size="sm" 
-                          variant="secondary" 
-                          className="w-full"
-                          onClick={() => choose(u)}
-                        >
-                          Select
-                        </GlassButton>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <GlassButton 
+                variant="primary" 
+                className="w-full"
+                onClick={() => setShowAvatarSelector(true)}
+              >
+                View & Select Avatar
+              </GlassButton>
             </div>
           )}
         </div>
       </GlassPanel>
     </div>
+
+    {/* Fullscreen Avatar Selector Modal */}
+    {showAvatarSelector && (
+      <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="w-full h-full max-w-6xl mx-auto flex flex-col">
+          {/* Header */}
+          <div className="text-center text-white mb-6">
+            <h2 className="text-3xl font-bold mb-2">Choose Your Avatar</h2>
+            <p className="text-white/80">Select the avatar that best represents you</p>
+          </div>
+
+          {/* Avatar Grid */}
+          <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6 max-h-[70vh] overflow-y-auto">
+            {variants.map((url, index) => (
+              <div key={index} className="group relative">
+                <div className={`relative rounded-2xl overflow-hidden bg-white shadow-2xl hover:shadow-3xl transition-all duration-300 cursor-pointer ${
+                  selectedAvatarIndex === index ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'
+                }`}>
+                  <img 
+                    src={url} 
+                    alt={`Avatar option ${index + 1}`} 
+                    className="w-full aspect-[3/4] object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  
+                  {/* Select Button - only show when this avatar is selected */}
+                  {selectedAvatarIndex === index && (
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <GlassButton 
+                        variant="primary" 
+                        className="w-full text-white bg-blue-500 hover:bg-blue-600 backdrop-blur-sm border-blue-400"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          choose(url);
+                        }}
+                      >
+                        ✓ Select This Avatar
+                      </GlassButton>
+                    </div>
+                  )}
+
+                  {/* Preview indicator when selected */}
+                  {selectedAvatarIndex === index && (
+                    <div className="absolute top-3 right-3 bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                      PREVIEWING
+                    </div>
+                  )}
+
+                  {/* Click to preview */}
+                  <div 
+                    className="absolute inset-0 cursor-pointer"
+                    onClick={() => setSelectedAvatarIndex(selectedAvatarIndex === index ? null : index)}
+                  />
+                </div>
+                
+                {/* Avatar Number */}
+                <div className="absolute top-3 left-3 w-8 h-8 bg-black/60 backdrop-blur-sm text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                  {index + 1}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer Actions */}
+          <div className="mt-6 flex justify-center gap-4">
+            <GlassButton 
+              variant="secondary" 
+              className="px-6 py-3 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm border-white/30"
+              onClick={() => {
+                setShowAvatarSelector(false);
+                setSelectedAvatarIndex(null);
+              }}
+            >
+              ← Back to Capture
+            </GlassButton>
+            {selectedAvatarIndex !== null && (
+              <GlassButton 
+                variant="secondary" 
+                className="px-6 py-3 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm border-white/30"
+                onClick={() => setSelectedAvatarIndex(null)}
+              >
+                Clear Selection
+              </GlassButton>
+            )}
+            <GlassButton 
+              variant="secondary" 
+              className="px-6 py-3 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm border-white/30"
+              onClick={() => {
+                setShowAvatarSelector(false);
+                setSelectedAvatarIndex(null);
+                setVariants([]);
+                setCapturedFrame(null);
+              }}
+            >
+              🔄 Generate New
+            </GlassButton>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }
 

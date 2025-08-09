@@ -5,16 +5,7 @@ export const maxDuration = 600;
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'https://api.openai.com';
 
-const AVATAR_PROMPT = `ROLE
-You are a professional photo-editing AI. Transform the provided face photo into a single, full-body fashion avatar suitable for family-friendly content.
-
-REQUIREMENTS
-1) Preserve the person's facial likeness exactly.
-2) Full-body, neutral forward-facing standing pose in a professional manner.
-3) Background: plain white seamless studio background (#FFFFFF).
-4) Attire: modest, well-fitted, professional casual clothing (long-sleeve shirt + full-length pants or jeans).
-5) Photorealistic, well-lit, high-resolution output appropriate for all audiences.
-6) Keep the styling modest, professional, and family-appropriate.`;
+const AVATAR_PROMPT = `Transform this person as a character in the exact stylized 3D art style of The Sims 4 by Electronic Arts, amazing outfit, colorful, low-poly look with clean sharp edges and bright textures, highly detailed and well-defined facial features faithful to Sims 4 models, full body, standing pose, smiling facial expression, with his eyes seeing up, casual varied clothing, isolated on plain white background with soft shadows, clean render, perfect for Photoshop cutout and composition`;
 
 async function inputToBlob(imageInput: string): Promise<Blob> {
   if (imageInput.startsWith('data:')) {
@@ -30,11 +21,22 @@ async function inputToBlob(imageInput: string): Promise<Blob> {
   return new Blob([ab], { type: res.headers.get('content-type') || 'image/jpeg' });
 }
 
-async function callOpenAIWithBlob(imageBlob: Blob): Promise<string> {
+async function callOpenAIWithBlob(imageBlob: Blob, variantIndex: number = 0): Promise<string> {
   if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not set');
+  
+  // Add variation to the prompt for different styles
+  const styleVariations = [
+    'with trendy casual clothing',
+    'with stylish streetwear outfit', 
+    'with colorful fashionable attire',
+    'with modern chic clothing'
+  ];
+  
+  const variantPrompt = `${AVATAR_PROMPT}, ${styleVariations[variantIndex % styleVariations.length]}`;
+  
   const fd = new FormData();
   fd.append('model', 'gpt-image-1');
-  fd.append('prompt', AVATAR_PROMPT);
+  fd.append('prompt', variantPrompt);
   fd.append('size', '1024x1024');
   fd.append('n', '1');
   fd.append('image', imageBlob, 'input.jpg');
@@ -91,14 +93,14 @@ export async function POST(req: NextRequest) {
       duration: `${blobDuration.toFixed(2)}ms` 
     });
 
-    // Make parallel OpenAI calls
-    console.log('🤖 AVATAR API: Starting 4 parallel OpenAI calls');
+    // Make parallel OpenAI calls with different style variations
+    console.log('🤖 AVATAR API: Starting 4 parallel OpenAI calls with style variations');
     const openaiStartTime = performance.now();
     const calls = [
-      callOpenAIWithBlob(blob), 
-      callOpenAIWithBlob(blob), 
-      callOpenAIWithBlob(blob), 
-      callOpenAIWithBlob(blob)
+      callOpenAIWithBlob(blob, 0), 
+      callOpenAIWithBlob(blob, 1), 
+      callOpenAIWithBlob(blob, 2), 
+      callOpenAIWithBlob(blob, 3)
     ];
     
     const images = await Promise.all(calls);
