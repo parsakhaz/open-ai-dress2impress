@@ -9,7 +9,6 @@ import AIConsole from '@/app/(app)/components/ai/AIConsole';
 import AvatarPanel from '@/app/(app)/components/panels/AvatarPanel';
 import AmazonPanel from '@/app/(app)/components/panels/AmazonPanel';
 import EditWithAIPanel from '@/app/(app)/components/panels/EditWithAIPanel';
-import Wardrobe from '@/app/(app)/components/ui/Wardrobe';
 import WardrobeModal from '@/app/(app)/components/ui/WardrobeModal';
 import WardrobeContent from '@/app/(app)/components/ui/WardrobeContent';
 import { DebugPanel } from '@/components/DebugPanel';
@@ -32,10 +31,7 @@ export default function GamePage() {
     });
     
     // Log environment status
-    const envVars = [
-      'NEXT_PUBLIC_VERCEL_URL',
-      // Note: Other env vars are not accessible on client side
-    ];
+    // Note: Other env vars are not accessible on client side
     
     console.log('🔧 CLIENT ENVIRONMENT:', {
       nodeEnv: process.env.NODE_ENV,
@@ -50,7 +46,23 @@ export default function GamePage() {
     
     console.log('🎮 GAME FLOW: Starting in phase', phase);
     console.log('💡 TIP: Press Ctrl+Shift+D to open debug panel (development only)');
+    console.log('⌨️  KEYBOARD: Press ESC to close panels, click Phase to cycle');
   }, [phase]);
+  
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setAmazonPanelVisible(false);
+        setEditPanelVisible(false);
+        setWardrobeOpen(false);
+        setAIConsoleVisible(false);
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
   
   return (
     <main className="relative w-screen h-screen overflow-hidden">
@@ -63,7 +75,9 @@ export default function GamePage() {
       
       {/* Conditional rendering based on phase */}
       {phase === 'CharacterSelect' ? (
-        <AvatarPanel />
+        <div className="fixed inset-0 flex items-center justify-center z-30 p-4">
+          <AvatarPanel />
+        </div>
       ) : (
         <ToolsIsland 
           onSearchClick={() => setAmazonPanelVisible(true)}
@@ -75,15 +89,41 @@ export default function GamePage() {
       
       {/* Panel overlays - only render when visible */}
       {isAmazonPanelVisible && (
-        <div className="fixed left-20 top-1/2 -translate-y-1/2 z-30">
-          <AmazonPanel onClose={() => setAmazonPanelVisible(false)} />
-        </div>
+        <>
+          <div 
+            className="fixed inset-0 z-25 bg-black/20" 
+            onClick={() => setAmazonPanelVisible(false)}
+          />
+          {/* Desktop positioning */}
+          <div className="fixed left-24 top-1/2 -translate-y-1/2 z-30 hidden sm:block">
+            <AmazonPanel onClose={() => setAmazonPanelVisible(false)} />
+          </div>
+          {/* Mobile positioning */}
+          <div className="fixed inset-4 z-30 flex items-center justify-center sm:hidden">
+            <div className="w-full max-w-md max-h-full overflow-auto">
+              <AmazonPanel onClose={() => setAmazonPanelVisible(false)} />
+            </div>
+          </div>
+        </>
       )}
       
       {isEditPanelVisible && (
-        <div className="fixed left-20 top-1/2 -translate-y-1/2 z-30">
-          <EditWithAIPanel onClose={() => setEditPanelVisible(false)} />
-        </div>
+        <>
+          <div 
+            className="fixed inset-0 z-25 bg-black/20" 
+            onClick={() => setEditPanelVisible(false)}
+          />
+          {/* Desktop positioning */}
+          <div className="fixed left-24 top-1/2 -translate-y-1/2 z-30 hidden sm:block">
+            <EditWithAIPanel onClose={() => setEditPanelVisible(false)} />
+          </div>
+          {/* Mobile positioning */}
+          <div className="fixed inset-4 z-30 flex items-center justify-center sm:hidden">
+            <div className="w-full max-w-md max-h-full overflow-auto">
+              <EditWithAIPanel onClose={() => setEditPanelVisible(false)} />
+            </div>
+          </div>
+        </>
       )}
       
       {/* Wardrobe Modal */}

@@ -2,7 +2,7 @@ import { GlassPanel } from '@/components/GlassPanel';
 
 export default function HistoryStrip() {
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 hidden sm:block">
       <GlassPanel className="p-2">
         <div className="flex items-center gap-3 overflow-x-auto max-w-[80vw]">
           {/* Placeholder for future history thumbnails */}
