@@ -30,12 +30,14 @@ export default function EditWithAIPanel() {
           placeholder="Base image URL"
           value={imageUrl}
           onChange={(e) => setImageUrl(e.target.value)}
+          suppressHydrationWarning
         />
         <input
           className="border rounded px-2 py-1 flex-1"
           placeholder="Instruction"
           value={instruction}
           onChange={(e) => setInstruction(e.target.value)}
+          suppressHydrationWarning
         />
         <button className="px-3 py-1 bg-black text-white rounded" onClick={onEdit} disabled={loading}>
           {loading ? 'Editing…' : 'Edit with AI'}

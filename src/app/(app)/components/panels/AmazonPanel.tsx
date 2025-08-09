@@ -33,6 +33,7 @@ export default function AmazonPanel() {
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           placeholder="Search Amazon fashion"
+          suppressHydrationWarning
         />
         <button className="px-3 py-1 bg-black text-white rounded" disabled={loading}>
           {loading ? 'Searching…' : 'Search'}
