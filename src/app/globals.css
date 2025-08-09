@@ -1,8 +1,37 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Accent as H S L; use with hsl(var(--accent) / <alpha>) */
+  --accent: 215 92% 60%;
+
+  /* Surface tokens (light) */
+  --surface: rgba(255,255,255,0.6);
+  --surface-border: rgba(255,255,255,0.6);
+  --edge: 0.35;                 /* top highlight strength */
+  --blur: 24px;
+  --saturate: 1.6;
+  --elev-1: 0 10px 30px rgba(0,0,0,0.15);
+  --elev-2: 0 20px 60px rgba(0,0,0,0.25);
+  --noise: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxmaWx0ZXIgaWQ9Im5vaXNlIj4KPGZ1cmJ1bGVuY2UgbnVtT2N0YXZlcz0iNCIgc2VlZD0iMiIgc3RpdGNoVGlsZXM9InN0aXRjaCIvPgo8L2ZpbHRlcj4KPHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsdGVyPSJ1cmwoI25vaXNlKSIgb3BhY2l0eT0iMC4xIi8+Cjwvc3ZnPgo=');   /* inline noise pattern */
+  --noise-opacity: 0.015;
+
+  /* Legacy variables for compatibility */
+  --background: #f8fafc;
+  --foreground: #0f172a;
+}
+
+:root.dark {
+  /* Dark mode tuning */
+  --surface: rgba(17,25,40,0.5);
+  --surface-border: rgba(255,255,255,0.12);
+  --edge: 0.25;
+  --blur: 28px;
+  --saturate: 1.8;
+  --noise-opacity: 0.02;
+  
+  /* Legacy variables for dark mode */
+  --background: #020617;
+  --foreground: #f1f5f9;
 }
 
 @theme inline {
@@ -13,14 +42,44 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not(.light) {
+    /* Dark mode tuning */
+    --surface: rgba(17,25,40,0.5);
+    --surface-border: rgba(255,255,255,0.12);
+    --edge: 0.25;
+    --blur: 28px;
+    --saturate: 1.8;
+    --noise-opacity: 0.02;
+    
+    /* Legacy variables for dark mode */
+    --background: #020617;
+    --foreground: #f1f5f9;
+  }
+}
+
+/* Backdrop fallback when unsupported */
+@supports not ((-webkit-backdrop-filter: none) or (backdrop-filter: none)) {
+  .supports-no-backdrop {
+    background: color-mix(in oklab, var(--surface) 70%, white);
+  }
+}
+
+/* Respect motion/transparency preferences */
+@media (prefers-reduced-transparency: reduce) {
+  :root, :root.dark { 
+    --blur: 0px; 
+    --saturate: 1; 
+    --surface: rgba(255,255,255,0.9);
+  }
+  :root.dark {
+    --surface: rgba(17,25,40,0.9);
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  min-height: 100vh;
+  antialiased: true;
 }

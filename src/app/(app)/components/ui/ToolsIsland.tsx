@@ -4,7 +4,7 @@ import Wardrobe from '@/app/(app)/components/ui/Wardrobe';
 
 export default function ToolsIsland() {
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <AmazonPanel />
       <EditWithAIPanel />
       <Wardrobe />
