@@ -17,26 +17,70 @@ export default function AvatarPanel() {
   const setPhase = useGameStore((s) => s.setPhase);
 
   const capture = useCallback(async () => {
+    console.log('📷 AVATAR PANEL: Capture button clicked');
+    
     const imageSrc = webcamRef.current?.getScreenshot();
-    if (!imageSrc) return;
+    if (!imageSrc) {
+      console.error('❌ AVATAR PANEL: Failed to capture image from webcam');
+      setError('Failed to capture image from webcam. Please ensure your camera is working.');
+      return;
+    }
+
+    console.log('✅ AVATAR PANEL: Image captured from webcam', {
+      dataLength: imageSrc.length,
+      format: imageSrc.substring(0, imageSrc.indexOf(';'))
+    });
+
+    console.log('🔄 AVATAR PANEL: Starting avatar generation process');
     setLoading(true);
     setError(null);
+    
+    const startTime = performance.now();
+    
     try {
-      // Note: If OpenAI rejects data URLs, we will need to upload to a blob store and pass a URL.
+      console.log('👤 AVATAR PANEL: Calling generateAvatarFromSelfie');
       const urls = await generateAvatarFromSelfie(imageSrc);
+      
+      const duration = performance.now() - startTime;
+      console.log('🎉 AVATAR PANEL: Avatar generation completed successfully', {
+        avatarCount: urls.length,
+        duration: `${duration.toFixed(2)}ms`
+      });
+      
       setVariants(urls);
+      
+      // Log to AI console for user visibility
+      // logAIEvent({ type: 'tool_call', content: `Generated ${urls.length} avatar variants`, timestamp: Date.now() });
+      
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Avatar generation failed');
+      const duration = performance.now() - startTime;
+      const error = e instanceof Error ? e : new Error('Unknown error');
+      
+      console.error('💥 AVATAR PANEL: Avatar generation failed', {
+        error: error.message,
+        duration: `${duration.toFixed(2)}ms`
+      });
+      
+      setError(error.message);
+      
+      // Log to AI console for user visibility
+      // logAIEvent({ type: 'tool_call', content: `Avatar generation failed: ${error.message}`, timestamp: Date.now() });
     } finally {
       setLoading(false);
     }
   }, []);
 
   function choose(url: string) {
+    console.log('✅ AVATAR PANEL: User selected avatar', { avatarUrl: url.substring(0, 50) + '...' });
+    
     const c: Character = { id: `char-${Date.now()}`, avatarUrl: url };
     setCharacter(c);
     setCurrentImage(url);
+    
+    console.log('🔄 AVATAR PANEL: Transitioning to Shopping phase');
     setPhase('ShoppingSpree');
+    
+    console.log('🎯 PHASE TRANSITION: CharacterSelect → ShoppingSpree');
   }
 
   return (

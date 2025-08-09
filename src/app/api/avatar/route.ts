@@ -55,15 +55,90 @@ async function callOpenAIWithBlob(imageBlob: Blob): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
+  console.log('🎯 AVATAR API: Starting avatar generation request');
+  const startTime = performance.now();
+  
   try {
+    // Environment validation
+    if (!OPENAI_API_KEY) {
+      console.error('❌ AVATAR API: OPENAI_API_KEY not set');
+      return new Response('OpenAI API key not configured', { status: 500 });
+    }
+
+    console.log('✅ AVATAR API: Environment validated');
+
+    // Parse request
     const { imageDataUrl } = (await req.json()) as { imageDataUrl: string };
-    if (!imageDataUrl) return new Response('Missing imageDataUrl', { status: 400 });
+    console.log('📥 AVATAR API: Request parsed', { 
+      hasImageData: !!imageDataUrl, 
+      dataUrlLength: imageDataUrl?.length 
+    });
+
+    if (!imageDataUrl) {
+      console.error('❌ AVATAR API: Missing imageDataUrl in request');
+      return new Response('Missing imageDataUrl', { status: 400 });
+    }
+
+    // Convert image to blob
+    console.log('🔄 AVATAR API: Converting image data to blob');
+    const blobStartTime = performance.now();
     const blob = await inputToBlob(imageDataUrl);
-    const calls = [callOpenAIWithBlob(blob), callOpenAIWithBlob(blob), callOpenAIWithBlob(blob), callOpenAIWithBlob(blob)];
+    const blobDuration = performance.now() - blobStartTime;
+    console.log('✅ AVATAR API: Blob conversion completed', { 
+      blobSize: blob.size, 
+      blobType: blob.type, 
+      duration: `${blobDuration.toFixed(2)}ms` 
+    });
+
+    // Make parallel OpenAI calls
+    console.log('🤖 AVATAR API: Starting 4 parallel OpenAI calls');
+    const openaiStartTime = performance.now();
+    const calls = [
+      callOpenAIWithBlob(blob), 
+      callOpenAIWithBlob(blob), 
+      callOpenAIWithBlob(blob), 
+      callOpenAIWithBlob(blob)
+    ];
+    
     const images = await Promise.all(calls);
+    const openaiDuration = performance.now() - openaiStartTime;
+    
+    console.log('✅ AVATAR API: OpenAI calls completed', { 
+      imageCount: images.length, 
+      duration: `${openaiDuration.toFixed(2)}ms` 
+    });
+
+    const totalDuration = performance.now() - startTime;
+    console.log('🎉 AVATAR API: Request completed successfully', { 
+      totalDuration: `${totalDuration.toFixed(2)}ms`,
+      imagesGenerated: images.length 
+    });
+
     return Response.json({ images });
   } catch (e) {
-    const message = e instanceof Error ? e.message : 'Unknown error';
+    const totalDuration = performance.now() - startTime;
+    const error = e instanceof Error ? e : new Error('Unknown error');
+    
+    console.error('💥 AVATAR API: Request failed', {
+      error: error.message,
+      stack: error.stack,
+      duration: `${totalDuration.toFixed(2)}ms`
+    });
+
+    // More specific error handling
+    if (error.message.includes('OpenAI error')) {
+      console.error('🤖 AVATAR API: OpenAI API error', { 
+        message: error.message,
+        suggestion: 'Check API key validity and OpenAI service status' 
+      });
+    } else if (error.message.includes('Invalid data URL')) {
+      console.error('📷 AVATAR API: Invalid image data', { 
+        message: error.message,
+        suggestion: 'Check webcam image format and data URL encoding' 
+      });
+    }
+
+    const message = error.message;
     return new Response(message, { status: 500 });
   }
 }
