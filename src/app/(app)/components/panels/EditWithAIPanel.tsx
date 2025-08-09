@@ -5,7 +5,11 @@ import { GlassPanel } from '@/components/GlassPanel';
 import { GlassButton } from '@/components/GlassButton';
 import { useGameStore } from '@/lib/state/gameStore';
 
-export default function EditWithAIPanel() {
+interface EditWithAIPanelProps {
+  onClose?: () => void;
+}
+
+export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) {
   const [imageUrl, setImageUrl] = useState('');
   const [instruction, setInstruction] = useState('add a silver necklace');
   const [loading, setLoading] = useState(false);
@@ -29,7 +33,22 @@ export default function EditWithAIPanel() {
   return (
     <GlassPanel>
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Edit with AI</h3>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Edit with AI</h3>
+          {onClose && (
+            <GlassButton
+              size="sm"
+              variant="ghost"
+              onClick={onClose}
+              className="w-8 h-8 p-0 flex items-center justify-center hover:bg-white/20"
+              title="Close"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </GlassButton>
+          )}
+        </div>
         
         <div className="space-y-3">
           <div>

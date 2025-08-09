@@ -1,16 +1,27 @@
 "use client";
 import { useGameStore } from '@/lib/state/gameStore';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import TopBar from '@/app/(app)/components/game/TopBar';
 import CenterStage from '@/app/(app)/components/game/CenterStage';
 import HistoryStrip from '@/app/(app)/components/game/HistoryStrip';
 import ToolsIsland from '@/app/(app)/components/ui/ToolsIsland';
 import AIConsole from '@/app/(app)/components/ai/AIConsole';
 import AvatarPanel from '@/app/(app)/components/panels/AvatarPanel';
+import AmazonPanel from '@/app/(app)/components/panels/AmazonPanel';
+import EditWithAIPanel from '@/app/(app)/components/panels/EditWithAIPanel';
+import Wardrobe from '@/app/(app)/components/ui/Wardrobe';
+import WardrobeModal from '@/app/(app)/components/ui/WardrobeModal';
+import WardrobeContent from '@/app/(app)/components/ui/WardrobeContent';
 import { DebugPanel } from '@/components/DebugPanel';
 
 export default function GamePage() {
   const phase = useGameStore((s) => s.phase);
+  
+  // Panel visibility states
+  const [isAmazonPanelVisible, setAmazonPanelVisible] = useState(false);
+  const [isEditPanelVisible, setEditPanelVisible] = useState(false);
+  const [isWardrobeOpen, setWardrobeOpen] = useState(false);
+  const [isAIConsoleVisible, setAIConsoleVisible] = useState(false);
   
   useEffect(() => {
     console.log('🚀 DRESS TO IMPRESS: Application started');
@@ -42,24 +53,50 @@ export default function GamePage() {
   }, [phase]);
   
   return (
-    <main className="container mx-auto p-6">
-      <div className="space-y-6">
-        <TopBar />
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[60vh]">
-          <div className="lg:col-span-2 space-y-6">
-            <CenterStage />
-            <HistoryStrip />
-          </div>
-          <div className="space-y-6">
-            {phase === 'CharacterSelect' ? (
-              <AvatarPanel />
-            ) : (
-              <ToolsIsland />
-            )}
-            <AIConsole />
-          </div>
+    <main className="relative w-screen h-screen overflow-hidden">
+      {/* Canvas Background - CenterStage takes full viewport */}
+      <CenterStage />
+      
+      {/* Fixed positioned overlay elements */}
+      <TopBar />
+      <HistoryStrip />
+      
+      {/* Conditional rendering based on phase */}
+      {phase === 'CharacterSelect' ? (
+        <AvatarPanel />
+      ) : (
+        <ToolsIsland 
+          onSearchClick={() => setAmazonPanelVisible(true)}
+          onEditClick={() => setEditPanelVisible(true)}
+          onWardrobeClick={() => setWardrobeOpen(true)}
+          onAIConsoleClick={() => setAIConsoleVisible(!isAIConsoleVisible)}
+        />
+      )}
+      
+      {/* Panel overlays - only render when visible */}
+      {isAmazonPanelVisible && (
+        <div className="fixed left-20 top-1/2 -translate-y-1/2 z-30">
+          <AmazonPanel onClose={() => setAmazonPanelVisible(false)} />
         </div>
-      </div>
+      )}
+      
+      {isEditPanelVisible && (
+        <div className="fixed left-20 top-1/2 -translate-y-1/2 z-30">
+          <EditWithAIPanel onClose={() => setEditPanelVisible(false)} />
+        </div>
+      )}
+      
+      {/* Wardrobe Modal */}
+      <WardrobeModal open={isWardrobeOpen} onClose={() => setWardrobeOpen(false)}>
+        <WardrobeContent />
+      </WardrobeModal>
+      
+      {/* AI Console - conditionally visible */}
+      {isAIConsoleVisible && (
+        <div className="fixed bottom-4 right-4 z-30">
+          <AIConsole />
+        </div>
+      )}
       <DebugPanel />
     </main>
   );
