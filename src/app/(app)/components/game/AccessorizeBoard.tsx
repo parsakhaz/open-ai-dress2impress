@@ -13,7 +13,7 @@ export default function AccessorizeBoard() {
   const runwayBaseImageUrl = useGameStore((s) => s.runwayBaseImageUrl);
   const aiPlayerResultUrl = useGameStore((s) => s.aiPlayerResultUrl);
   const aiStyledResultUrl = useGameStore((s) => s.aiStyledResultUrl);
-  const setAiStyledResultUrl = useGameStore((s) => s.setAiStyledResultUrl);
+  const setAiStyledResultUrl = useGameStore((s) => (s as any).setAiStyledResultUrl);
   const { showToast } = useToast();
 
   // Right-pane minimal orchestration state
@@ -66,7 +66,7 @@ export default function AccessorizeBoard() {
   }, [phase, aiPlayerResultUrl]);
 
   return (
-    <div className="absolute inset-0 z-20 bg-background/95 backdrop-blur-sm">
+    <div className="absolute inset-0 z-20 bg-background/95 backdrop-blur-sm pt-16 md:pt-20">
       <div className="h-full w-full min-h-0 grid grid-cols-1 lg:grid-cols-2 gap-4 p-4 md:p-6 max-w-7xl mx-auto">
         {/* Left: Player (You) inline editor */}
         <UserAccessorizePane />
@@ -83,12 +83,16 @@ export default function AccessorizeBoard() {
             <div className="absolute inset-0 z-0">
               {/* If an image exists, show it blurred; otherwise a neutral gradient */}
               {aiStyledResultUrl || aiPlayerResultUrl ? (
-                <img src={aiStyledResultUrl || aiPlayerResultUrl} alt="ChatGPT look (pending)" className="w-full h-full object-cover blur-xl opacity-40" />
+                <img 
+                  src={aiStyledResultUrl || aiPlayerResultUrl || ''} 
+                  alt="ChatGPT look (pending)" 
+                  className="w-full h-full object-cover blur-xl opacity-40" 
+                />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-purple-200/30 via-indigo-200/20 to-fuchsia-200/30" />
               )}
             </div>
-            <div className="relative z-10 flex-1 flex items-center justify-center p-4">
+            <div className="absolute inset-0 z-10 flex items-center justify-center p-4">
               <div className="text-center">
                 <div className={`w-12 h-12 mx-auto rounded-full border-4 border-foreground/20 ${status==='done' ? 'border-green-500' : 'border-t-foreground animate-spin'}`} />
                 <div className="mt-3 text-foreground font-semibold">
@@ -100,7 +104,7 @@ export default function AccessorizeBoard() {
                 </div>
                 {instruction && (
                   <div className="mt-2 text-xs text-foreground/80 font-mono px-3">
-                    query: “{instruction}”
+                    query: "{instruction}"
                   </div>
                 )}
               </div>
@@ -111,5 +115,3 @@ export default function AccessorizeBoard() {
     </div>
   );
 }
-
-
