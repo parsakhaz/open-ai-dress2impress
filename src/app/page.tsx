@@ -7,6 +7,7 @@ import CenterStage from '@/app/(app)/components/game/CenterStage';
 import HistoryStrip from '@/app/(app)/components/game/HistoryStrip';
 import ToolsIsland from '@/app/(app)/components/ui/ToolsIsland';
 import AIConsole from '@/app/(app)/components/ai/AIConsole';
+import GameBoard from '@/app/(app)/components/game/GameBoard';
 import AvatarPanel from '@/app/(app)/components/panels/AvatarPanel';
 import AmazonPanel from '@/app/(app)/components/panels/AmazonPanel';
 import EditWithAIPanel from '@/app/(app)/components/panels/EditWithAIPanel';
@@ -321,6 +322,11 @@ export default function GamePage() {
       {phase !== 'CharacterSelect' && phase !== 'ThemeSelect' && <TopBar />}
       <HistoryStrip />
       
+      {/* Board layout (single screen) during gameplay phases */}
+      {phase !== 'CharacterSelect' && phase !== 'ThemeSelect' && (
+        <GameBoard />
+      )}
+
       {/* Conditional rendering based on phase */}
       {(() => {
         console.log('🎮 GAME PAGE: Current phase is', phase, '| Should show AvatarPanel:', phase === 'CharacterSelect');
@@ -336,44 +342,9 @@ export default function GamePage() {
             </div>
           </div>
         </div>
-      ) : (
-        (phase === 'ShoppingSpree' || phase === 'StylingRound') ? (
-          <ToolsIsland 
-            onSearchClick={() => {
-              if (!canOpenShopping) { showToast(shoppingTooltip, 'info'); return; }
-              setAmazonPanelVisible(true);
-            }}
-            onEditClick={() => {
-              if (!canOpenEdit) { showToast(editTooltip, 'info'); return; }
-              setEditPanelVisible(true);
-            }}
-            onWardrobeClick={() => {
-              if (!canOpenWardrobe) { showToast(wardrobeTooltip, 'info'); return; }
-              setWardrobeOpen(true);
-            }}
-            onAIConsoleClick={() => setAIConsoleVisible(!isAIConsoleVisible)}
-            searchDisabled={!canOpenShopping}
-            editDisabled={!canOpenEdit}
-            wardrobeDisabled={!canOpenWardrobe}
-            searchTooltip={shoppingTooltip}
-            editTooltip={editTooltip}
-            wardrobeTooltip={wardrobeTooltip}
-          />
-        ) : null
-      )}
+      ) : null}
       
-      {/* Panel overlays - only render when visible */}
-      {isAmazonPanelVisible && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-lg">
-          <div 
-            className="fixed inset-0"
-            onClick={() => setAmazonPanelVisible(false)}
-          />
-          <div className="relative w-[96vw] max-w-[1600px] mx-2 h-[96vh]">
-            <AmazonPanel onClose={() => setAmazonPanelVisible(false)} showToast={showToast} />
-          </div>
-        </div>
-      )}
+      {/* Amazon modal removed in single-screen layout; generation lives in left sidebar */}
       
       {isEditPanelVisible && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-lg">
@@ -392,18 +363,7 @@ export default function GamePage() {
         <WardrobeContent onClose={() => setWardrobeOpen(false)} />
       </WardrobeModal>
       
-      {/* AI Console - conditionally visible */}
-      {isAIConsoleVisible && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-lg">
-          <div 
-            className="fixed inset-0"
-            onClick={() => setAIConsoleVisible(false)}
-          />
-          <div className="relative max-w-3xl w-full mx-4 max-h-[90vh]">
-            <AIConsole onClose={() => setAIConsoleVisible(false)} />
-          </div>
-        </div>
-      )}
+      {/* AI Console dialog not needed; logs live on the right in the board */}
       <DebugPanel />
       
       {/* Walkout loading overlay */}

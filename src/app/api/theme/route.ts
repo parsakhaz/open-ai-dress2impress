@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server';
 import { createHandler } from '@/lib/util/apiRoute';
-import { getServerEnv } from '@/lib/util/env';
 import { withTimeout } from '@/lib/util/http';
 
 export const runtime = 'nodejs';
@@ -24,6 +23,17 @@ function parseThemes(text: string): string[] {
   return lines.slice(0, 15);
 }
 
+// Read only the minimal OpenAI env required for this endpoint, so missing
+// unrelated keys (e.g., RAPIDAPI_KEY) do not break theme generation.
+function getOpenAIEnv() {
+  const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+  const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'https://api.openai.com';
+  if (!OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY is not set');
+  }
+  return { OPENAI_API_KEY, OPENAI_BASE_URL };
+}
+
 export const POST = createHandler<{ context?: string }, { themes: string[] }>({
   parse: async (req: NextRequest) => {
     try {
@@ -34,7 +44,8 @@ export const POST = createHandler<{ context?: string }, { themes: string[] }>({
     }
   },
   handle: async ({ context }) => {
-    const { OPENAI_API_KEY, OPENAI_BASE_URL } = getServerEnv();
+    // Only require OpenAI credentials here
+    const { OPENAI_API_KEY, OPENAI_BASE_URL } = getOpenAIEnv();
     const controller = new AbortController();
     const timeoutPromise = new Promise<never>((_, reject) => setTimeout(() => {
       controller.abort();

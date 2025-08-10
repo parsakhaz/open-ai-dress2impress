@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { searchAmazon } from '@/lib/adapters/amazon';
 import type { WardrobeItem } from '@/types';
+import { MAX_WARDROBE_ITEMS } from '@/lib/constants';
 import { useGameStore } from '@/lib/state/gameStore';
 import { GlassPanel } from '@/components/GlassPanel';
 import { GlassButton } from '@/components/GlassButton';
@@ -12,7 +13,8 @@ interface AmazonPanelProps {
   showToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
-const MAX_WARDROBE_ITEMS = 8;
+// Use shared constant so the limit also applies to the new 3x3 grid
+// (behavior stays identical; only the value moves to constants)
 
 export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {}) {
   const [query, setQuery] = useState('black leather jacket');
@@ -99,7 +101,7 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Amazon Shopping</h2>
-            <div className="text-sm text-slate-600 dark:text-slate-400">Selected {wardrobe.length}/{MAX_WARDROBE_ITEMS} • Max 8 items</div>
+            <div className="text-sm text-slate-600 dark:text-slate-400">Selected {wardrobe.length}/{MAX_WARDROBE_ITEMS} • Max {MAX_WARDROBE_ITEMS} items</div>
           </div>
           {onClose && (
             <GlassButton
