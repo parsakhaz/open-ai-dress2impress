@@ -21,9 +21,13 @@ export const POST = createHandler<AmazonSearchRequest, { products: RapidProduct[
     if (categoryId) {
       endpoint = `products-by-category?category_id=${encodeURIComponent(categoryId)}&page=${page}&country=${country}&sort_by=${sort_by}&product_condition=${product_condition}&is_prime=${is_prime}&deals_and_discounts=${deals_and_discounts}`;
     } else if (query) {
-      // Mirror Amazon's own search behavior: pass the raw keyword (no forced category)
+      // Normalize user query: append "clothes" if not present to steer toward apparel
+      const normalized = String(query).trim();
+      const hasClothes = /(^|\b)clothes(\b|$)/i.test(normalized);
+      const finalQuery = hasClothes || normalized.length === 0 ? normalized : `${normalized} clothes`;
+      // Mirror Amazon's own search behavior
       const params = new URLSearchParams({
-        query,
+        query: finalQuery,
         page: String(page),
         country,
         sort_by,

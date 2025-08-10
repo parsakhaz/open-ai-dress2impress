@@ -59,7 +59,7 @@ export const POST = createHandler<{ context?: string }, { themes: string[] }>({
         Authorization: `Bearer ${OPENAI_API_KEY}`,
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5-mini',
         temperature: 0.9,
         max_tokens: 256,
         response_format: { type: 'json_object' },

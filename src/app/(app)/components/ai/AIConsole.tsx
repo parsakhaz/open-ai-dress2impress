@@ -25,6 +25,23 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
   const [density, setDensity] = useState<'compact' | 'comfortable'>('compact');
   const [autoScrollPinned, setAutoScrollPinned] = useState(false);
   const [activeActions, setActiveActions] = useState<Record<string, { label: string; tool?: string; phase?: string }>>({});
+  
+  type RowStatus = 'running' | 'ok' | 'error' | 'info';
+  interface AggregatedRow {
+    id: string;
+    phase?: string;
+    tool?: string;
+    status: RowStatus;
+    timestamp: number;
+    query?: string;
+    category?: string;
+    count?: number;
+    outfitId?: string;
+    finalId?: string;
+    reason?: string;
+    images?: string[];
+    plan?: { queries?: Array<{ category: string; query: string }>; outfits?: Array<{ id: string }>; palette?: string[] } | null;
+  }
   // Local inline error badge with optional countdown will manage its own state
 
   // Minimal inline lucide-style icons (no external deps)
@@ -189,7 +206,8 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
               content = content.replace(/.*(RATE_LIMIT|429).*?/i, 'search: hit rate limit, slowing down');
             }
             // Emit richer UI event so the console can show thumbnails inline
-            const images = Array.isArray((evt as any).context?.images) ? ((evt as any).context?.images as string[]) : undefined;
+            const ctx: any = (evt as any).context || {};
+            const images = Array.isArray(ctx.images) ? (ctx.images as string[]) : undefined;
             const groupId = typeof (evt as any)?.context?.callId === 'string' ? String((evt as any).context.callId) : undefined;
             const errorDetail = typeof (evt as any)?.context?.originalError === 'string'
               ? String((evt as any).context.originalError)
@@ -215,6 +233,12 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
               errorDetail,
               runId: (evt as any).runId,
               groupId,
+              // Friendly fields
+              query: typeof ctx.query === 'string' ? ctx.query : undefined,
+              category: typeof ctx.category === 'string' ? ctx.category : undefined,
+              count: typeof ctx.count === 'number' ? ctx.count : undefined,
+              finalId: typeof ctx.finalId === 'string' ? ctx.finalId : undefined,
+              plan: ctx.plan || undefined,
             };
             logAIEvent(aiEvent);
             if (aiEvent.type === 'tool_call' && aiEvent.kind === 'start') {
@@ -262,6 +286,86 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
     const MAX_VISIBLE = 60;
     return all.slice(-MAX_VISIBLE).reverse();
   }, [aiLog, filters]);
+
+  // Aggregate start/result pairs into a single, human-friendly row
+  const rows = useMemo<AggregatedRow[]>(() => {
+    const map = new Map<string, AggregatedRow>();
+    const out: AggregatedRow[] = [];
+    // Process in chronological order to build rows, then reverse later
+    const chronological = [...aiLog];
+    for (const e of chronological) {
+      const key = e.groupId ? `${e.groupId}-${e.tool || e.phase || ''}` : `row-${e.timestamp}-${e.tool || e.phase || e.content}`;
+      let row = map.get(key);
+      if (!row) {
+        row = {
+          id: key,
+          phase: e.phase,
+          tool: e.tool,
+          status: e.kind === 'error' ? 'error' : e.kind === 'result' ? 'ok' : e.kind === 'start' ? 'running' : 'info',
+          timestamp: e.timestamp || Date.now(),
+          query: (e as any).query,
+          category: (e as any).category,
+          count: (e as any).count,
+          finalId: (e as any).finalId,
+          plan: (e as any).plan || null,
+          images: e.images,
+        };
+        map.set(key, row);
+        out.push(row);
+      }
+      // Update status/images/metadata on subsequent events
+      if (e.kind === 'result') row.status = 'ok';
+      if (e.kind === 'error') row.status = 'error';
+      if (!row.images && e.images) row.images = e.images;
+      if (!row.count && (e as any).count) row.count = (e as any).count as number;
+      if (!row.query && (e as any).query) row.query = (e as any).query as string;
+      if (!row.category && (e as any).category) row.category = (e as any).category as string;
+      if ((e as any).finalId) row.finalId = (e as any).finalId as string;
+      if ((e as any).plan) row.plan = (e as any).plan as any;
+      // Prefer the latest timestamp for sorting
+      row.timestamp = e.timestamp || row.timestamp;
+    }
+    // Keep last N rows and show newest first
+    const MAX_ROWS = 60;
+    return out.slice(-MAX_ROWS).reverse();
+  }, [aiLog]);
+
+  function formatRowTitle(r: AggregatedRow): string {
+    if (r.tool === 'searchRapid') {
+      const parts = [] as string[];
+      if (typeof r.count === 'number') parts.push(`${r.count} results`);
+      if (r.category) parts.push(r.category);
+      if (r.query) parts.push(`“${r.query}”`);
+      return parts.join(' • ');
+    }
+    if (r.tool === 'fashn.tryon') {
+      return `Outfit ${r.outfitId || r.id.split('-')[0]} try‑on`;
+    }
+    if (r.phase === 'PLAN' && r.plan) {
+      const ids = Array.isArray(r.plan?.outfits) ? r.plan!.outfits!.map((o: any) => o.id).join(', ') : '';
+      return ids ? `Planned outfits ${ids}` : 'Plan ready';
+    }
+    if (r.phase === 'PICK' && r.finalId) {
+      return `Picked ${r.finalId}`;
+    }
+    return r.tool || r.phase || 'event';
+  }
+
+  function formatRowSubtitle(r: AggregatedRow): string | undefined {
+    if (r.phase === 'PICK' && r.reason) return r.reason;
+    return undefined;
+  }
+
+  function relativeTimeFrom(ts: number): string | null {
+    if (!ts || !Number.isFinite(ts)) return null;
+    const diff = Math.round((Date.now() - ts) / 1000);
+    const abs = Math.abs(diff);
+    let value = -diff; let unit: Intl.RelativeTimeFormatUnit = 'second';
+    if (abs >= 3600) { value = -Math.round(diff / 3600); unit = 'hour'; }
+    else if (abs >= 60) { value = -Math.round(diff / 60); unit = 'minute'; }
+    const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' });
+    return rtf.format(value as any, unit);
+  }
   const withSeparators = useMemo(() => {
     const out: any[] = [];
     let lastPhase: string | undefined;
@@ -344,35 +448,36 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
               <span>Waiting for instructions…</span>
             </div>
           ) : (
-            withSeparators.map((e: any, i: number) => (
-                '.__sep' in e ? (
-                  <div key={e.key} className="my-2 border-t border-white/10">
-                    <div className="-mt-3">
-                      <span className="px-2 text-[10px] uppercase tracking-wide text-slate-400 bg-black/80">{(e.phase || '').toLowerCase()}</span>
-                    </div>
-                  </div>
-                ) : (
-              <div key={i} className="mb-2 last:mb-0">
+            rows.map((r, i) => (
+              <div key={r.id} className="mb-2 last:mb-0">
                 <div className="flex items-start gap-2">
                   <div className="flex-1 min-w-0">
                     <div className={`flex items-center gap-2 ${density === 'compact' ? 'mb-1' : 'mb-2'}`}>
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] md:text-xs rounded border ${
-                        e.type === 'thought' 
-                          ? 'text-blue-300 border-blue-400/30 bg-blue-400/10' 
-                          : 'text-amber-300 border-amber-400/30 bg-amber-400/10'
-                      }`}>
-                        {e.type === 'thought' ? <Icon.Message className="w-3 h-3" /> : <Icon.Play className="w-3 h-3" />}
-                        <span>{e.type === 'thought' ? 'Analyzing…' : 'Action'}</span>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] md:text-xs rounded border ${r.tool ? 'text-amber-300 border-amber-400/30 bg-amber-400/10' : 'text-blue-300 border-blue-400/30 bg-blue-400/10'}`}> 
+                        {r.tool ? <Icon.Play className="w-3 h-3" /> : <Icon.Message className="w-3 h-3" />}
+                        <span>{r.tool ? 'Action' : 'Thought'}</span>
                       </span>
-                      {e.kind === 'start' && <Icon.Spinner className="w-3 h-3 text-green-300/80" />}
-                      {e.kind === 'result' && <span className="inline-flex items-center gap-1 text-[10px] text-green-300/80"><Icon.Check className="w-3 h-3" /> response received</span>}
-                      {e.kind === 'error' && <ErrorBadge retryInMs={e.retryInMs} errorDetail={e.errorDetail} />}
-                      <span className="ml-auto text-green-300/40 text-[10px] whitespace-nowrap relative -top-[1px]">[{new Date(e.timestamp).toLocaleTimeString()}]</span>
+                      {r.status === 'running' && <Icon.Spinner className="w-3 h-3 text-green-300/80" />}
+                      {r.status === 'ok' && <span className="inline-flex items-center gap-1 text-[10px] text-green-300/80"><Icon.Check className="w-3 h-3" /> done</span>}
+                      {r.status === 'error' && <ErrorBadge />}
+                      {relativeTimeFrom(r.timestamp) && (
+                        <span className="ml-auto text-green-300/40 text-[10px] whitespace-nowrap relative -top-[1px]">[{relativeTimeFrom(r.timestamp)}]</span>
+                      )}
                     </div>
-                    <p className={`text-green-100 break-words overflow-wrap-anywhere ${density === 'compact' ? 'text-xs' : 'text-sm'}`}>{e.content}</p>
-                    {Array.isArray(e.images) && e.images.length > 0 && (
+                    <div className={`text-green-100 break-words overflow-wrap-anywhere ${density === 'compact' ? 'text-xs' : 'text-sm'}`}>
+                      {formatRowTitle(r)}
+                      {formatRowSubtitle(r) ? <span className="text-green-300/70"> — {formatRowSubtitle(r)}</span> : null}
+                      {r.plan?.queries && Array.isArray(r.plan.queries) && r.plan.queries.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {r.plan.queries.slice(0,3).map((q: any, idx: number) => (
+                            <span key={idx} className="px-2 py-0.5 text-[10px] rounded border border-white/10 text-slate-200/90">{q.category}: “{q.query}”</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    {Array.isArray(r.images) && r.images.length > 0 && (
                       <div className="mt-2 flex items-center gap-2 overflow-x-auto">
-                        {e.images.slice(0, 6).map((u: string, idx: number) => (
+                        {r.images.slice(0, 6).map((u: string, idx: number) => (
                           <div key={`${i}-${idx}`} className="relative">
                             <img
                               src={u}
@@ -391,7 +496,6 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
                   </div>
                 </div>
               </div>
-                )
             ))
           )}
           {/* Sticky bottom controls: active actions tray + pin toggle */}

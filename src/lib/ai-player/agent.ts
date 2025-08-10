@@ -120,18 +120,19 @@ export class AIPlayerAgent {
     const system = 'You are a fashion AI. Respond JSON only. No prose.';
     const user = `Theme: ${this.theme}\nConstraints: max 2 Rapid searches, 1-2 outfits, prefer top+bottom. JSON format: {"palette": string[], "queries": [{"category":"top|bottom|dress","query": string}], "outfits": [{"id": "A"|"B", "items": [{"category":"top|bottom|dress","source":"closet"|"rapid"}]}]}`;
     const body = { model: 'gpt-5-mini', messages: [ { role: 'system', content: system }, { role: 'user', content: user } ] } as any;
-    await this.emit({ phase: 'PLAN', eventType: 'tool:start', tool: { name: 'openai.chat' }, message: 'PLAN JSON' });
+    await this.emit({ phase: 'PLAN', eventType: 'tool:start', tool: { name: 'openai.chat' }, message: 'plan' });
     const res = await fetch(`${OPENAI_BASE_URL}/v1/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` }, body: JSON.stringify(body) });
     const data = await res.json();
     const text = data?.choices?.[0]?.message?.content || '{}';
-    await this.emit({ phase: 'PLAN', eventType: 'tool:result', tool: { name: 'openai.chat' }, message: 'Plan received' });
     try {
       const parsed = JSON.parse(text);
       const queries = Array.isArray(parsed?.queries) ? parsed.queries.slice(0, 2).map((q: any) => ({ category: (q.category || 'top') as Category, query: String(q.query || '') })) : [];
       const outfits = Array.isArray(parsed?.outfits) ? parsed.outfits.slice(0, 2).map((o: any, i: number) => ({ id: String(o.id || (i === 0 ? 'A' : 'B')), items: Array.isArray(o.items) ? o.items.map((it: any) => ({ category: (it.category || 'top') as Category, source: (it.source || 'closet') as 'closet'|'rapid' })) : [] })) : [];
       const palette = Array.isArray(parsed?.palette) ? parsed.palette.map((s: any) => String(s)) : ['black','white'];
+      await this.emit({ phase: 'PLAN', eventType: 'tool:result', tool: { name: 'openai.chat' }, message: 'plan:done', context: { plan: { queries, outfits, palette } } });
       return { queries, outfits, palette };
     } catch {
+      await this.emit({ phase: 'PLAN', eventType: 'tool:result', tool: { name: 'openai.chat' }, message: 'plan:done', context: { plan: { queries: [], outfits: [{ id: 'A', items: [{ category: 'top', source: 'rapid' }] }], palette: ['black','white'] } } });
       return { queries: [], outfits: [{ id: 'A', items: [{ category: 'top', source: 'rapid' }] }], palette: ['black','white'] };
     }
   }
@@ -143,7 +144,7 @@ export class AIPlayerAgent {
     const rapidPromises: Promise<Product[]>[] = [];
     if (plan.queries[0]) {
       const q0 = plan.queries[0];
-      await this.emit({ phase: 'GATHER', eventType: 'tool:start', tool: { name: 'searchRapid' }, message: `Searching Amazon for ${q0.category}`, context: { q: q0.query, callId: 'search-0' } });
+      await this.emit({ phase: 'GATHER', eventType: 'tool:start', tool: { name: 'searchRapid' }, message: `search`, context: { query: q0.query, category: q0.category, callId: 'search-0' } });
       rapidPromises.push(
         remote.searchRapid(q0.query, q0.category)
           .then(async (r) => {
@@ -151,17 +152,17 @@ export class AIPlayerAgent {
               phase: 'GATHER',
               eventType: 'tool:result',
               tool: { name: 'searchRapid' },
-              message: `Found ${r.length}`,
-              context: { images: r.slice(0, 6).map((p) => p.image), callId: 'search-0' },
+              message: `search:done`,
+              context: { images: r.slice(0, 6).map((p) => p.image), callId: 'search-0', count: r.length, query: q0.query, category: q0.category },
             });
             return r;
           })
-          .catch(async (e) => { await this.emit({ phase: 'GATHER', eventType: 'tool:error', tool: { name: 'searchRapid' }, message: String(e), context: { callId: 'search-0' } }); return [] as Product[]; })
+          .catch(async (e) => { await this.emit({ phase: 'GATHER', eventType: 'tool:error', tool: { name: 'searchRapid' }, message: String(e), context: { callId: 'search-0', query: q0.query, category: q0.category } }); return [] as Product[]; })
       );
     }
     if (plan.queries[1]) {
       const q1 = plan.queries[1];
-      await this.emit({ phase: 'GATHER', eventType: 'tool:start', tool: { name: 'searchRapid' }, message: `Searching Amazon for ${q1.category}`, context: { q: q1.query, callId: 'search-1' } });
+      await this.emit({ phase: 'GATHER', eventType: 'tool:start', tool: { name: 'searchRapid' }, message: `search`, context: { query: q1.query, category: q1.category, callId: 'search-1' } });
       rapidPromises.push(
         remote.searchRapid(q1.query, q1.category)
           .then(async (r) => {
@@ -169,12 +170,12 @@ export class AIPlayerAgent {
               phase: 'GATHER',
               eventType: 'tool:result',
               tool: { name: 'searchRapid' },
-              message: `Found ${r.length}`,
-              context: { images: r.slice(0, 6).map((p) => p.image), callId: 'search-1' },
+              message: `search:done`,
+              context: { images: r.slice(0, 6).map((p) => p.image), callId: 'search-1', count: r.length, query: q1.query, category: q1.category },
             });
             return r;
           })
-          .catch(async (e) => { await this.emit({ phase: 'GATHER', eventType: 'tool:error', tool: { name: 'searchRapid' }, message: String(e), context: { callId: 'search-1' } }); return [] as Product[]; })
+          .catch(async (e) => { await this.emit({ phase: 'GATHER', eventType: 'tool:error', tool: { name: 'searchRapid' }, message: String(e), context: { callId: 'search-1', query: q1.query, category: q1.category } }); return [] as Product[]; })
       );
     }
     const [closet, ...rapidLists] = await Promise.all([closetPromise, ...rapidPromises]);
@@ -199,10 +200,10 @@ export class AIPlayerAgent {
     const tryonPromises = resolved.map(async (o) => {
       const garment = o.items[0];
       if (!garment) return { id: o.id, images: [] as string[] };
-      await this.emit({ phase: 'TRYON', eventType: 'tool:start', tool: { name: 'fashn.tryon' }, message: `Outfit ${o.id} try-on`, context: { callId: o.id } });
+      await this.emit({ phase: 'TRYON', eventType: 'tool:start', tool: { name: 'fashn.tryon' }, message: `tryon`, context: { callId: o.id, outfitId: o.id } });
       const garmentDataUri = await this.toDataUri(garment.image);
       const images = await remote.tryOnFashnData(modelDataUri, garmentDataUri);
-      await this.emit({ phase: 'TRYON', eventType: 'tool:result', tool: { name: 'fashn.tryon' }, message: `Outfit ${o.id} images ${images.length}`, context: { images, callId: o.id } });
+      await this.emit({ phase: 'TRYON', eventType: 'tool:result', tool: { name: 'fashn.tryon' }, message: `tryon:done`, context: { images, callId: o.id, outfitId: o.id, count: images.length } });
       return { id: o.id, images };
     });
     return Promise.all(tryonPromises);
@@ -213,13 +214,13 @@ export class AIPlayerAgent {
     const sys = 'You are a fashion AI. Respond JSON only.';
     const user = `Theme: ${this.theme}\nCandidates: ${JSON.stringify(candidates.map(c => ({ id: c.id, images: c.images.slice(0,2) })))}\nChoose best: {"final_outfit_id": "A|B", "reason": string}`;
     const body = { model: 'gpt-5-mini', messages: [ { role: 'system', content: sys }, { role: 'user', content: user } ] } as any;
-    await this.emit({ phase: 'PICK', eventType: 'tool:start', tool: { name: 'openai.chat' }, message: 'FINAL PICK' });
+    await this.emit({ phase: 'PICK', eventType: 'tool:start', tool: { name: 'openai.chat' }, message: 'pick' });
     const res = await fetch(`${OPENAI_BASE_URL}/v1/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` }, body: JSON.stringify(body) });
     const data = await res.json();
     const text = data?.choices?.[0]?.message?.content || '{}';
     let finalId = candidates[0]?.id || 'A'; let reason = 'Best available.';
     try { const parsed = JSON.parse(text); finalId = parsed.final_outfit_id || finalId; reason = parsed.reason || reason; } catch {}
-    await this.emit({ phase: 'PICK', eventType: 'phase:result', message: `Picked ${finalId}`, context: { reason } });
+    await this.emit({ phase: 'PICK', eventType: 'phase:result', message: `pick:done`, context: { finalId, reason } });
     await saveManifest(this.runId, { runId: this.runId, theme: this.theme, avatarUrl: this.avatarUrl, candidates, final: { id: finalId, reason } });
     await this.emit({ phase: 'DONE', eventType: 'system', message: 'AI player (GPT) finished.' });
   }

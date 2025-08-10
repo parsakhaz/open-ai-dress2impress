@@ -4,7 +4,10 @@ import type { AmazonSearchRequest } from '@/lib/api/types';
 
 export async function searchAmazon(query: string, options?: Partial<AmazonSearchRequest> & { categoryTag?: 'top' | 'bottom' | 'dress' }): Promise<WardrobeItem[]> {
   const { categoryTag, ...rest } = options || {};
-  const data = await api.amazon({ query, ...rest });
+  const normalized = String(query ?? '').trim();
+  const hasClothes = /(^|\b)clothes(\b|$)/i.test(normalized);
+  const finalQuery = hasClothes || normalized.length === 0 ? normalized : `${normalized} clothes`;
+  const data = await api.amazon({ query: finalQuery, ...rest });
   return (data.products || [])
     .map((product): WardrobeItem | null => {
       if (!product.asin || !product.product_title || !product.product_photo) {

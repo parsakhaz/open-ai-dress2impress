@@ -44,6 +44,12 @@ export interface AIEvent {
   // Correlation identifiers for grouping parallel actions in the UI
   runId?: string; // originating run id
   groupId?: string; // stable id per parallel call (e.g., 'search-0', 'A')
+  // Optional friendly metadata extracted from event context for better UI
+  query?: string;
+  category?: string;
+  count?: number;
+  finalId?: string;
+  plan?: any;
 }
 
 // New: Image record for Dexie images table
