@@ -84,18 +84,18 @@ export default function ThemeWheelModal({ open, onClose }: ThemeWheelModalProps)
           )}
         </div>
 
-        {/* Wheel - rely on library visuals (no extra pointer). Wrapped for better padding */}
-        <div className="mx-auto rounded-2xl border border-white/10 bg-white/5 p-4 md:p-6 shadow-2xl">
+        {/* Wheel - make surface opaque to avoid transparency artifacts */}
+        <div className="mx-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 md:p-6 shadow-2xl overflow-hidden">
           <div className="relative mx-auto w-[min(80vw,22rem)] h-[min(80vw,22rem)] flex items-center justify-center">
           <Wheel
             mustStartSpinning={spinning}
             prizeNumber={selectedIndex ?? 0}
             data={items.map((text) => ({ option: text }))}
-            outerBorderColor="#ffffff33"
-            innerBorderColor="#ffffff44"
-            radiusLineColor="#ffffff22"
+            outerBorderColor="#e5e7eb" // slate-200
+            innerBorderColor="#cbd5e1" // slate-300
+            radiusLineColor="#ffffff"
             radiusLineWidth={1}
-            backgroundColors={["#ec489966","#8b5cf666","#6366f166","#f472b666"]}
+            backgroundColors={["#ec4899","#8b5cf6","#6366f1","#f472b6"]}
             textColors={["#f8fafc"]}
             fontSize={12}
             onStopSpinning={() => {
