@@ -15,12 +15,15 @@ import { DebugPanel } from '@/components/DebugPanel';
 import { useToast } from '@/hooks/useToast';
 import ThemeWheelModal from '@/app/(app)/components/ui/ThemeWheelModal';
 import UrgencyVignette from '@/app/(app)/components/game/UrgencyVignette';
+import { generateWalkoutVideo } from '@/lib/adapters/video';
 
 export default function GamePage() {
   const phase = useGameStore((s) => s.phase);
   const theme = useGameStore((s) => s.theme);
   const character = useGameStore((s) => s.character);
+  const currentImageUrl = useGameStore((s) => s.currentImageUrl);
   const setPhase = useGameStore((s) => s.setPhase);
+  const resetGame = useGameStore((s) => s.resetGame);
   const { showToast, ToastContainer } = useToast();
   
   // Panel visibility states
@@ -28,6 +31,18 @@ export default function GamePage() {
   const [isEditPanelVisible, setEditPanelVisible] = useState(false);
   const [isWardrobeOpen, setWardrobeOpen] = useState(false);
   const [isAIConsoleVisible, setAIConsoleVisible] = useState(false);
+
+  // Runway (final walk) state
+  const [runwayLoading, setRunwayLoading] = useState(false);
+  const [runwayUrl, setRunwayUrl] = useState<string | null>(null);
+  const [runwayError, setRunwayError] = useState<string | null>(null);
+  const [runwayStarted, setRunwayStarted] = useState(false);
+  const [runwayElapsed, setRunwayElapsed] = useState(0); // seconds
+  const progressToastKeysRef = (function useOnceRef() {
+    const React = require('react') as typeof import('react');
+    const ref = React.useRef<Set<string>>(new Set());
+    return ref;
+  })();
   
   console.log('🚀 INITIAL RENDER: Page component is executing');
 
@@ -65,6 +80,80 @@ export default function GamePage() {
     console.log('💡 TIP: Press Ctrl+Shift+D to open debug panel (development only)');
     console.log('⌨️  KEYBOARD: Press ESC to close panels, click Phase to cycle');
   }, [phase]);
+
+  // Trigger runway video generation when entering WalkoutAndEval
+  useEffect(() => {
+    if (phase !== 'WalkoutAndEval') {
+      // Reset trigger guard when leaving the phase
+      setRunwayStarted(false);
+      return;
+    }
+    if (runwayStarted) return;
+    const baseUrl = currentImageUrl || character?.avatarUrl || null;
+    if (!baseUrl) {
+      setRunwayError('No image available to generate a runway video.');
+      showToast('No final look selected to generate a runway video.', 'error');
+      return;
+    }
+    setRunwayStarted(true);
+    setRunwayError(null);
+    setRunwayLoading(true);
+    setRunwayElapsed(0);
+    progressToastKeysRef.current.clear();
+    showToast('Runway generation started. This can take ~5 minutes.', 'info', 3200);
+    (async () => {
+      try {
+        const url = await generateWalkoutVideo(baseUrl);
+        setRunwayUrl(url);
+        setPhase('Results');
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Failed to generate runway video';
+        setRunwayError(msg);
+        showToast('Runway generation failed. Please try again.', 'error');
+      } finally {
+        setRunwayLoading(false);
+      }
+    })();
+  }, [phase, runwayStarted, currentImageUrl, character, setPhase, showToast]);
+
+  // Progress ticker during Walkout phase
+  useEffect(() => {
+    if (!(phase === 'WalkoutAndEval' && runwayLoading)) return;
+    const id = setInterval(() => setRunwayElapsed((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [phase, runwayLoading]);
+
+  // Staged toasts to keep users engaged during long generation
+  useEffect(() => {
+    if (!(phase === 'WalkoutAndEval' && runwayLoading)) return;
+    const notifyOnce = (key: string, message: string, type: Parameters<typeof showToast>[1] = 'info', duration = 2600) => {
+      if (progressToastKeysRef.current.has(key)) return;
+      progressToastKeysRef.current.add(key);
+      showToast(message, type, duration);
+    };
+    if (runwayElapsed >= 20) notifyOnce('t20', 'Studio is setting the lights and camera…');
+    if (runwayElapsed >= 60) notifyOnce('t60', 'Generating your runway motion…');
+    if (runwayElapsed >= 120) notifyOnce('t120', 'Halfway there—rendering frames…');
+    if (runwayElapsed >= 180) notifyOnce('t180', 'Polishing details for that perfect walk…');
+    if (runwayElapsed >= 240) notifyOnce('t240', 'Encoding video—almost ready…');
+  }, [phase, runwayLoading, runwayElapsed, showToast]);
+
+  const RUNWAY_ETA_SECONDS = 300; // 5 minutes nominal ETA
+  const runwayProgressPct = Math.min(95, Math.round((runwayElapsed / RUNWAY_ETA_SECONDS) * 100));
+  const remainingSeconds = Math.max(0, RUNWAY_ETA_SECONDS - runwayElapsed);
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+  const statusMessage = (() => {
+    if (runwayElapsed < 20) return 'Booking the runway…';
+    if (runwayElapsed < 60) return 'Warming up the studio lights…';
+    if (runwayElapsed < 120) return 'Directing your walk sequence…';
+    if (runwayElapsed < 180) return 'Rendering frames in high fidelity…';
+    if (runwayElapsed < 240) return 'Color grading and refining details…';
+    return 'Final touches—preparing your premiere…';
+  })();
 
   // Auto-close disallowed panels on phase changes
   useEffect(() => {
@@ -188,27 +277,29 @@ export default function GamePage() {
           </div>
         </div>
       ) : (
-        <ToolsIsland 
-          onSearchClick={() => {
-            if (!canOpenShopping) { showToast(shoppingTooltip, 'info'); return; }
-            setAmazonPanelVisible(true);
-          }}
-          onEditClick={() => {
-            if (!canOpenEdit) { showToast(editTooltip, 'info'); return; }
-            setEditPanelVisible(true);
-          }}
-          onWardrobeClick={() => {
-            if (!canOpenWardrobe) { showToast(wardrobeTooltip, 'info'); return; }
-            setWardrobeOpen(true);
-          }}
-          onAIConsoleClick={() => setAIConsoleVisible(!isAIConsoleVisible)}
-          searchDisabled={!canOpenShopping}
-          editDisabled={!canOpenEdit}
-          wardrobeDisabled={!canOpenWardrobe}
-          searchTooltip={shoppingTooltip}
-          editTooltip={editTooltip}
-          wardrobeTooltip={wardrobeTooltip}
-        />
+        (phase === 'ShoppingSpree' || phase === 'StylingRound') ? (
+          <ToolsIsland 
+            onSearchClick={() => {
+              if (!canOpenShopping) { showToast(shoppingTooltip, 'info'); return; }
+              setAmazonPanelVisible(true);
+            }}
+            onEditClick={() => {
+              if (!canOpenEdit) { showToast(editTooltip, 'info'); return; }
+              setEditPanelVisible(true);
+            }}
+            onWardrobeClick={() => {
+              if (!canOpenWardrobe) { showToast(wardrobeTooltip, 'info'); return; }
+              setWardrobeOpen(true);
+            }}
+            onAIConsoleClick={() => setAIConsoleVisible(!isAIConsoleVisible)}
+            searchDisabled={!canOpenShopping}
+            editDisabled={!canOpenEdit}
+            wardrobeDisabled={!canOpenWardrobe}
+            searchTooltip={shoppingTooltip}
+            editTooltip={editTooltip}
+            wardrobeTooltip={wardrobeTooltip}
+          />
+        ) : null
       )}
       
       {/* Panel overlays - only render when visible */}
@@ -255,6 +346,51 @@ export default function GamePage() {
       )}
       <DebugPanel />
       
+      {/* Walkout loading overlay */}
+      {phase === 'WalkoutAndEval' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-lg">
+          <div className="text-center space-y-5">
+            <div className="w-12 h-12 mx-auto rounded-full border-4 border-white/30 border-t-white animate-spin" />
+            <div className="text-white/95 text-lg font-medium">Generating your runway walk…</div>
+            <div className="text-white/80 text-sm">{statusMessage}</div>
+            <div className="w-80 max-w-[70vw] h-3 mx-auto rounded-full bg-white/10 overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-accent/60 to-accent" style={{ width: `${runwayProgressPct}%` }} />
+            </div>
+            <div className="text-white/70 text-xs">{runwayProgressPct}% • ~{formatTime(remainingSeconds)} remaining (est.)</div>
+            {runwayError && <div className="text-red-300 text-sm">{runwayError}</div>}
+          </div>
+        </div>
+      )}
+
+      {/* Results overlay with video */}
+      {phase === 'Results' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-lg">
+          <div className="w-full max-w-3xl mx-4">
+            {runwayUrl ? (
+              <video src={runwayUrl} autoPlay loop controls className="w-full rounded-xl shadow-2xl bg-black" />
+            ) : (
+              currentImageUrl ? (
+                <img src={currentImageUrl} alt="Final look" className="w-full rounded-xl shadow-2xl" />
+              ) : null
+            )}
+            <div className="mt-6 flex items-center justify-center gap-3">
+              <button
+                className="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20"
+                onClick={() => resetGame()}
+              >
+                Restart
+              </button>
+              <button
+                className="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20"
+                onClick={() => setPhase('StylingRound')}
+              >
+                Back to styling
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Toast notifications */}
       <ToastContainer />
     </main>
