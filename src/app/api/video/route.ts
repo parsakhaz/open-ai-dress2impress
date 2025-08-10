@@ -34,7 +34,8 @@ export const POST = createHandler<{ imageUrl: string }, { url: string }>({
         mode: 'std',
         duration: 5,
         image: imageUrl,
-        prompt: 'A fashion model walks forward on a runway, studio lighting, plain white background.',
+        prompt:
+          'Full-body wide shot of a fashion model walking straight toward the camera on a runway from a distance quickly; zoomed out; the entire figure (head to toe) visible and centered; professional studio lighting; clean white seamless background; steady camera.',
         external_task_id,
       }),
       keepalive: true,

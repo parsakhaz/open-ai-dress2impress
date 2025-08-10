@@ -75,7 +75,7 @@ export default function Wardrobe() {
     }, []);
   })();
 
-  // Listen for "run on another base" requests from the TryOnResultsModal
+  // Listen for "run on another base" requests from the TryOnResultsModal (fallback)
   (function useRunAnotherBaseListener() {
     const React = require('react') as typeof import('react');
     React.useEffect(() => {
@@ -83,21 +83,8 @@ export default function Wardrobe() {
         const custom = e as CustomEvent<{ itemId?: string }>;
         const itemId = custom.detail?.itemId;
         if (!itemId) return;
-        // Prefer using current image automatically; if absent, open base picker
-        const currentImageUrl = useGameStore.getState().currentImageUrl;
-        const item = useGameStore.getState().wardrobe.find((w) => w.id === itemId);
-        if (!item) return;
-        if (currentImageUrl) {
-          try {
-            setAutoLayering({ pending: true, itemId });
-            await selectImage(currentImageUrl, { type: 'avatar', description: 'Base image selection', addToHistory: false });
-            await tryOnQueue.enqueue({ baseImageId: null, baseImageUrl: currentImageUrl, item });
-          } finally {
-            setAutoLayering({ pending: false, itemId: null });
-          }
-        } else {
-          setPickerForItemId(itemId);
-        }
+        // Always open the base picker so the user can select the desired base explicitly
+        setPickerForItemId(itemId);
       };
       window.addEventListener('TRYON_RUN_ANOTHER_BASE', handler as EventListener);
       return () => window.removeEventListener('TRYON_RUN_ANOTHER_BASE', handler as EventListener);
@@ -237,6 +224,9 @@ export default function Wardrobe() {
         results={results}
         onSelect={async (imageUrl) => {
           await selectImage(imageUrl, { type: 'tryOn', description: 'Try-on result', addToHistory: true });
+        }}
+        onRequestChangeBase={(id) => {
+          setPickerForItemId(id);
         }}
       />
 

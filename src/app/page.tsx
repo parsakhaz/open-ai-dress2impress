@@ -14,7 +14,7 @@ import WardrobeModal from '@/app/(app)/components/ui/WardrobeModal';
 import WardrobeContent from '@/app/(app)/components/ui/WardrobeContent';
 import { DebugPanel } from '@/components/DebugPanel';
 import { useToast } from '@/hooks/useToast';
-import ThemeWheelModal from '@/app/(app)/components/ui/ThemeWheelModal';
+import ThemeDrawModal from '@/app/(app)/components/ui/ThemeDrawModal';
 import UrgencyVignette from '@/app/(app)/components/game/UrgencyVignette';
 import { generateWalkoutVideo } from '@/lib/adapters/video';
 
@@ -296,7 +296,7 @@ export default function GamePage() {
         return null;
       })()}
       {phase === 'ThemeSelect' && character ? (
-        <ThemeWheelModal open={true} onClose={() => { /* handled by spin */ }} />
+        <ThemeDrawModal open={true} onClose={() => { /* handled by draw */ }} />
       ) : phase === 'CharacterSelect' ? (
         <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm overflow-y-auto">
           <div className="min-h-[100svh] flex items-start justify-center p-4 sm:p-6">
@@ -394,14 +394,26 @@ export default function GamePage() {
       {/* Results overlay with video */}
       {phase === 'Results' && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-lg">
-          <div className="w-full max-w-3xl mx-4">
-            {runwayUrl ? (
-              <video src={runwayUrl} autoPlay loop controls className="w-full rounded-xl shadow-2xl bg-black" />
-            ) : (
-              currentImageUrl ? (
-                <img src={currentImageUrl} alt="Final look" className="w-full rounded-xl shadow-2xl" />
-              ) : null
-            )}
+          <div className="w-full max-w-6xl mx-6 py-8">
+            <div className="w-full aspect-video max-h-[80vh] mx-auto rounded-2xl overflow-hidden shadow-2xl bg-black/90 flex items-center justify-center">
+              {runwayUrl ? (
+                <video
+                  src={runwayUrl}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  controls={false}
+                  controlsList="nodownload noremoteplayback noplaybackrate"
+                  className="w-full h-full object-contain"
+                  onContextMenu={(e) => e.preventDefault()}
+                />
+              ) : (
+                currentImageUrl ? (
+                  <img src={currentImageUrl} alt="Final look" className="w-full h-full object-contain" />
+                ) : null
+              )}
+            </div>
             <div className="mt-6 flex items-center justify-center gap-3">
               <button
                 className="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20"

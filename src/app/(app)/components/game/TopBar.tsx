@@ -20,6 +20,8 @@ export default function TopBar() {
   const { showToast } = useToast();
   const thresholdsShownRef = useRef<Set<string>>(new Set());
   const lastPhaseRef = useRef<string | null>(null);
+  const prevWardrobeLenRef = useRef<number>(wardrobe.length);
+  const clampedThisPhaseRef = useRef<boolean>(false);
   
   const phases = ['CharacterSelect', 'ThemeSelect', 'ShoppingSpree', 'StylingRound', 'WalkoutAndEval', 'Results'] as const;
   type GamePhase = typeof phases[number];
@@ -65,6 +67,23 @@ export default function TopBar() {
       stopRef.current = null;
     };
   }, [phase, setPhase, setTimer]);
+
+  // Clamp timer to 15s when wardrobe transitions 7 -> 8 during Shopping
+  useEffect(() => {
+    if (phase !== 'ShoppingSpree') {
+      clampedThisPhaseRef.current = false;
+      prevWardrobeLenRef.current = wardrobe.length;
+      return;
+    }
+    const prev = prevWardrobeLenRef.current;
+    const curr = wardrobe.length;
+    if (!clampedThisPhaseRef.current && prev === 7 && curr === 8 && timer > 15) {
+      setTimer(15);
+      clampedThisPhaseRef.current = true;
+      showToast('Great picks! 15 seconds left to finalize.', 'info', 2200);
+    }
+    prevWardrobeLenRef.current = curr;
+  }, [phase, wardrobe.length, timer, setTimer, showToast]);
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;

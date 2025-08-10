@@ -12,9 +12,10 @@ interface TryOnResultsModalProps {
   itemId?: string;
   results?: string[];
   onSelect: (imageUrl: string) => void;
+  onRequestChangeBase?: (itemId: string) => void; // Preferred over global event
 }
 
-export function TryOnResultsModal({ isOpen, onClose, itemId, results: initialResults, onSelect }: TryOnResultsModalProps) {
+export function TryOnResultsModal({ isOpen, onClose, itemId, results: initialResults, onSelect, onRequestChangeBase }: TryOnResultsModalProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showFullscreenPreview, setShowFullscreenPreview] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -170,17 +171,16 @@ export function TryOnResultsModal({ isOpen, onClose, itemId, results: initialRes
                     <GlassButton
                       variant="ghost"
                       onClick={() => {
-                        // Close results first, then signal parent to open base picker or auto-enqueue using current image
-                        try {
-                          onClose();
-                        } finally {
-                          window.dispatchEvent(
-                            new CustomEvent('TRYON_RUN_ANOTHER_BASE', { detail: { itemId } })
-                          );
+                        // Close results, then ask parent to open base picker (fallback to global event)
+                        onClose();
+                        if (onRequestChangeBase) {
+                          onRequestChangeBase(itemId);
+                        } else {
+                          window.dispatchEvent(new CustomEvent('TRYON_RUN_ANOTHER_BASE', { detail: { itemId } }));
                         }
                       }}
                     >
-                      Run on another base image
+                      Change base image
                     </GlassButton>
                   )}
                   <GlassButton
