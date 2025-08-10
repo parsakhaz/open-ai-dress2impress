@@ -23,10 +23,18 @@ async function toBase64DataUrl(input: string): Promise<string> {
   let contentType = 'image/png';
 
   if (input.startsWith('/')) {
-    // Treat as asset under public/
+    // Treat as asset under public/. Decode URL-encoded paths (e.g. spaces as %20).
     const publicDir = path.join(process.cwd(), 'public');
-    const filePath = path.join(publicDir, input.replace(/^\//, ''));
-    buffer = await fs.readFile(filePath);
+    const relRaw = input.replace(/^\//, '');
+    const relDecoded = (() => {
+      try { return decodeURIComponent(relRaw); } catch { return relRaw; }
+    })();
+    // Normalize and prevent path traversal
+    const absPath = path.normalize(path.join(publicDir, relDecoded));
+    if (!absPath.startsWith(publicDir + path.sep) && absPath !== publicDir) {
+      throw new Error('Invalid image path');
+    }
+    buffer = await fs.readFile(absPath);
   } else if (/^https?:\/\//i.test(input)) {
     const res = await fetch(input as string);
     if (!res.ok) throw new Error(`Failed to fetch image URL: ${res.status} ${res.statusText}`);
@@ -35,10 +43,14 @@ async function toBase64DataUrl(input: string): Promise<string> {
     const ct = res.headers.get('content-type');
     if (ct && /^image\//.test(ct)) contentType = ct;
   } else {
-    // Fallback: try to read as relative path from public
+    // Fallback: try to read as relative path from public (also decode if URL-encoded)
     const publicDir = path.join(process.cwd(), 'public');
-    const filePath = path.join(publicDir, input);
-    buffer = await fs.readFile(filePath);
+    const relDecoded = (() => { try { return decodeURIComponent(input); } catch { return input; } })();
+    const absPath = path.normalize(path.join(publicDir, relDecoded));
+    if (!absPath.startsWith(publicDir + path.sep) && absPath !== publicDir) {
+      throw new Error('Invalid image path');
+    }
+    buffer = await fs.readFile(absPath);
   }
 
   // Downscale/compress to keep payloads reasonable

@@ -50,7 +50,11 @@ export class AIPlayerAgent {
       const path = require('path') as typeof import('path');
       const fs = require('fs/promises') as typeof import('fs/promises');
       const sharp: typeof import('sharp') = require('sharp');
-      const absFile = path.join(process.cwd(), 'public', url.replace(/^\//, ''));
+      const relRaw = url.replace(/^\//, '');
+      const relDecoded = (() => { try { return decodeURIComponent(relRaw); } catch { return relRaw; } })();
+      const candidate = path.normalize(path.join(process.cwd(), 'public', relDecoded));
+      const publicDir = path.join(process.cwd(), 'public');
+      const absFile = (candidate.startsWith(publicDir + path.sep) || candidate === publicDir) ? candidate : path.join(publicDir, relRaw);
       try {
         let buf = await fs.readFile(absFile);
         // Downscale to keep payload small for GPT vision
