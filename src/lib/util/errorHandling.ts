@@ -296,10 +296,30 @@ export class ErrorHandler {
 }
 
 // Utility functions for common error scenarios
-export const createAPIError = ErrorHandler.handleAPIError;
-export const createNetworkError = ErrorHandler.handleNetworkError;
-export const createValidationError = ErrorHandler.handleValidationError;
-export const createUserError = ErrorHandler.handleUserError;
-export const createSystemError = ErrorHandler.handleSystemError;
-export const withRetry = ErrorHandler.handleWithRetry;
-export const trackError = ErrorHandler.trackError;
+export function createAPIError(apiName: string, endpoint: string, response: Response | null, originalError?: Error) {
+  return ErrorHandler.handleAPIError(apiName, endpoint, response, originalError);
+}
+
+export function createNetworkError(context: string, originalError: Error) {
+  return ErrorHandler.handleNetworkError(context, originalError);
+}
+
+export function createValidationError(field: string, value: any, requirement: string) {
+  return ErrorHandler.handleValidationError(field, value, requirement);
+}
+
+export function createUserError(action: string, reason: string) {
+  return ErrorHandler.handleUserError(action, reason);
+}
+
+export function createSystemError(component: string, originalError: Error) {
+  return ErrorHandler.handleSystemError(component, originalError);
+}
+
+export function withRetry<T>(operation: () => Promise<T>, operationName: string, maxRetries?: number): Promise<T> {
+  return ErrorHandler.handleWithRetry(operation, operationName, maxRetries);
+}
+
+export function trackError(error: DTIError): void {
+  return ErrorHandler.trackError(error);
+}

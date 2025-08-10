@@ -6,6 +6,8 @@ import { GlassPanel } from '@/components/GlassPanel';
 import { GlassButton } from '@/components/GlassButton';
 import { BaseImagePickerModal } from '@/app/(app)/components/modals/BaseImagePickerModal';
 import { tryOnQueue } from '@/lib/services/tryOnQueue';
+import { TryOnResultsModal } from '@/components/TryOnResultsModal';
+import { selectImage } from '@/lib/services/stateActions';
 
 export default function Wardrobe() {
   const wardrobe = useGameStore((s) => s.wardrobe);
@@ -13,10 +15,26 @@ export default function Wardrobe() {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pickerForItemId, setPickerForItemId] = useState<string | null>(null);
+  const [resultsOpen, setResultsOpen] = useState(false);
+  const [results, setResults] = useState<string[]>([]);
 
   function openPicker(itemId: string) {
     setPickerForItemId(itemId);
   }
+
+  // Listen for queue completions and show results
+  (function useQueueListener() {
+    const React = require('react') as typeof import('react');
+    React.useEffect(() => {
+      const unsub = tryOnQueue.onChange((job) => {
+        if (job.status === 'succeeded' && job.images && job.images.length > 0) {
+          setResults(job.images);
+          setResultsOpen(true);
+        }
+      });
+      return () => unsub();
+    }, []);
+  })();
 
   return (
     <GlassPanel>
@@ -106,6 +124,15 @@ export default function Wardrobe() {
         </div>
       </WardrobeModal>
 
+      <TryOnResultsModal
+        isOpen={resultsOpen}
+        onClose={() => setResultsOpen(false)}
+        results={results}
+        onSelect={async (imageUrl) => {
+          await selectImage(imageUrl, { type: 'tryOn', description: 'Try-on result', addToHistory: true });
+        }}
+      />
+
       <BaseImagePickerModal
         isOpen={!!pickerForItemId}
         onClose={() => setPickerForItemId(null)}
@@ -113,6 +140,8 @@ export default function Wardrobe() {
           const item = wardrobe.find((w) => w.id === pickerForItemId!);
           if (!item) return;
           try {
+            // Immediately reflect the chosen base image on the center stage
+            await selectImage(base.imageUrl, { type: 'avatar', description: 'Base image selection', addToHistory: false });
             await tryOnQueue.enqueue({ baseImageId: base.imageId ?? null, baseImageUrl: base.imageUrl, item });
           } catch (e) {
             setError(e instanceof Error ? e.message : 'Failed to queue try-on');

@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useGameStore } from '@/lib/state/gameStore';
 import { GlassButton } from '@/components/GlassButton';
+import { TryOnResultsModal } from '@/components/TryOnResultsModal';
 import { selectImage } from '@/lib/services/stateActions';
 import { BaseImagePickerModal } from '@/app/(app)/components/modals/BaseImagePickerModal';
 import { tryOnQueue } from '@/lib/services/tryOnQueue';
@@ -14,10 +15,29 @@ export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) 
   const wardrobe = useGameStore((s) => s.wardrobe);
   const [error, setError] = useState<string | null>(null);
   const [showBasePicker, setShowBasePicker] = useState<string | null>(null); // itemId when picking
+  const [showTryOnModal, setShowTryOnModal] = useState(false);
+  const [variants, setVariants] = useState<string[]>([]);
 
   async function onPickBaseAndEnqueue(itemId: string, itemImageUrl: string) {
     setShowBasePicker(itemId);
   }
+
+  // Listen for background job completions and open results modal
+  // We keep it simple: show modal for the latest completed job
+  // and let the user apply a result image, which updates the avatar/home via selectImage
+  // eslint-disable-next-line react-hooks/rules-of-hooks
+  (function useQueueListener() {
+    const React = require('react') as typeof import('react');
+    React.useEffect(() => {
+      const unsub = tryOnQueue.onChange((job) => {
+        if (job.status === 'succeeded' && job.images && job.images.length > 0) {
+          setVariants(job.images);
+          setShowTryOnModal(true);
+        }
+      });
+      return () => unsub();
+    }, []);
+  })();
 
   if (wardrobe.length === 0) {
     return (
@@ -83,12 +103,25 @@ export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) 
           const item = wardrobe.find((w) => w.id === showBasePicker!);
           if (!item) return;
           try {
+            // Immediately reflect the chosen base image on the center stage
+            await selectImage(base.imageUrl, { type: 'avatar', description: 'Base image selection', addToHistory: false });
             await tryOnQueue.enqueue({ baseImageId: base.imageId ?? null, baseImageUrl: base.imageUrl, item });
           } catch (e) {
             setError(e instanceof Error ? e.message : 'Failed to queue try-on');
           } finally {
             setShowBasePicker(null);
           }
+        }}
+      />
+
+      {/* Try-On Results Modal (opens when a background job completes) */}
+      <TryOnResultsModal
+        isOpen={showTryOnModal}
+        onClose={() => setShowTryOnModal(false)}
+        results={variants}
+        onSelect={async (imageUrl) => {
+          await selectImage(imageUrl, { type: 'tryOn', description: 'Try-on result', addToHistory: true });
+          onClose?.();
         }}
       />
     </div>
