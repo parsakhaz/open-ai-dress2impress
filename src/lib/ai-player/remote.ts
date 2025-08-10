@@ -40,4 +40,13 @@ export async function tryOnFashn(avatarUrl: string, clothingImageUrl: string): P
   return res.images || [];
 }
 
+export async function tryOnFashnData(modelDataUrl: string, garmentDataUrl: string): Promise<string[]> {
+  const res = await typedFetch<{ images: string[] }>(`${baseUrl()}/api/tryon`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ characterImageUrl: modelDataUrl, clothingImageUrl: garmentDataUrl }),
+  }, { apiName: 'FASHN' });
+  return res.images || [];
+}
+
 

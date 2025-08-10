@@ -8,6 +8,7 @@ import HistoryStrip from '@/app/(app)/components/game/HistoryStrip';
 import ToolsIsland from '@/app/(app)/components/ui/ToolsIsland';
 import AIConsole from '@/app/(app)/components/ai/AIConsole';
 import GameBoard from '@/app/(app)/components/game/GameBoard';
+import StylingBoard from '@/app/(app)/components/game/StylingBoard';
 import AvatarPanel from '@/app/(app)/components/panels/AvatarPanel';
 import AmazonPanel from '@/app/(app)/components/panels/AmazonPanel';
 import EditWithAIPanel from '@/app/(app)/components/panels/EditWithAIPanel';
@@ -324,7 +325,7 @@ export default function GamePage() {
       
       {/* Board layout (single screen) during gameplay phases */}
       {phase !== 'CharacterSelect' && phase !== 'ThemeSelect' && (
-        <GameBoard />
+        phase === 'StylingRound' ? <StylingBoard /> : <GameBoard />
       )}
 
       {/* Conditional rendering based on phase */}

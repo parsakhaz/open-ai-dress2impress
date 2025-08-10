@@ -10,14 +10,16 @@ interface AIConsoleProps {
   onClose?: () => void;
   autoRunOnMount?: boolean;
   inline?: boolean; // if true, render as inline panel (no modal chrome/buttons)
+  showTryOnThumbs?: boolean;
 }
 
-export default function AIConsole({ onClose, autoRunOnMount = false, inline = false }: AIConsoleProps = {}) {
+export default function AIConsole({ onClose, autoRunOnMount = false, inline = false, showTryOnThumbs = false }: AIConsoleProps = {}) {
   const aiLog = useGameStore((s) => s.aiLog);
   const logAIEvent = useGameStore((s) => s.logAIEvent);
   const [isRunning, setIsRunning] = useState(false);
   const seededRef = useRef(false);
   const startedRef = useRef(false);
+  const [tryOnImages, setTryOnImages] = useState<string[]>([]);
 
   // Simple demo log so the panel isn't empty
   useEffect(() => {
@@ -82,6 +84,18 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
             if (evt.context) {
               const keys = Object.keys(evt.context);
               if (keys.length > 0) content += ` {${keys.slice(0, 3).join(', ')}${keys.length > 3 ? ', …' : ''}}`;
+              // Capture try-on images when present
+              if (showTryOnThumbs && Array.isArray((evt as any).context?.images)) {
+                const imgs = ((evt as any).context.images as string[]).filter(Boolean);
+                if (imgs.length > 0) {
+                  setTryOnImages((prev) => {
+                    const set = new Set(prev);
+                    imgs.forEach((u) => set.add(u));
+                    // keep last 6
+                    return Array.from(set).slice(-6);
+                  });
+                }
+              }
             }
             logAIEvent({ type: evt.eventType.startsWith('tool') ? 'tool_call' : 'thought', content, timestamp: Date.now() });
           } catch (e) {
@@ -144,6 +158,21 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
           )}
         </div>
         
+        {/* Try-on image preview */}
+        {inline && showTryOnThumbs && tryOnImages.length > 0 && (
+          <div className="mb-3">
+            <div className="w-full aspect-video rounded-lg overflow-hidden bg-black/80 border border-white/10 flex items-center justify-center">
+              {/* Show latest image */}
+              <img src={tryOnImages[tryOnImages.length - 1]} alt="AI try-on" className="w-full h-full object-contain" />
+            </div>
+            <div className="mt-2 flex items-center gap-2 overflow-x-auto">
+              {tryOnImages.map((u, i) => (
+                <img key={u + i} src={u} className="w-16 h-16 object-cover rounded border border-white/10" alt="try-on thumb" />
+              ))}
+            </div>
+          </div>
+        )}
+
         <div ref={setLogContainerRef} className={`rounded-lg bg-black/95 dark:bg-black/70 backdrop-blur-sm p-4 font-mono text-sm border border-green-500/20 ${inline ? 'h-[52vh] md:h-[60vh] overflow-y-auto' : 'h-96 md:h-[60vh] overflow-auto'}`}>
           {aiLog.length === 0 ? (
             <div className="text-green-400/60 flex items-center gap-2">

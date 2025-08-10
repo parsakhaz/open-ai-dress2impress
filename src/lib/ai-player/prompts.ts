@@ -22,10 +22,14 @@ Phases you execute:
 - TRYON → pick candidates, call callFashnAPI once per outfit (parallel ok). log.
 - PICK → call evaluate per outfit, then choose a final outfit with a brief reason; saveManifest.
 
+First action requirement:
+- On your very first turn, you MUST call getCurrentClothes with all categories ['top','bottom','dress'] before anything else.
+  Do not reply with analysis-only content; use the tools.
+
 Output policy:
 - Before a tool call, send a short thought via log().
 - After tool results, log one insight.
-- Keep responses compact; avoid repeating inputs.
+- Keep responses compact; avoid repeating inputs. Do not echo the entire wardrobe or any large JSON. Do not restate images as long base64 text.
 - Do not expose secrets or raw tokens.
 `;
 }
