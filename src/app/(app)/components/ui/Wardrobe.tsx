@@ -18,12 +18,14 @@ export default function Wardrobe() {
   const [pickerForItemId, setPickerForItemId] = useState<string | null>(null);
   const [resultsOpen, setResultsOpen] = useState(false);
   const [results, setResults] = useState<string[]>([]);
+  const [tryOnItemId, setTryOnItemId] = useState<string | null>(null); // Track itemId for try-on results
 
   async function onTryOnClick(itemId: string) {
     // If we already have results for this item (any base), show them immediately
     const latest = await getLatestSucceededByItem(itemId);
     if (latest?.images && latest.images.length > 0) {
       setResults(latest.images);
+      setTryOnItemId(itemId);
       setResultsOpen(true);
       return;
     }
@@ -38,6 +40,7 @@ export default function Wardrobe() {
       const unsub = tryOnQueue.onChange((job) => {
         if (job.status === 'succeeded' && job.images && job.images.length > 0) {
           setResults(job.images);
+          setTryOnItemId(job.itemId);
           setResultsOpen(true);
         }
       });
@@ -135,8 +138,11 @@ export default function Wardrobe() {
 
       <TryOnResultsModal
         isOpen={resultsOpen}
-        onClose={() => setResultsOpen(false)}
-        itemId={pickerForItemId || undefined}
+        onClose={() => {
+          setResultsOpen(false);
+          setTryOnItemId(null);
+        }}
+        itemId={tryOnItemId || undefined}
         results={results}
         onSelect={async (imageUrl) => {
           await selectImage(imageUrl, { type: 'tryOn', description: 'Try-on result', addToHistory: true });

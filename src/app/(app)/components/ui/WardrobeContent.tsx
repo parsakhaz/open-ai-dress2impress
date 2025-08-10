@@ -18,12 +18,14 @@ export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) 
   const [showBasePicker, setShowBasePicker] = useState<string | null>(null); // itemId when picking
   const [showTryOnModal, setShowTryOnModal] = useState(false);
   const [variants, setVariants] = useState<string[]>([]);
+  const [tryOnItemId, setTryOnItemId] = useState<string | null>(null); // Track itemId for try-on results
 
   async function onPickBaseAndEnqueue(itemId: string, itemImageUrl: string) {
     // If results already exist for this item, show them immediately
     const latest = await getLatestSucceededByItem(itemId);
     if (latest?.images && latest.images.length > 0) {
       setVariants(latest.images);
+      setTryOnItemId(itemId);
       setShowTryOnModal(true);
       return;
     }
@@ -40,6 +42,7 @@ export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) 
       const unsub = tryOnQueue.onChange((job) => {
         if (job.status === 'succeeded' && job.images && job.images.length > 0) {
           setVariants(job.images);
+          setTryOnItemId(job.itemId);
           setShowTryOnModal(true);
         }
       });
@@ -125,8 +128,11 @@ export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) 
       {/* Try-On Results Modal (opens when a background job completes) */}
       <TryOnResultsModal
         isOpen={showTryOnModal}
-        onClose={() => setShowTryOnModal(false)}
-        itemId={showBasePicker || undefined}
+        onClose={() => {
+          setShowTryOnModal(false);
+          setTryOnItemId(null);
+        }}
+        itemId={tryOnItemId || undefined}
         results={variants}
         onSelect={async (imageUrl) => {
           await selectImage(imageUrl, { type: 'tryOn', description: 'Try-on result', addToHistory: true });
