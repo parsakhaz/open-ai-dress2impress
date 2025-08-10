@@ -19,6 +19,7 @@ export default function Wardrobe() {
   const [resultsOpen, setResultsOpen] = useState(false);
   const [results, setResults] = useState<string[]>([]);
   const [tryOnItemId, setTryOnItemId] = useState<string | null>(null); // Track itemId for try-on results
+  const [autoLayering, setAutoLayering] = useState<{ pending: boolean; itemId?: string | null }>({ pending: false, itemId: null });
 
   async function onTryOnClick(itemId: string) {
     // If we already have results for this item (any base), show them immediately
@@ -45,6 +46,35 @@ export default function Wardrobe() {
         }
       });
       return () => unsub();
+    }, []);
+  })();
+
+  // Listen for "run on another base" requests from the TryOnResultsModal
+  (function useRunAnotherBaseListener() {
+    const React = require('react') as typeof import('react');
+    React.useEffect(() => {
+      const handler = async (e: Event) => {
+        const custom = e as CustomEvent<{ itemId?: string }>;
+        const itemId = custom.detail?.itemId;
+        if (!itemId) return;
+        // Prefer using current image automatically; if absent, open base picker
+        const currentImageUrl = useGameStore.getState().currentImageUrl;
+        const item = useGameStore.getState().wardrobe.find((w) => w.id === itemId);
+        if (!item) return;
+        if (currentImageUrl) {
+          try {
+            setAutoLayering({ pending: true, itemId });
+            await selectImage(currentImageUrl, { type: 'avatar', description: 'Base image selection', addToHistory: false });
+            await tryOnQueue.enqueue({ baseImageId: null, baseImageUrl: currentImageUrl, item });
+          } finally {
+            setAutoLayering({ pending: false, itemId: null });
+          }
+        } else {
+          setPickerForItemId(itemId);
+        }
+      };
+      window.addEventListener('TRYON_RUN_ANOTHER_BASE', handler as EventListener);
+      return () => window.removeEventListener('TRYON_RUN_ANOTHER_BASE', handler as EventListener);
     }, []);
   })();
 

@@ -41,6 +41,16 @@ export function TryOnResultsModal({ isOpen, onClose, itemId, results: initialRes
     };
   }, [isOpen, itemId]);
 
+  // Default to fullscreen preview when the modal opens for a more responsive, large view
+  useEffect(() => {
+    if (isOpen && results.length > 0) {
+      setPreviewIndex(selectedIndex);
+      setShowFullscreenPreview(true);
+    } else if (!isOpen) {
+      setShowFullscreenPreview(false);
+    }
+  }, [isOpen, results.length, selectedIndex]);
+
   if (!isOpen || results.length === 0) return null;
 
   const handleSelect = () => {
@@ -160,8 +170,14 @@ export function TryOnResultsModal({ isOpen, onClose, itemId, results: initialRes
                     <GlassButton
                       variant="ghost"
                       onClick={() => {
-                        // Fire a custom event the parent screens can listen to and open the base picker
-                        window.dispatchEvent(new CustomEvent('TRYON_RUN_ANOTHER_BASE', { detail: { itemId } }));
+                        // Close results first, then signal parent to open base picker or auto-enqueue using current image
+                        try {
+                          onClose();
+                        } finally {
+                          window.dispatchEvent(
+                            new CustomEvent('TRYON_RUN_ANOTHER_BASE', { detail: { itemId } })
+                          );
+                        }
                       }}
                     >
                       Run on another base image

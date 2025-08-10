@@ -19,6 +19,7 @@ export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) 
   const [showTryOnModal, setShowTryOnModal] = useState(false);
   const [variants, setVariants] = useState<string[]>([]);
   const [tryOnItemId, setTryOnItemId] = useState<string | null>(null); // Track itemId for try-on results
+  const [autoLayering, setAutoLayering] = useState<{ pending: boolean; itemId?: string | null }>({ pending: false, itemId: null });
 
   async function onPickBaseAndEnqueue(itemId: string, itemImageUrl: string) {
     // If results already exist for this item, show them immediately
@@ -47,6 +48,34 @@ export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) 
         }
       });
       return () => unsub();
+    }, []);
+  })();
+
+  // Listen for "run on another base" requests from the TryOnResultsModal
+  (function useRunAnotherBaseListener() {
+    const React = require('react') as typeof import('react');
+    React.useEffect(() => {
+      const handler = async (e: Event) => {
+        const custom = e as CustomEvent<{ itemId?: string }>;
+        const itemId = custom.detail?.itemId;
+        if (!itemId) return;
+        const currentImageUrl = useGameStore.getState().currentImageUrl;
+        const item = useGameStore.getState().wardrobe.find((w) => w.id === itemId);
+        if (!item) return;
+        if (currentImageUrl) {
+          try {
+            setAutoLayering({ pending: true, itemId });
+            await selectImage(currentImageUrl, { type: 'avatar', description: 'Base image selection', addToHistory: false });
+            await tryOnQueue.enqueue({ baseImageId: null, baseImageUrl: currentImageUrl, item });
+          } finally {
+            setAutoLayering({ pending: false, itemId: null });
+          }
+        } else {
+          setShowBasePicker(itemId);
+        }
+      };
+      window.addEventListener('TRYON_RUN_ANOTHER_BASE', handler as EventListener);
+      return () => window.removeEventListener('TRYON_RUN_ANOTHER_BASE', handler as EventListener);
     }, []);
   })();
 

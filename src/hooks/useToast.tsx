@@ -15,7 +15,6 @@ export function useToast() {
         toast.error(message, { duration });
       } else if (type === 'warning') {
         // Sonner supports toast.warning
-        // @ts-expect-error - types may not expose warning explicitly in older versions
         toast.warning?.(message, { duration }) ?? toast(message, { duration });
       } else {
         toast.info(message, { duration });
