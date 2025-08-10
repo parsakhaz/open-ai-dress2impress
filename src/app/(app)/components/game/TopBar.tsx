@@ -20,8 +20,7 @@ export default function TopBar() {
   const { showToast } = useToast();
   const thresholdsShownRef = useRef<Set<string>>(new Set());
   const lastPhaseRef = useRef<string | null>(null);
-  const prevWardrobeLenRef = useRef<number>(wardrobe.length);
-  const clampedThisPhaseRef = useRef<boolean>(false);
+  // Removed clamp refs
   
   const phases = ['CharacterSelect', 'ThemeSelect', 'ShoppingSpree', 'StylingRound', 'WalkoutAndEval', 'Results'] as const;
   type GamePhase = typeof phases[number];
@@ -68,25 +67,7 @@ export default function TopBar() {
     };
   }, [phase, setPhase, setTimer]);
 
-  // Clamp timer to 15s when wardrobe transitions 7 -> 8 during Shopping
-  useEffect(() => {
-    if (phase !== 'ShoppingSpree') {
-      clampedThisPhaseRef.current = false;
-      prevWardrobeLenRef.current = wardrobe.length;
-      return;
-    }
-    const prev = prevWardrobeLenRef.current;
-    const curr = wardrobe.length;
-    if (!clampedThisPhaseRef.current && prev === 7 && curr === 8 && timer > 20) {
-      // Restart countdown from 15s to avoid the old interval overwriting the state on next tick
-      stopRef.current?.();
-      setTimer(20);
-      stopRef.current = createCountdown(20, (s) => setTimer(s), () => setPhase('StylingRound'));
-      clampedThisPhaseRef.current = true;
-      showToast('Great picks! 20 seconds left to finalize.', 'info', 2200);
-    }
-    prevWardrobeLenRef.current = curr;
-  }, [phase, wardrobe.length, timer, setTimer, showToast]);
+  // Removed clamp effect
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
