@@ -374,7 +374,7 @@ export default function GamePage() {
       
       {/* Walkout loading overlay */}
       {phase === 'WalkoutAndEval' && runwayLoading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-overlay)]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white">
           <div className="text-center space-y-5">
             <div className="w-12 h-12 mx-auto rounded-full border-4 border-foreground/30 border-t-foreground animate-spin" />
             <div className="text-foreground text-lg font-medium">Generating your runway walk…</div>
@@ -390,7 +390,7 @@ export default function GamePage() {
 
       {/* Walkout debug overlay when auto-runway is disabled */}
       {phase === 'WalkoutAndEval' && !runwayLoading && disableAutoRunway && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-overlay)]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white">
           <div className="text-center space-y-4 text-foreground">
             <div className="text-lg font-semibold">Runway generation disabled by debug.</div>
             <div className="text-sm text-foreground/80">Enable it in Debug Panel → FLOW to auto-generate, or jump to Results.</div>
@@ -400,7 +400,7 @@ export default function GamePage() {
 
       {/* Results overlay with video */}
       {phase === 'Results' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-overlay)] pt-24">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white pt-24">
           <div className="w-full max-w-6xl mx-6 py-8">
             <div className="w-full aspect-video max-h-[70vh] mx-auto rounded-2xl overflow-hidden shadow-2xl bg-background flex items-center justify-center">
               {(runwayUrl || persistedRunwayUrl) ? (
