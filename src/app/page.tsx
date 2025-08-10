@@ -336,7 +336,7 @@ export default function GamePage() {
       {phase === 'ThemeSelect' && character ? (
         <ThemeDrawModal open={true} onClose={() => { /* handled by draw */ }} />
       ) : phase === 'CharacterSelect' ? (
-        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm overflow-y-auto">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-white">
           <div className="min-h-[100svh] flex items-start justify-center p-4 sm:p-6">
             <div className="w-full max-w-6xl my-6">
               <AvatarPanel />

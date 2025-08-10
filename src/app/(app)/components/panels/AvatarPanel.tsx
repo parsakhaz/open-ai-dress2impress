@@ -4,13 +4,11 @@ import { useCallback, useRef, useState } from 'react';
 import type React from 'react';
 import { generateAvatarFromSelfie } from '@/lib/adapters/avatar';
 import { useGameStore } from '@/lib/state/gameStore';
-import { GlassPanel } from '@/components/GlassPanel';
 import { GlassButton } from '@/components/GlassButton';
 import { CameraPermissionHelper } from '../CameraPermissionHelper';
 import { Confetti } from '@/components/Confetti';
 import type { Character } from '@/types';
 import { selectImage } from '@/lib/services/stateActions';
-import FaceHistory from './FaceHistory';
 import { saveFaceImage } from '@/lib/services/faceActions';
 import { getOrGenerateForFace } from '@/lib/services/avatarCache';
 
@@ -37,6 +35,7 @@ export default function AvatarPanel() {
   const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const setCharacter = useGameStore((s) => s.setCharacter);
+  const character = useGameStore((s) => s.character);
   const setCurrentImage = useGameStore((s) => s.setCurrentImage);
   const setPhase = useGameStore((s) => s.setPhase);
   const addToHistory = useGameStore((s) => s.addToHistory);
@@ -211,38 +210,19 @@ export default function AvatarPanel() {
   );
 
   function choose(url: string) {
-    console.log('✅ AVATAR PANEL: User chose avatar for confirmation', { avatarUrl: url.substring(0, 50) + '...' });
-    
+    console.log('✅ AVATAR PANEL: User chose avatar for selection', { avatarUrl: url.substring(0, 50) + '...' });
     setSelectedAvatarUrl(url);
     setShowAvatarSelector(false);
     setShowFullscreenPreview(false);
     setSelectedAvatarIndex(null);
-    setShowShoppingConfirmation(true);
   }
 
-  function confirmAndStartShopping() {
+  function proceedNext() {
     if (!selectedAvatarUrl) return;
-    
-    console.log('✅ AVATAR PANEL: Confirmed avatar selection, starting shopping');
-    
-    // Trigger global confetti from both sides of the screen
-    try {
-      window.dispatchEvent(new CustomEvent('GLOBAL_CONFETTI', { detail: { side: 'both', pieces: 220 } }));
-    } catch {
-      // no-op
-    }
-    
     const c: Character = { id: `char-${Date.now()}`, avatarUrl: selectedAvatarUrl };
     setCharacter(c);
     void selectImage(selectedAvatarUrl, { type: 'avatar', description: 'Selected avatar', addToHistory: true });
-    
-    // Delay phase transition for confetti effect
-    setTimeout(() => {
-      setShowShoppingConfirmation(false);
-      console.log('🔄 AVATAR PANEL: Transitioning to Theme select');
-      setPhase('ThemeSelect');
-      console.log('🎯 PHASE TRANSITION: CharacterSelect → ThemeSelect');
-    }, 1500);
+    setPhase('ThemeSelect');
   }
 
   const handleWebcamError = (error: string | DOMException) => {
@@ -270,21 +250,25 @@ export default function AvatarPanel() {
   };
 
   return (
-    <div>
-    <div className="w-full max-w-6xl">
-      <GlassPanel variant="modal" className="max-h-[90svh] overflow-auto">
-        <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4 min-h-0">
-          <div className="space-y-6">
-            {/* Simple brand placeholder */}
-            <div className="text-left">
-              <div className="inline-block px-3 py-1 rounded-lg bg-black/5 dark:bg-white/10 text-slate-800 dark:text-white text-sm font-semibold">FashnAI</div>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-[1fr_60px_1fr] gap-6">
+    <>
+    <div className="w-full max-w-6xl mx-auto py-8">
+      <div className="grid grid-cols-1 gap-6 min-h-0">
+        <div className="space-y-6">
+          {/* Brand */}
+          <div className="text-left">
+            <img
+              src="/FASHN%20ASSETS/Logos/Logo%20Text%20Light.svg"
+              alt="FASHN AI"
+              className="h-8 w-auto"
+            />
+          </div>
+            {/* Main content area, vertically centered */}
+            <div className="min-h-[75svh] flex items-center">
+              <div className="grid grid-cols-1 lg:grid-cols-[1fr_60px_1.4fr] gap-6 w-full">
               {/* Style yourself */}
               <div>
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">Style yourself</h3>
-                <div className="relative rounded-2xl border-2 border-dashed border-slate-300/70 dark:border-white/20 p-5 min-h-[340px] flex flex-col justify-center">
+                <div className="relative rounded-2xl border-2 border-dashed border-slate-300/70 dark:border-white/20 p-6 min-h-[440px] flex flex-col justify-center bg-violet-50">
                   {/* Hidden file input */}
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
@@ -380,8 +364,8 @@ export default function AvatarPanel() {
                     </>
                   ) : (
                     <div className="text-center">
-                      <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center">
-                        <svg className="w-8 h-8 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center">
+                        <svg className="w-9 h-9 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l4-4h10l4 4v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
                         </svg>
                       </div>
@@ -406,28 +390,34 @@ export default function AvatarPanel() {
               </div>
 
               {/* OR divider */}
-              <div className="hidden lg:flex items-center justify-center text-slate-500 font-semibold select-none">
-                or
-              </div>
+              <div className="hidden lg:flex items-center justify-center text-slate-500 font-semibold select-none text-xl">or</div>
 
               {/* Style a character */}
               <div>
                 <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">Style a character</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-                  {presetCharacters.map((p) => (
-                    <button
-                      key={p.id}
-                      className="group relative rounded-2xl p-3 bg-gradient-to-b from-white to-white/60 dark:from-white/10 dark:to-white/5 border border-black/10 dark:border-white/10 hover:shadow-xl transition-all"
-                      onClick={() => choose(p.url)}
-                      title={`Choose ${p.name}`}
-                    >
-                      <div className="relative w-full aspect-[3/4]">
-                        <img src={p.url} alt={p.name} className="absolute inset-0 w-full h-full object-contain" />
-                      </div>
-                      <div className="mt-2 text-center text-slate-700 dark:text-slate-200 text-sm font-medium">{p.name}</div>
-                    </button>
-                  ))}
+                  {presetCharacters.map((p) => {
+                    const isSelected = selectedAvatarUrl === p.url;
+                    return (
+                      <button
+                        key={p.id}
+                        className={`group relative transition-all ${isSelected ? 'ring-4 ring-violet-300 rounded-2xl' : ''}`}
+                        onClick={() => {
+                          setSelectedAvatarUrl(p.url);
+                          setSelectedAvatarIndex(null);
+                        }}
+                        title={`Choose ${p.name}`}
+                      >
+                        <div className="relative w-full h-[400px] rounded-2xl overflow-hidden">
+                          <div className="absolute inset-0 rounded-2xl bg-violet-100/50 opacity-0 group-hover:opacity-100 transition-opacity z-0" />
+                          <img src={p.url} alt={p.name} className="absolute inset-0 w-full h-full object-contain z-10" />
+                        </div>
+                        <div className="mt-3 text-center text-slate-700 dark:text-slate-200 text-base font-medium">{p.name}</div>
+                      </button>
+                    );
+                  })}
                 </div>
+              </div>
               </div>
             </div>
 
@@ -443,19 +433,25 @@ export default function AvatarPanel() {
                 </GlassButton>
               </div>
             )}
-          </div>
-          <div className="hidden md:block">
-            <FaceHistory
-              onSelect={(sel) => {
-                setCapturedFrame(sel.dataUrl);
-                setShowFlash(true);
-                setTimeout(() => setShowFlash(false), 150);
-                void processFace({ imageId: sel.imageId, dataUrl: sel.dataUrl });
-              }}
-            />
-          </div>
         </div>
-      </GlassPanel>
+      </div>
+      {/* Next button bottom-right */}
+      {!(showAvatarSelector || showFullscreenPreview || showShoppingConfirmation) && (
+        <div className="fixed bottom-12 right-20 z-[60]">
+          <GlassButton
+            variant="primary"
+            className="px-16 py-4 text-lg rounded-xl shadow-lg"
+            disabled={!character && !selectedAvatarUrl}
+            onClick={() => {
+              if (selectedAvatarUrl || character) {
+                proceedNext();
+              }
+            }}
+          >
+            Next →
+          </GlassButton>
+        </div>
+      )}
     </div>
 
     {/* Fullscreen Avatar Selector Modal */}
@@ -470,7 +466,7 @@ export default function AvatarPanel() {
               <p className="text-white/80">Select the avatar that best represents you</p>
             </div>
 
-            {/* Avatar Grid */}
+            {/* Avatar Grid - selection only (no extra CTA), with black Back/Next */}
             <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6 max-h-[70vh] overflow-y-auto">
               {variants.map((url, index) => (
                 <div key={index} className="group relative">
@@ -494,21 +490,7 @@ export default function AvatarPanel() {
                     </div>
                     <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                     
-                    {/* Select Button - only show when this avatar is selected */}
-                    {selectedAvatarIndex === index && (
-                      <div className="absolute bottom-4 left-4 right-4">
-                        <GlassButton 
-                          variant="primary" 
-                          className="w-full text-white bg-blue-500 hover:bg-blue-600 backdrop-blur-sm border-blue-400"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            choose(url);
-                          }}
-                        >
-                          ✓ Select This Avatar
-                        </GlassButton>
-                      </div>
-                    )}
+                    {/* Click selects; no inline button */}
 
                     {/* Preview indicator when selected */}
                     {selectedAvatarIndex === index && (
@@ -521,8 +503,8 @@ export default function AvatarPanel() {
                     <div 
                       className="absolute inset-0 cursor-pointer"
                       onClick={() => {
-                        setPreviewAvatarIndex(index);
-                        setShowFullscreenPreview(true);
+                        setSelectedAvatarIndex(index);
+                        choose(url);
                       }}
                     />
                   </div>
@@ -535,39 +517,26 @@ export default function AvatarPanel() {
               ))}
             </div>
 
-            {/* Footer Actions */}
+            {/* Footer Actions: Black Back/Next */}
             <div className="mt-6 flex justify-center gap-4">
-              <GlassButton 
-                variant="secondary" 
-                className="px-6 py-3 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm border-white/30"
+              <button 
+                className="px-6 py-3 rounded-xl bg-black text-white hover:bg-black/90"
                 onClick={() => {
                   setShowAvatarSelector(false);
                   setSelectedAvatarIndex(null);
                 }}
               >
-                ← Back to Capture
-              </GlassButton>
-              {selectedAvatarIndex !== null && (
-                <GlassButton 
-                  variant="secondary" 
-                  className="px-6 py-3 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm border-white/30"
-                  onClick={() => setSelectedAvatarIndex(null)}
-                >
-                  Clear Selection
-                </GlassButton>
-              )}
-              <GlassButton 
-                variant="secondary" 
-                className="px-6 py-3 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm border-white/30"
+                Back to capture
+              </button>
+              <button 
+                className="px-6 py-3 rounded-xl bg-black text-white hover:bg-black/90 disabled:opacity-40"
+                disabled={selectedAvatarUrl == null}
                 onClick={() => {
-                  setShowAvatarSelector(false);
-                  setSelectedAvatarIndex(null);
-                  setVariants([]);
-                  setCapturedFrame(null);
+                  if (selectedAvatarUrl) proceedNext();
                 }}
               >
-                🔄 Generate New
-              </GlassButton>
+                Next
+              </button>
             </div>
           </div>
         </div>
@@ -681,13 +650,13 @@ export default function AvatarPanel() {
                 <div className="relative w-32 h-40 md:w-40 md:h-48 rounded-2xl overflow-hidden shadow-xl bg-gradient-to-br from-slate-100 to-slate-200">
                   {/* Blurred background */}
                   <img
-                    src={selectedAvatarUrl}
+                    src={selectedAvatarUrl ?? ''}
                     alt=""
                     className="absolute inset-0 w-full h-full object-cover blur-xl opacity-50"
                   />
                   {/* Main avatar */}
                   <img
-                    src={selectedAvatarUrl}
+                    src={selectedAvatarUrl ?? ''}
                     alt="Selected avatar"
                     className="relative w-full h-full object-contain p-2"
                   />
@@ -707,7 +676,7 @@ export default function AvatarPanel() {
                 <GlassButton
                   variant="primary"
                   className="w-full py-3 md:py-4 bg-green-500 hover:bg-green-600 text-white font-semibold text-lg"
-                  onClick={confirmAndStartShopping}
+                  onClick={proceedNext}
                 >
                   🛍️ Start Shopping Spree!
                 </GlassButton>
@@ -745,7 +714,7 @@ export default function AvatarPanel() {
 
     {/* Confetti celebration */}
     <Confetti trigger={showConfetti} />
-    </div>
+    </>
   );
 }
 
