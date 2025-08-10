@@ -136,7 +136,12 @@ export default function Wardrobe() {
                 onMouseEnter={() => { setHoveredId(w.id); void ensurePreview(w.id); }}
                 onMouseLeave={() => { setHoveredId((id) => (id === w.id ? null : id)); }}
               >
-                <img src={w.imageUrl} alt={w.name} className="w-full aspect-square object-cover" />
+                <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
+                  {/* Blurred background */}
+                  <img src={w.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover blur-xl opacity-50" />
+                  {/* Main image (fit without crop) */}
+                  <img src={w.imageUrl} alt={w.name} className="relative w-full h-full object-contain" />
+                </div>
                 {/* Hover Preview Overlay */}
                 {hoveredId === w.id && canHover() && (
                   <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2">
@@ -188,7 +193,12 @@ export default function Wardrobe() {
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
             {wardrobe.map((w) => (
               <div key={w.id} className="group relative rounded-lg overflow-hidden bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 hover:border-accent/50 transition-colors">
-                <img src={w.imageUrl} alt={w.name} className="w-full aspect-square object-cover" />
+                <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
+                  {/* Blurred background */}
+                  <img src={w.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover blur-xl opacity-50" />
+                  {/* Main image (fit without crop) */}
+                  <img src={w.imageUrl} alt={w.name} className="relative w-full h-full object-contain p-2" />
+                </div>
                 <div className="p-3">
                   <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-2 line-clamp-2">{w.name}</p>
                   <div className="flex gap-2">

@@ -1,6 +1,7 @@
 "use client";
 import { useGameStore } from '@/lib/state/gameStore';
 import { useEffect, useState } from 'react';
+import { Confetti } from '@/components/Confetti';
 import TopBar from '@/app/(app)/components/game/TopBar';
 import CenterStage from '@/app/(app)/components/game/CenterStage';
 import HistoryStrip from '@/app/(app)/components/game/HistoryStrip';
@@ -31,6 +32,12 @@ export default function GamePage() {
   const [isEditPanelVisible, setEditPanelVisible] = useState(false);
   const [isWardrobeOpen, setWardrobeOpen] = useState(false);
   const [isAIConsoleVisible, setAIConsoleVisible] = useState(false);
+
+  // Global confetti triggers (left and right side bursts)
+  const [leftConfettiTrigger, setLeftConfettiTrigger] = useState(false);
+  const [rightConfettiTrigger, setRightConfettiTrigger] = useState(false);
+  const [leftSource, setLeftSource] = useState<{ x: number; y: number; w: number; h: number } | undefined>(undefined);
+  const [rightSource, setRightSource] = useState<{ x: number; y: number; w: number; h: number } | undefined>(undefined);
 
   // Runway (final walk) state
   const [runwayLoading, setRunwayLoading] = useState(false);
@@ -80,6 +87,28 @@ export default function GamePage() {
     console.log('💡 TIP: Press Ctrl+Shift+D to open debug panel (development only)');
     console.log('⌨️  KEYBOARD: Press ESC to close panels, click Phase to cycle');
   }, [phase]);
+
+  // Listen for global confetti events so celebrations outlive panel unmounts
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ side?: 'left' | 'right' | 'both'; pieces?: number }>).detail || {};
+      const side = detail.side || 'both';
+      const width = typeof window !== 'undefined' ? window.innerWidth : 0;
+      const height = typeof window !== 'undefined' ? window.innerHeight : 0;
+      const leftRect = { x: 0, y: 0, w: Math.max(16, Math.round(width * 0.02)), h: height };
+      const rightRect = { x: Math.max(0, width - Math.max(16, Math.round(width * 0.02))), y: 0, w: Math.max(16, Math.round(width * 0.02)), h: height };
+      if (side === 'left' || side === 'both') {
+        setLeftSource(leftRect);
+        setLeftConfettiTrigger((t) => !t);
+      }
+      if (side === 'right' || side === 'both') {
+        setRightSource(rightRect);
+        setRightConfettiTrigger((t) => !t);
+      }
+    };
+    window.addEventListener('GLOBAL_CONFETTI', handler as EventListener);
+    return () => window.removeEventListener('GLOBAL_CONFETTI', handler as EventListener);
+  }, []);
 
   // Trigger runway video generation when entering WalkoutAndEval
   useEffect(() => {
@@ -393,6 +422,10 @@ export default function GamePage() {
 
       {/* Toast notifications */}
       <ToastContainer />
+
+      {/* Global Confetti (renders above all content via portal) */}
+      <Confetti trigger={leftConfettiTrigger} source={leftSource} pieces={200} />
+      <Confetti trigger={rightConfettiTrigger} source={rightSource} pieces={200} />
     </main>
   );
 }

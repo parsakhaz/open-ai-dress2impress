@@ -200,8 +200,12 @@ export default function AvatarPanel() {
     
     console.log('✅ AVATAR PANEL: Confirmed avatar selection, starting shopping');
     
-    // Trigger confetti!
-    setShowConfetti(true);
+    // Trigger global confetti from both sides of the screen
+    try {
+      window.dispatchEvent(new CustomEvent('GLOBAL_CONFETTI', { detail: { side: 'both', pieces: 220 } }));
+    } catch {
+      // no-op
+    }
     
     const c: Character = { id: `char-${Date.now()}`, avatarUrl: selectedAvatarUrl };
     setCharacter(c);
@@ -210,7 +214,6 @@ export default function AvatarPanel() {
     // Delay phase transition for confetti effect
     setTimeout(() => {
       setShowShoppingConfirmation(false);
-      setShowConfetti(false);
       console.log('🔄 AVATAR PANEL: Transitioning to Theme select');
       setPhase('ThemeSelect');
       console.log('🎯 PHASE TRANSITION: CharacterSelect → ThemeSelect');
