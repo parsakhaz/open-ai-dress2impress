@@ -220,7 +220,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
                   <div className={`relative rounded-2xl overflow-hidden bg-white shadow-2xl hover:shadow-3xl transition-all duration-300 cursor-pointer ${
                     selectedEditIndex === index ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'
                   }`}>
-                    <div className="relative w-full aspect-square bg-gradient-to-br from-slate-100 to-slate-200">
+                    <div className="relative w-full aspect-[3/4] bg-gradient-to-br from-slate-100 to-slate-200">
                       <img 
                         src={url} 
                         alt=""
