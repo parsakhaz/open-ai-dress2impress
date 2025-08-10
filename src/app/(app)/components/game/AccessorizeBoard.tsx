@@ -55,10 +55,6 @@ export default function AccessorizeBoard() {
         const data2 = await res2.json();
         const first = Array.isArray(data2?.images) ? data2.images[0] : null;
         if (!first) throw new Error('No images');
-        
-        // Add 20 second delay to make it feel more realistic
-        await new Promise(resolve => setTimeout(resolve, 20000));
-        
         setAiStyledResultUrl(first);
         setStatus('done');
       } catch (e) {

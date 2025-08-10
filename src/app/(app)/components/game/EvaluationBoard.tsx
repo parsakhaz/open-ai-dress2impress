@@ -19,6 +19,8 @@ export default function EvaluationBoard() {
   const [selectedWinner, setSelectedWinner] = useState<'player' | 'ai' | null>(null);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [evaluationError, setEvaluationError] = useState<string | null>(null);
+  const [thinkingMessages, setThinkingMessages] = useState<string[]>([]);
+  const [currentMessageIndex, setCurrentMessageIndex] = useState(0);
 
   // Use the player's final selected image (runway base or current)
   const playerFinalImage = runwayBaseImageUrl || currentImageUrl || character?.avatarUrl;
@@ -34,6 +36,29 @@ export default function EvaluationBoard() {
     // Move to the WalkoutAndEval phase
     setPhase('WalkoutAndEval');
   };
+
+  // Animated thinking messages
+  useEffect(() => {
+    if (isEvaluating) {
+      const messages = [
+        "ChatGPT is examining both outfits...",
+        "Analyzing color harmony and theme alignment...",
+        "Considering style choices and creativity...",
+        "Evaluating overall aesthetic appeal...",
+        "Weighing fashion sense against theme requirements...",
+        "Making final style assessments...",
+        "Almost ready with the verdict..."
+      ];
+      setThinkingMessages(messages);
+      setCurrentMessageIndex(0);
+
+      const interval = setInterval(() => {
+        setCurrentMessageIndex(prev => (prev + 1) % messages.length);
+      }, 2500);
+
+      return () => clearInterval(interval);
+    }
+  }, [isEvaluating]);
 
   // Evaluate the images when both are ready
   useEffect(() => {
@@ -79,20 +104,43 @@ export default function EvaluationBoard() {
   if (!playerFinalImage || !aiFinalImage || isEvaluating || (!evaluationResult && !evaluationError)) {
     return (
       <div className="fixed inset-0 z-50 bg-background flex items-center justify-center p-4">
-        <GlassPanel variant="card" className="max-w-md w-full text-center">
-          <div className="w-8 h-8 mx-auto rounded-full border-2 border-primary/30 border-t-primary animate-spin mb-4" />
-          <h2 className="text-xl font-bold mb-2">
-            {isEvaluating ? "Evaluating Outfits..." : "Preparing Evaluation..."}
+        <GlassPanel variant="card" className="max-w-lg w-full text-center">
+          {/* Animated spinner with pulse effect */}
+          <div className="relative mb-6">
+            <div className="w-16 h-16 mx-auto rounded-full border-4 border-primary/20 border-t-primary animate-spin" />
+            <div className="absolute inset-0 w-16 h-16 mx-auto rounded-full bg-primary/10 animate-pulse" />
+          </div>
+          
+          <h2 className="text-2xl font-bold mb-4 animate-pulse">
+            {isEvaluating ? "Fashion Face-off!" : "Preparing Evaluation..."}
           </h2>
-          <p className="text-muted-foreground mb-4">
-            {!playerFinalImage && "Waiting for your final look..."}
-            {!aiFinalImage && "Waiting for ChatGPT to finish..."}
-            {isEvaluating && "AI judge is analyzing both outfits..."}
-          </p>
+          
+          {/* Dynamic thinking messages */}
+          <div className="min-h-[60px] flex items-center justify-center mb-6">
+            <p className="text-lg text-muted-foreground transition-all duration-500 ease-in-out transform">
+              {!playerFinalImage && "Waiting for your final look..."}
+              {!aiFinalImage && "Waiting for ChatGPT to finish..."}
+              {isEvaluating && thinkingMessages.length > 0 && (
+                <span className="animate-fade-in font-medium">
+                  {thinkingMessages[currentMessageIndex]}
+                </span>
+              )}
+            </p>
+          </div>
+
+          {/* Floating dots animation */}
+          {isEvaluating && (
+            <div className="flex justify-center space-x-2 mb-4">
+              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+              <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            </div>
+          )}
+          
           {!isEvaluating && (
             <button
               onClick={() => setPhase('Accessorize')}
-              className="px-4 py-2 bg-muted hover:bg-muted/80 rounded-lg transition-colors"
+              className="px-6 py-3 bg-muted hover:bg-muted/80 rounded-lg transition-all duration-200 hover:scale-105"
             >
               ← Back to Accessories
             </button>

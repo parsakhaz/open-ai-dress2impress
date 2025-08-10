@@ -447,7 +447,7 @@ export default function GamePage() {
               className="pointer-events-auto px-4 py-2 rounded-lg bg-white/90 text-black hover:bg-white border border-gray-300 shadow-lg backdrop-blur-sm font-medium"
               onClick={() => { if (!muteToasts) showToast('Skipping accessories—heading to evaluation.', 'info', 2000); setEditPanelVisible(false); setPhase('Evaluation'); }}
             >
-              Skip Accessorize
+              Click to begin GPT-5 Evaluation →
             </button>
           </div>
         </div>
