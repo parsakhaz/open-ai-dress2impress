@@ -8,6 +8,8 @@ import HistoryStrip from '@/app/(app)/components/game/HistoryStrip';
 import AIConsole from '@/app/(app)/components/ai/AIConsole';
 import GameBoard from '@/app/(app)/components/game/GameBoard';
 import StylingBoard from '@/app/(app)/components/game/StylingBoard';
+import AccessorizeBoard from '@/app/(app)/components/game/AccessorizeBoard';
+import EvaluationBoard from '@/app/(app)/components/game/EvaluationBoard';
 import AvatarPanel from '@/app/(app)/components/panels/AvatarPanel';
 import EditWithAIPanel from '@/app/(app)/components/panels/EditWithAIPanel';
 import { DebugPanel } from '@/components/DebugPanel';
@@ -212,10 +214,10 @@ export default function GamePage() {
       // Wardrobe becomes the left inline panel; keep flag for keyboard shortcut UX
       setWardrobeOpen(true);
     } else if (phase === 'Accessorize') {
-      // Auto-open Edit; close others
+      // Inline editor now; keep sidebars closed
       setWardrobeOpen(false);
       setAIConsoleVisible(false);
-      setEditPanelVisible(true);
+      setEditPanelVisible(false);
       try { useGameStore.getState().setAccessorizeUsed(false); } catch {}
       // Clear previous runway base to avoid stale usages
       try { useGameStore.getState().setRunwayBaseImageUrl(null); } catch {}
@@ -259,7 +261,12 @@ export default function GamePage() {
           if (!muteToasts) showToast(editTooltip, 'info');
           return;
         }
-        // Open Edit; close others
+        // In Accessorize, focus inline input instead of opening modal
+        if (phase === 'Accessorize') {
+          try { window.dispatchEvent(new CustomEvent('ACCESSORIZE_EVT', { detail: 'FOCUS_ACCESSORIZE_INPUT' })); } catch {}
+          return;
+        }
+        // Open modal editor in other phases if ever needed
         setWardrobeOpen(false);
         setAIConsoleVisible(false);
         setEditPanelVisible(true);
@@ -313,16 +320,18 @@ export default function GamePage() {
       <UrgencyVignette />
       
       {/* Fixed positioned overlay elements */}
-      {phase !== 'CharacterSelect' && phase !== 'ThemeSelect' && <TopBar />}
-      {phase !== 'WalkoutAndEval' && phase !== 'Results' && <HistoryStrip />}
+      {phase !== 'CharacterSelect' && phase !== 'ThemeSelect' && phase !== 'Evaluation' && <TopBar />}
+      {phase !== 'WalkoutAndEval' && phase !== 'Results' && phase !== 'Evaluation' && <HistoryStrip />}
       
       {/* Board layout (single screen) during gameplay phases */}
-      {phase !== 'CharacterSelect' && phase !== 'ThemeSelect' && (
+      {phase !== 'CharacterSelect' && phase !== 'ThemeSelect' && phase !== 'Evaluation' && (
         phase === 'StylingRound'
           ? <StylingBoard />
-          : (phase === 'ShoppingSpree' || phase === 'Accessorize')
-            ? <GameBoard />
-            : null
+          : phase === 'Accessorize'
+            ? <AccessorizeBoard />
+            : phase === 'ShoppingSpree'
+              ? <GameBoard />
+              : null
       )}
 
       {/* Conditional rendering based on phase */}
@@ -340,6 +349,8 @@ export default function GamePage() {
             </div>
           </div>
         </div>
+      ) : phase === 'Evaluation' ? (
+        <EvaluationBoard />
       ) : null}
       
       {/* Amazon modal removed in single-screen layout; generation lives in left sidebar */}
@@ -440,13 +451,13 @@ export default function GamePage() {
             </button>
             <button
               className="pointer-events-auto px-4 py-2 rounded-lg bg-white/90 text-black hover:bg-white border border-gray-300 shadow-lg backdrop-blur-sm font-medium"
-              onClick={() => { if (!muteToasts) showToast('Skipping accessories—preparing the runway.', 'info', 2000); setEditPanelVisible(false); setPhase('WalkoutAndEval'); }}
+              onClick={() => { if (!muteToasts) showToast('Skipping accessories—heading to evaluation.', 'info', 2000); setEditPanelVisible(false); setPhase('Evaluation'); }}
             >
               Skip Accessorize
             </button>
             <button
               className="pointer-events-auto px-4 py-2 rounded-lg bg-white/90 text-black hover:bg-white border border-gray-300 shadow-lg backdrop-blur-sm font-medium"
-              onClick={() => { setEditPanelVisible(false); setPhase('WalkoutAndEval'); }}
+              onClick={() => { setEditPanelVisible(false); setPhase('Evaluation'); }}
             >
               Next →
             </button>

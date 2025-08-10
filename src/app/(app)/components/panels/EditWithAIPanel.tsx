@@ -357,8 +357,8 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
                     await selectImage(chosen, { type: 'edit', description: instruction || 'AI edit', addToHistory: true });
                     setRunwayBaseImageUrl(chosen);
                     if (phase === 'Accessorize') {
-                      showToast('Accessories locked in—heading to runway.', 'success', 2200);
-                      setPhase('WalkoutAndEval');
+                      showToast('Accessories locked in—heading to evaluation.', 'success', 2200);
+                      setPhase('Evaluation');
                       onClose?.();
                     }
                   }}

@@ -27,6 +27,8 @@ interface GameState {
   runwayUrl: string | null;
   accessorizeUsed: boolean;
   runwayBaseImageUrl: string | null;
+  aiPlayerResultUrl: string | null;
+  aiStyledResultUrl: string | null;
   setPhase: (phase: GamePhase) => void;
   setTheme: (theme: string) => void;
   setThemeOptions: (themes: string[]) => void;
@@ -43,6 +45,7 @@ interface GameState {
   setRunwayUrl: (url: string | null) => void;
   setAccessorizeUsed: (used: boolean) => void;
   setRunwayBaseImageUrl: (url: string | null) => void;
+  setAiPlayerResultUrl: (url: string | null) => void;
   resetGame: () => void;
 }
 
@@ -63,6 +66,8 @@ export const useGameStore = create<GameState>()(
       runwayUrl: null,
       accessorizeUsed: false,
       runwayBaseImageUrl: null,
+      aiPlayerResultUrl: null,
+      aiStyledResultUrl: null,
       setPhase: (phase) => set({ phase }),
       setTheme: (theme) => set({ theme }),
       setThemeOptions: (themes) => set({ themeOptions: themes }),
@@ -77,7 +82,9 @@ export const useGameStore = create<GameState>()(
       setCurrentImageId: (id) => set({ currentImageId: id }),
       setRunwayUrl: (url) => set({ runwayUrl: url }),
       setAccessorizeUsed: (used) => set({ accessorizeUsed: used }),
-      setRunwayBaseImageUrl: (url) => set({ runwayBaseImageUrl: url }),
+      setRunwayBaseImageUrl: (url: string | null) => set({ runwayBaseImageUrl: url }),
+      setAiPlayerResultUrl: (url: string | null) => set({ aiPlayerResultUrl: url }),
+      setAiStyledResultUrl: (url: string | null) => set({ aiStyledResultUrl: url }),
       addToHistory: (item) => set((state) => ({
         history: [...state.history, {
           ...item,
@@ -97,6 +104,8 @@ export const useGameStore = create<GameState>()(
         runwayUrl: null,
         accessorizeUsed: false,
         runwayBaseImageUrl: null,
+        aiPlayerResultUrl: null,
+        aiStyledResultUrl: null,
         theme: '',
         themeOptions: [],
         themeLoading: false,

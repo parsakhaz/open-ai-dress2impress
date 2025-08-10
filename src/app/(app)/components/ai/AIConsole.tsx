@@ -201,6 +201,13 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
                   });
                 }
               }
+              // Capture AI player's final result image for evaluation phase
+              if (evt.phase === 'PICK' && evt.eventType === 'phase:result' && (evt as any).context?.tryOnImage) {
+                const finalImage = (evt as any).context.tryOnImage as string;
+                // Save to game store for evaluation phase
+                const { setAiPlayerResultUrl } = useGameStore.getState();
+                setAiPlayerResultUrl(finalImage);
+              }
             }
             // Normalize rate-limit or 429s to a friendly line
             if (/RATE_LIMIT|429/.test(content)) {
