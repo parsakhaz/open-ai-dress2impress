@@ -8,7 +8,7 @@ import { BaseImagePickerModal } from '@/app/(app)/components/modals/BaseImagePic
 import { tryOnQueue } from '@/lib/services/tryOnQueue';
 import { TryOnResultsModal } from '@/components/TryOnResultsModal';
 import { selectImage } from '@/lib/services/stateActions';
-import { getLatestSucceededByItem } from '@/lib/services/tryOnRepo';
+import { getAllImagesByItem, getLatestSucceededByItem } from '@/lib/services/tryOnRepo';
 
 export default function Wardrobe() {
   const wardrobe = useGameStore((s) => s.wardrobe);
@@ -22,16 +22,42 @@ export default function Wardrobe() {
   const [autoLayering, setAutoLayering] = useState<{ pending: boolean; itemId?: string | null }>({ pending: false, itemId: null });
 
   async function onTryOnClick(itemId: string) {
-    // If we already have results for this item (any base), show them immediately
-    const latest = await getLatestSucceededByItem(itemId);
-    if (latest?.images && latest.images.length > 0) {
-      setResults(latest.images);
+    // Prefer aggregated results across all bases
+    const imgs = await getAllImagesByItem(itemId);
+    if (imgs && imgs.length > 0) {
+      setResults(imgs);
       setTryOnItemId(itemId);
       setResultsOpen(true);
       return;
     }
     // Otherwise prompt for base image, then enqueue
     setPickerForItemId(itemId);
+  }
+
+  // Hover preview state for desktop-only preview of latest try-on
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [previewById, setPreviewById] = useState<Record<string, { status: 'idle' | 'loading' | 'ready' | 'none' | 'error'; url?: string }>>({});
+
+  function canHover(): boolean {
+    return typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  }
+
+  async function ensurePreview(itemId: string) {
+    if (!canHover()) return;
+    const cached = previewById[itemId];
+    if (cached && cached.status !== 'idle') return;
+    setPreviewById((m) => ({ ...m, [itemId]: { status: 'loading' } }));
+    try {
+      const latest = await getLatestSucceededByItem(itemId);
+      const url = latest?.images?.[0];
+      if (url) {
+        setPreviewById((m) => ({ ...m, [itemId]: { status: 'ready', url } }));
+      } else {
+        setPreviewById((m) => ({ ...m, [itemId]: { status: 'none' } }));
+      }
+    } catch {
+      setPreviewById((m) => ({ ...m, [itemId]: { status: 'error' } }));
+    }
   }
 
   // Listen for queue completions and show results
@@ -104,8 +130,33 @@ export default function Wardrobe() {
         ) : (
           <div className="grid grid-cols-2 gap-3">
             {wardrobe.slice(0, 4).map((w) => (
-              <div key={w.id} className="group relative rounded-lg overflow-hidden bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 hover:border-accent/50 transition-colors">
+              <div
+                key={w.id}
+                className="group relative rounded-lg overflow-hidden bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 hover:border-accent/50 transition-colors"
+                onMouseEnter={() => { setHoveredId(w.id); void ensurePreview(w.id); }}
+                onMouseLeave={() => { setHoveredId((id) => (id === w.id ? null : id)); }}
+              >
                 <img src={w.imageUrl} alt={w.name} className="w-full aspect-square object-cover" />
+                {/* Hover Preview Overlay */}
+                {hoveredId === w.id && canHover() && (
+                  <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2">
+                    {previewById[w.id]?.status === 'loading' && (
+                      <div className="text-white/80 text-xs">Loading preview…</div>
+                    )}
+                    {previewById[w.id]?.status === 'ready' && previewById[w.id]?.url && (
+                      <div className="relative w-full h-full">
+                        <img src={previewById[w.id]!.url!} alt="Latest try-on" className="absolute inset-0 w-full h-full object-contain" />
+                        <div className="absolute top-2 left-2 text-[10px] px-2 py-1 rounded bg-white/20 text-white">Latest try-on</div>
+                      </div>
+                    )}
+                    {previewById[w.id]?.status === 'none' && (
+                      <div className="text-white/80 text-xs">No try-on yet</div>
+                    )}
+                    {previewById[w.id]?.status === 'error' && (
+                      <div className="text-white/80 text-xs">Preview unavailable</div>
+                    )}
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 <div className="absolute bottom-2 left-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                   <p className="text-white text-xs font-medium truncate mb-2">{w.name}</p>

@@ -1,19 +1,27 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import ReactConfetti from 'react-confetti';
 
 interface ConfettiProps {
   trigger: boolean;
   duration?: number;
   colors?: string[];
+  source?: { x: number; y: number; w: number; h: number };
+  pieces?: number;
 }
 
-export function Confetti({ trigger, duration = 3000, colors }: ConfettiProps) {
+export function Confetti({ trigger, duration = 3000, colors, source, pieces }: ConfettiProps) {
   const [show, setShow] = useState(false);
   const [windowDimensions, setWindowDimensions] = useState({ 
     width: 0, 
     height: 0 
   });
+  const [mounted, setMounted] = useState(false);
+  const prefersReducedMotion = useMemo(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return false;
+    return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  }, []);
 
   useEffect(() => {
     // Set dimensions on mount
@@ -21,6 +29,7 @@ export function Confetti({ trigger, duration = 3000, colors }: ConfettiProps) {
       width: window.innerWidth,
       height: window.innerHeight
     });
+    setMounted(true);
 
     // Update dimensions on resize
     const handleResize = () => {
@@ -44,14 +53,20 @@ export function Confetti({ trigger, duration = 3000, colors }: ConfettiProps) {
 
   if (!show || windowDimensions.width === 0) return null;
 
-  return (
-    <ReactConfetti
-      width={windowDimensions.width}
-      height={windowDimensions.height}
-      recycle={false}
-      numberOfPieces={200}
-      gravity={0.2}
-      colors={colors || ['#3B82F6', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B']}
-    />
+  const confetti = (
+    <div className="fixed inset-0 z-[1000] pointer-events-none">
+      <ReactConfetti
+        width={windowDimensions.width}
+        height={windowDimensions.height}
+        recycle={false}
+        numberOfPieces={pieces ?? (prefersReducedMotion ? 60 : 200)}
+        gravity={prefersReducedMotion ? 0.15 : 0.2}
+        colors={colors || ['#3B82F6', '#8B5CF6', '#EC4899', '#10B981', '#F59E0B']}
+        confettiSource={source}
+      />
+    </div>
   );
+
+  // Use portal to ensure it's above all app content and modals
+  return mounted ? createPortal(confetti, document.body) : null;
 }

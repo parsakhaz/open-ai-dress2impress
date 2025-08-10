@@ -6,7 +6,7 @@ import { TryOnResultsModal } from '@/components/TryOnResultsModal';
 import { selectImage } from '@/lib/services/stateActions';
 import { BaseImagePickerModal } from '@/app/(app)/components/modals/BaseImagePickerModal';
 import { tryOnQueue } from '@/lib/services/tryOnQueue';
-import { getLatestSucceededByItem } from '@/lib/services/tryOnRepo';
+import { getAllImagesByItem, getLatestSucceededByItem } from '@/lib/services/tryOnRepo';
 
 interface WardrobeContentProps {
   onClose?: () => void;
@@ -22,15 +22,41 @@ export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) 
   const [autoLayering, setAutoLayering] = useState<{ pending: boolean; itemId?: string | null }>({ pending: false, itemId: null });
 
   async function onPickBaseAndEnqueue(itemId: string, itemImageUrl: string) {
-    // If results already exist for this item, show them immediately
-    const latest = await getLatestSucceededByItem(itemId);
-    if (latest?.images && latest.images.length > 0) {
-      setVariants(latest.images);
+    // Prefer aggregated results across all bases
+    const imgs = await getAllImagesByItem(itemId);
+    if (imgs && imgs.length > 0) {
+      setVariants(imgs);
       setTryOnItemId(itemId);
       setShowTryOnModal(true);
       return;
     }
     setShowBasePicker(itemId);
+  }
+
+  // Hover preview state for desktop-only preview of latest try-on
+  const [hoveredId, setHoveredId] = useState<string | null>(null);
+  const [previewById, setPreviewById] = useState<Record<string, { status: 'idle' | 'loading' | 'ready' | 'none' | 'error'; url?: string }>>({});
+
+  function canHover(): boolean {
+    return typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  }
+
+  async function ensurePreview(itemId: string) {
+    if (!canHover()) return;
+    const cached = previewById[itemId];
+    if (cached && cached.status !== 'idle') return;
+    setPreviewById((m) => ({ ...m, [itemId]: { status: 'loading' } }));
+    try {
+      const latest = await getLatestSucceededByItem(itemId);
+      const url = latest?.images?.[0];
+      if (url) {
+        setPreviewById((m) => ({ ...m, [itemId]: { status: 'ready', url } }));
+      } else {
+        setPreviewById((m) => ({ ...m, [itemId]: { status: 'none' } }));
+      }
+    } catch {
+      setPreviewById((m) => ({ ...m, [itemId]: { status: 'error' } }));
+    }
   }
 
   // Listen for background job completions and open results modal
@@ -101,12 +127,37 @@ export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) 
       
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {wardrobe.map((item) => (
-          <div key={item.id} className="group relative rounded-lg overflow-hidden bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 hover:border-accent/50 transition-colors">
+          <div
+            key={item.id}
+            className="group relative rounded-lg overflow-hidden bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 hover:border-accent/50 transition-colors"
+            onMouseEnter={() => { setHoveredId(item.id); void ensurePreview(item.id); }}
+            onMouseLeave={() => { setHoveredId((id) => (id === item.id ? null : id)); }}
+          >
             <div className="relative w-full aspect-square overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
               {/* Blurred background */}
               <img src={item.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover blur-xl opacity-50" />
               {/* Main image */}
               <img src={item.imageUrl} alt={item.name} className="relative w-full h-full object-contain p-2" />
+              {/* Hover Preview Overlay */}
+              {hoveredId === item.id && canHover() && (
+                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2">
+                  {previewById[item.id]?.status === 'loading' && (
+                    <div className="text-white/80 text-xs">Loading preview…</div>
+                  )}
+                  {previewById[item.id]?.status === 'ready' && previewById[item.id]?.url && (
+                    <div className="relative w-full h-full">
+                      <img src={previewById[item.id]!.url!} alt="Latest try-on" className="absolute inset-0 w-full h-full object-contain" />
+                      <div className="absolute top-2 left-2 text-[10px] px-2 py-1 rounded bg-white/20 text-white">Latest try-on</div>
+                    </div>
+                  )}
+                  {previewById[item.id]?.status === 'none' && (
+                    <div className="text-white/80 text-xs">No try-on yet</div>
+                  )}
+                  {previewById[item.id]?.status === 'error' && (
+                    <div className="text-white/80 text-xs">Preview unavailable</div>
+                  )}
+                </div>
+              )}
             </div>
             <div className="p-3">
               <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-2 line-clamp-2">{item.name}</p>
