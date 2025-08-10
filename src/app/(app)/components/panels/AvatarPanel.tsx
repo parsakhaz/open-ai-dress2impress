@@ -7,7 +7,6 @@ import { GlassPanel } from '@/components/GlassPanel';
 import { GlassButton } from '@/components/GlassButton';
 import { CameraPermissionHelper } from '../CameraPermissionHelper';
 import { Confetti } from '@/components/Confetti';
-import { OnboardingTutorial } from '@/components/OnboardingTutorial';
 import type { Character } from '@/types';
 import { selectImage } from '@/lib/services/stateActions';
 import FaceHistory from './FaceHistory';
@@ -35,7 +34,6 @@ export default function AvatarPanel() {
   const [showShoppingConfirmation, setShowShoppingConfirmation] = useState(false);
   const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
-  const [showOnboarding, setShowOnboarding] = useState(false);
   const setCharacter = useGameStore((s) => s.setCharacter);
   const setCurrentImage = useGameStore((s) => s.setCurrentImage);
   const setPhase = useGameStore((s) => s.setPhase);
@@ -675,19 +673,7 @@ export default function AvatarPanel() {
                 🛍️ Start Shopping Spree!
               </GlassButton>
               
-              {/* Onboarding Button */}
-              <GlassButton
-                variant="secondary"
-                className="w-full py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-100 border border-blue-400/30"
-                onClick={() => setShowOnboarding(true)}
-              >
-                <div className="flex items-center justify-center gap-2">
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  🎓 How to Play (Tutorial)
-                </div>
-              </GlassButton>
+              
               
               <div className="flex gap-3">
                 <GlassButton
@@ -722,17 +708,7 @@ export default function AvatarPanel() {
     {/* Confetti celebration */}
     <Confetti trigger={showConfetti} />
 
-    {/* Onboarding Tutorial */}
-    {showOnboarding && (
-      <OnboardingTutorial
-        onClose={() => setShowOnboarding(false)}
-        onComplete={() => {
-          setShowOnboarding(false);
-          // You can optionally auto-start shopping after tutorial
-          // confirmAndStartShopping();
-        }}
-      />
-    )}
+    
     </>
   );
 }

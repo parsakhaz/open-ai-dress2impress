@@ -70,7 +70,7 @@ export default function ThemeWheelModal({ open, onClose }: ThemeWheelModalProps)
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-6 md:p-8">
       <div className="absolute inset-0" onClick={() => (spinning ? null : onClose())} />
-      <div className="relative w-full max-w-2xl mx-auto">
+      <div className="relative w-full max-w-4xl mx-auto min-h-[80vh] flex flex-col">
         <div className="mb-4 md:mb-6 text-center space-y-2">
           <h2 className="text-3xl font-extrabold text-white">Spin for Today&apos;s Theme</h2>
           <p className="text-slate-300 text-sm">Randomly pick one of 15 game categories</p>
@@ -85,8 +85,15 @@ export default function ThemeWheelModal({ open, onClose }: ThemeWheelModalProps)
         </div>
 
         {/* Wheel - make surface opaque to avoid transparency artifacts */}
-        <div className="mx-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 md:p-6 shadow-2xl overflow-hidden">
-          <div className="relative mx-auto w-[min(80vw,22rem)] h-[min(80vw,22rem)] flex items-center justify-center">
+        <div className="mx-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 md:p-6 shadow-2xl overflow-visible select-none">
+          <div
+            className="relative mx-auto w-[min(92vw,36rem)] h-[min(92vw,36rem)] flex items-center justify-center cursor-pointer"
+            onClick={() => {
+              if (!spinning && !themeLoading && !items.includes('...')) onSpin();
+            }}
+            aria-label="Click to spin the theme wheel"
+            role="button"
+          >
           <Wheel
             mustStartSpinning={spinning}
             prizeNumber={selectedIndex ?? 0}
@@ -97,7 +104,7 @@ export default function ThemeWheelModal({ open, onClose }: ThemeWheelModalProps)
             radiusLineWidth={1}
             backgroundColors={["#ec4899","#8b5cf6","#6366f1","#f472b6"]}
             textColors={["#f8fafc"]}
-            fontSize={12}
+            fontSize={16}
             onStopSpinning={() => {
               const idx = selectedIndex ?? 0;
               const theme = items[idx];
@@ -115,15 +122,8 @@ export default function ThemeWheelModal({ open, onClose }: ThemeWheelModalProps)
           />
           </div>
         </div>
-
-        <div className="mt-6 flex items-center justify-center">
-          <button
-            className={`px-6 py-2.5 rounded-md text-white font-semibold ${spinning || themeLoading ? 'bg-gray-500 cursor-not-allowed' : 'bg-pink-600 hover:bg-pink-500'}`}
-            onClick={onSpin}
-            disabled={spinning || themeLoading || items.includes('...')}
-          >
-            {themeLoading ? 'Loading themes…' : spinning ? 'Spinning…' : 'Spin'}
-          </button>
+        <div className="mt-4 text-center text-slate-500 dark:text-slate-300">
+          {themeLoading ? 'Loading themes…' : spinning ? 'Spinning…' : 'Click the wheel to spin'}
         </div>
       </div>
     </div>
