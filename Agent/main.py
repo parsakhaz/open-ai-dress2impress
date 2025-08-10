@@ -41,8 +41,6 @@ Notes
   try-on result.
 """
 
-from __future__ import annotations
-
 import argparse
 import asyncio
 import dataclasses
@@ -52,7 +50,6 @@ import os
 import random
 import re
 import socket
-import string
 import threading
 import time
 from dataclasses import dataclass
@@ -63,8 +60,6 @@ from pathlib import Path
 from typing import Dict, List, Literal, Optional, Tuple
 from urllib.parse import urlparse
 import urllib.request
-import urllib.error
-import json as json_lib
 
 
 # Optional dependencies for image composition in mocked try-on
@@ -173,13 +168,6 @@ class Config:
 # ------------------------------------------------------------
 # Utilities
 # ------------------------------------------------------------
-def _slugify(text: str) -> str:
-    text = text.lower()
-    text = re.sub(r"[^a-z0-9\-\_\s]", "", text)
-    text = re.sub(r"\s+", "-", text).strip("-")
-    return text[:80]
-
-
 def _hash_short(text: str, length: int = 8) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:length]
 
@@ -335,59 +323,7 @@ def _save_image_any(path: Path, src: str) -> None:
     _download_image_to(path, src)
 
 
-def _http_url_to_data_uri(url: str, target_max_bytes: int = 2_000_000) -> Optional[str]:
-    """Fetch an HTTP(S) image and return a data URI using the original bytes.
-    Falls back to None on failure.
-    """
-    try:
-        with urllib.request.urlopen(url) as resp:  # nosec B310
-            content_type = resp.headers.get("Content-Type", "image/jpeg")
-            data = resp.read()
-            if len(data) > target_max_bytes:
-                # If too large, don't inline
-                return None
-            b64 = base64.b64encode(data).decode("ascii")
-            return f"data:{content_type};base64,{b64}"
-    except Exception:
-        return None
-
-
-def _image_to_jpeg_b64_from_path(path: Path, max_dim_px: int = 1024, quality: int = 80) -> Optional[str]:
-    if not HAS_PIL:
-        return None
-    try:
-        from io import BytesIO
-        img = Image.open(path).convert("RGB")
-        w, h = img.size
-        s = min(1.0, max_dim_px / max(w, h))
-        if s < 1.0:
-            img = img.resize((int(w * s), int(h * s)))
-        buf = BytesIO()
-        img.save(buf, format="JPEG", quality=quality, optimize=True)
-        return base64.b64encode(buf.getvalue()).decode("ascii")
-    except Exception:
-        return None
-
-
-def _bytes_to_jpeg_b64(data: bytes, max_dim_px: int = 1024, quality: int = 80) -> Optional[str]:
-    if not HAS_PIL:
-        return base64.b64encode(data).decode("ascii")
-    try:
-        from io import BytesIO
-        img = Image.open(BytesIO(data)).convert("RGB")
-        w, h = img.size
-        s = min(1.0, max_dim_px / max(w, h))
-        if s < 1.0:
-            img = img.resize((int(w * s), int(h * s)))
-        buf = BytesIO()
-        img.save(buf, format="JPEG", quality=quality, optimize=True)
-        return base64.b64encode(buf.getvalue()).decode("ascii")
-    except Exception:
-        # Fallback raw
-        try:
-            return base64.b64encode(data).decode("ascii")
-        except Exception:
-            return None
+# removed unused helper _bytes_to_jpeg_b64
 
 
 # ------------------------------------------------------------
