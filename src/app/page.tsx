@@ -142,8 +142,12 @@ export default function GamePage() {
       {phase === 'ThemeSelect' && character ? (
         <ThemeWheelModal open={true} onClose={() => { /* handled by spin */ }} />
       ) : phase === 'CharacterSelect' ? (
-        <div className="fixed inset-0 flex items-center justify-center z-30 p-4 bg-black/30 backdrop-blur-sm">
-          <AvatarPanel />
+        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm overflow-y-auto">
+          <div className="min-h-[100svh] flex items-start justify-center p-4 sm:p-6">
+            <div className="w-full max-w-6xl my-6">
+              <AvatarPanel />
+            </div>
+          </div>
         </div>
       ) : (
         <ToolsIsland 
