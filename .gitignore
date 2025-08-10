@@ -39,3 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Generated outputs
+public/out/**
+Agent/out/**
+Agent/results/**

@@ -57,21 +57,27 @@ export function DebugPanel() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen]);
 
-  const refreshDebugInfo = () => {
+  const refreshDebugInfo = async () => {
     console.log('🔍 DEBUG PANEL: Refreshing debug information');
-    
-    const envInfo = {
-      OPENAI_API_KEY: process.env.OPENAI_API_KEY ? 'Set (' + process.env.OPENAI_API_KEY.substring(0, 8) + '...)' : 'Not set',
-      FASHN_AI_API_KEY: process.env.FASHN_AI_API_KEY ? 'Set (' + process.env.FASHN_AI_API_KEY.substring(0, 8) + '...)' : 'Not set',
-      RAPIDAPI_KEY: process.env.RAPIDAPI_KEY ? 'Set (' + process.env.RAPIDAPI_KEY.substring(0, 8) + '...)' : 'Not set',
-      RAPIDAPI_HOST: process.env.RAPIDAPI_HOST || 'Not set',
-      NODE_ENV: process.env.NODE_ENV,
-    };
+    let envInfo: Record<string, string | undefined> = { NODE_ENV: process.env.NODE_ENV };
+    try {
+      const res = await fetch('/api/debug/env');
+      if (res.ok) {
+        const data = await res.json();
+        const f = data?.flags || {};
+        envInfo = {
+          OPENAI_API_KEY: f.OPENAI_API_KEY ? 'Set' : 'Not set',
+          FASHN_AI_API_KEY: f.FASHN_AI_API_KEY ? 'Set' : 'Not set',
+          RAPIDAPI_KEY: f.RAPIDAPI_KEY ? 'Set' : 'Not set',
+          RAPIDAPI_HOST: f.RAPIDAPI_HOST ? 'Set' : 'Not set',
+          KLING_ACCESS_KEY: f.KLING_ACCESS_KEY ? 'Set' : 'Not set',
+          KLING_SECRET_KEY: f.KLING_SECRET_KEY ? 'Set' : 'Not set',
+          NODE_ENV: process.env.NODE_ENV,
+        } as const;
+      }
+    } catch {}
 
-    // Get performance entries
-    const performanceEntries = performance.getEntries().slice(-20); // Last 20 entries
-
-    // Get console logs if available (simplified)
+    const performanceEntries = performance.getEntries().slice(-20);
     const recentErrors: any[] = [];
     const apiCalls: any[] = [];
 

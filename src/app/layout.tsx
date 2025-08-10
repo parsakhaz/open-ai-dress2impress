@@ -41,9 +41,7 @@ export default function RootLayout({
           }}
         />
         
-        <script dangerouslySetInnerHTML={{
-          __html: `console.log('🌍 BROWSER: HTML body loaded, React hydrating...');`
-        }} />
+        {/* Removed inline script for better hygiene */}
         {children}
       </body>
     </html>

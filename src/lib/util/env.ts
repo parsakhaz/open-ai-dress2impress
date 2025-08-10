@@ -24,8 +24,8 @@ export function getServerEnv(): ServerEnv {
   const FASHN_AI_API_KEY = requireEnvVar('FASHN_AI_API_KEY', process.env.FASHN_AI_API_KEY);
   const RAPIDAPI_KEY = requireEnvVar('RAPIDAPI_KEY', process.env.RAPIDAPI_KEY);
   const RAPIDAPI_HOST = requireEnvVar('RAPIDAPI_HOST', process.env.RAPIDAPI_HOST);
-  const KLING_ACCESS_KEY = process.env.KLING_ACCESS_KEY || process.env.NEXT_PUBLIC_KLING_ACCESS_KEY;
-  const KLING_SECRET_KEY = process.env.KLING_SECRET_KEY || process.env.NEXT_PUBLIC_KLING_SECRET_KEY;
+  const KLING_ACCESS_KEY = process.env.KLING_ACCESS_KEY;
+  const KLING_SECRET_KEY = process.env.KLING_SECRET_KEY;
 
   return {
     OPENAI_API_KEY,

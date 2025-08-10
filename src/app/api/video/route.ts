@@ -3,7 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { createHandler } from '@/lib/util/apiRoute';
 import { guards } from '@/lib/util/validation';
 import { generateKlingToken } from '@/lib/server/kling';
-import { poll, sleep } from '@/lib/util/promise';
+import { poll } from '@/lib/util/promise';
 import { fetchBlob } from '@/lib/util/http';
 
 export const runtime = 'nodejs';
@@ -42,6 +42,8 @@ export const POST = createHandler<{ imageUrl: string }, { url: string }>({
     const external_task_id = uuidv4();
     // Kling expects base64 payload for image; convert any URL or data URL to raw base64 string
     const image_base64 = await toBase64(imageUrl);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 60_000);
     const createResponse = await fetch(`${API_HOST}/v1/videos/image2video`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, Accept: 'application/json' },
@@ -59,7 +61,9 @@ export const POST = createHandler<{ imageUrl: string }, { url: string }>({
         external_task_id,
       }),
       keepalive: true,
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
     if (!createResponse.ok) {
       const text = await createResponse.text();
       throw new Error(`Kling create error: ${createResponse.status} ${text}`);

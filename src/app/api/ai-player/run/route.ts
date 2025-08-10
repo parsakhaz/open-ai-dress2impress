@@ -1,6 +1,7 @@
 // src/app/api/ai-player/run/route.ts
 
 import { NextRequest, NextResponse } from 'next/server';
+import { logger } from '@/lib/util/logger';
 import { AIPlayerAgent } from '@/lib/ai-player/agent';
 
 export const dynamic = 'force-dynamic';
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Failed to start AI player stream:', error);
+    logger.error('AI_PLAYER', 'Failed to start AI player stream', error);
     return NextResponse.json({ error: 'Failed to initialize AI player.' }, { status: 500 });
   }
 }

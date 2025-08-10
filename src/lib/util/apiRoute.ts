@@ -24,10 +24,10 @@ export function createHandler<TReq, TRes>(opts: {
       if (isDTI) {
         const e = error as any;
         const status = e.statusCode || 500;
-        return new Response(e.userMessage || e.message || 'Server error', { status });
+        return Response.json({ error: e.userMessage || e.message || 'Server error', code: e.code }, { status });
       }
       const sys = ErrorHandler.handleSystemError('API', error);
-      return new Response(sys.userMessage, { status: sys.statusCode || 500 });
+      return Response.json({ error: sys.userMessage, code: sys.code }, { status: sys.statusCode || 500 });
     }
   };
 }
