@@ -29,6 +29,7 @@ interface GameState {
   logAIEvent: (event: AIEvent) => void;
   setCharacter: (c: Character | null) => void;
   addToWardrobe: (item: WardrobeItem) => void;
+  removeFromWardrobe: (id: string) => void;
   setCurrentImage: (url: string | null) => void;
   setCurrentImageId: (id: string | null) => void;
   addToHistory: (item: Omit<HistoryItem, 'id' | 'timestamp'>) => void;
@@ -54,6 +55,7 @@ export const useGameStore = create<GameState>()(
       logAIEvent: (event) => set((state) => ({ aiLog: [...state.aiLog, event] })),
       setCharacter: (c) => set({ character: c }),
       addToWardrobe: (item) => set((s) => ({ wardrobe: [...s.wardrobe, item] })),
+      removeFromWardrobe: (id) => set((s) => ({ wardrobe: s.wardrobe.filter((w) => w.id !== id) })),
       setCurrentImage: (url) => set({ currentImageUrl: url }),
       setCurrentImageId: (id) => set({ currentImageId: id }),
       addToHistory: (item) => set((state) => ({

@@ -16,8 +16,9 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<WardrobeItem[]>([]);
-  const [addedItems, setAddedItems] = useState<Set<string>>(new Set());
   const addToWardrobe = useGameStore((s) => s.addToWardrobe);
+  const removeFromWardrobe = useGameStore((s) => s.removeFromWardrobe);
+  const wardrobe = useGameStore((s) => s.wardrobe);
 
   // Handle Escape key to close modal
   useEffect(() => {
@@ -28,28 +29,21 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
     return () => document.removeEventListener('keydown', onEsc);
   }, [onClose]);
 
-  const handleAddToWardrobe = (item: WardrobeItem) => {
-    addToWardrobe(item);
-    showToast?.(`Added "${item.name}" to wardrobe! 👗`);
-    
-    // Add to visual feedback set
-    setAddedItems(prev => new Set(prev).add(item.id));
-    
-    // Remove from visual feedback after 2 seconds
-    setTimeout(() => {
-      setAddedItems(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(item.id);
-        return newSet;
-      });
-    }, 2000);
+  const toggleWardrobe = (item: WardrobeItem) => {
+    const inWardrobe = wardrobe.some((w) => w.id === item.id);
+    if (inWardrobe) {
+      removeFromWardrobe(item.id);
+      showToast?.(`Removed "${item.name}" from wardrobe`, 'info');
+    } else {
+      addToWardrobe(item);
+      showToast?.(`Added "${item.name}" to wardrobe! 👗`, 'success');
+    }
   };
 
   async function onSearch(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setAddedItems(new Set()); // Reset added items for new search
     try {
       const items = await searchAmazon(query);
       setResults(items);
@@ -130,53 +124,58 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
                   Found {results.length} {results.length === 1 ? 'item' : 'items'}
                 </h4>
                 <div className="text-sm text-slate-600 dark:text-slate-400">
-                  Click items to add to your wardrobe
+                  Click an item to add/remove from your wardrobe
                 </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {results.map((r) => (
-                  <div key={r.id} className="group relative rounded-xl overflow-hidden bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 hover:border-accent/50 hover:scale-105 transition-all duration-200">
+                  <div
+                    key={r.id}
+                    className="group relative rounded-xl overflow-hidden bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 hover:border-accent/50 hover:scale-105 transition-all duration-200 cursor-pointer"
+                    role="button"
+                    tabIndex={0}
+                    title="Click to add or remove"
+                    onClick={() => {
+                      toggleWardrobe(r);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        toggleWardrobe(r);
+                      }
+                    }}
+                  >
                     <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
                       {/* Blurred background */}
                       <img src={r.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover blur-xl opacity-50" />
                       {/* Main image (no crop) */}
-                      <img src={r.imageUrl} alt={r.name} className="relative w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300" />
-                    </div>
-                    <div className="p-3 space-y-2">
-                      <p className="text-sm font-medium text-slate-900 dark:text-slate-100 line-clamp-2 leading-tight">{r.name}</p>
-                      {r.price && (
-                        <p className="text-sm text-accent font-semibold">{r.price}</p>
-                      )}
-                      <GlassButton 
-                        size="sm" 
-                        variant={addedItems.has(r.id) ? "primary" : "secondary"}
-                        className={`w-full transition-all duration-300 ${
-                          addedItems.has(r.id) 
-                            ? 'bg-green-500 hover:bg-green-600 text-white scale-105' 
-                            : 'hover:bg-accent/20'
-                        }`}
-                        onClick={() => handleAddToWardrobe(r)}
-                        disabled={addedItems.has(r.id)}
-                      >
-                        <div className="flex items-center justify-center gap-2">
-                          {addedItems.has(r.id) ? (
-                            <>
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                              Added!
-                            </>
-                          ) : (
-                            <>
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                              </svg>
-                              Add to Wardrobe
-                            </>
-                          )}
+                      <img src={r.imageUrl} alt={r.name} className="relative w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
+                      {/* In-wardrobe badge */}
+                      {wardrobe.some((w) => w.id === r.id) && (
+                        <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full shadow">
+                          Added
                         </div>
-                      </GlassButton>
+                      )}
+                      {/* Info icon + hover metadata */}
+                      <div className="absolute bottom-2 left-2 group/inf">
+                        <div className="w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center text-xs">i</div>
+                        <div className="pointer-events-none absolute left-0 bottom-8 opacity-0 group-hover/inf:opacity-100 transition-opacity duration-200">
+                          <div className="max-w-[240px] rounded-lg bg-black/80 text-white text-xs p-2 shadow-lg border border-white/10">
+                            <div className="font-semibold mb-1 line-clamp-3">{r.name}</div>
+                            {r.price && <div className="opacity-80">{r.price}</div>}
+                          </div>
+                        </div>
+                      </div>
+                      {/* Hover preview 1.5x above card */}
+                      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-2 -translate-y-full z-40 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                        <div className="w-[360px] max-w-[80vw] rounded-2xl overflow-hidden shadow-2xl border border-white/20 dark:border-white/10 bg-gradient-to-br from-slate-100/90 to-slate-200/90 dark:from-black/50 dark:to-slate-900/40 backdrop-blur-md">
+                          <div className="relative w-full h-[360px]">
+                            <img src={r.imageUrl} alt="" className="absolute inset-0 w-full h-full object-contain p-3" />
+                          </div>
+                        </div>
+                      </div>
                     </div>
+                    {/* No below-card metadata; image fills card. Name/price available via info icon hover. */}
                   </div>
                 ))}
               </div>
