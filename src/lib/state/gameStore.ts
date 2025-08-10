@@ -81,6 +81,7 @@ export const useGameStore = create<GameState>()(
       runwayBaseImageUrl: null,
       aiPlayerResultUrl: null,
       aiStyledResultUrl: null,
+      evaluationResult: null,
       setPhase: (phase) => set({ phase }),
       setTheme: (theme) => set({ theme }),
       setThemeOptions: (themes) => set({ themeOptions: themes }),
@@ -98,6 +99,7 @@ export const useGameStore = create<GameState>()(
       setRunwayBaseImageUrl: (url: string | null) => set({ runwayBaseImageUrl: url }),
       setAiPlayerResultUrl: (url: string | null) => set({ aiPlayerResultUrl: url }),
       setAiStyledResultUrl: (url: string | null) => set({ aiStyledResultUrl: url }),
+      setEvaluationResult: (result: EvaluationResult | null) => set({ evaluationResult: result }),
       addToHistory: (item) => set((state) => ({
         history: [...state.history, {
           ...item,
@@ -119,6 +121,7 @@ export const useGameStore = create<GameState>()(
         runwayBaseImageUrl: null,
         aiPlayerResultUrl: null,
         aiStyledResultUrl: null,
+        evaluationResult: null,
         theme: '',
         themeOptions: [],
         themeLoading: false,

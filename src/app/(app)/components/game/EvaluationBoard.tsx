@@ -10,10 +10,14 @@ export default function EvaluationBoard() {
   const currentImageUrl = useGameStore((s) => s.currentImageUrl);
   const runwayBaseImageUrl = useGameStore((s) => s.runwayBaseImageUrl);
   const aiPlayerResultUrl = useGameStore((s) => s.aiPlayerResultUrl);
+  const evaluationResult = useGameStore((s) => s.evaluationResult);
   const setPhase = useGameStore((s) => s.setPhase);
+  const setEvaluationResult = useGameStore((s) => s.setEvaluationResult);
   const character = useGameStore((s) => s.character);
   
   const [selectedWinner, setSelectedWinner] = useState<'player' | 'ai' | null>(null);
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [evaluationError, setEvaluationError] = useState<string | null>(null);
 
   // Use the player's final selected image (runway base or current)
   const playerFinalImage = runwayBaseImageUrl || currentImageUrl || character?.avatarUrl;
@@ -27,9 +31,45 @@ export default function EvaluationBoard() {
     setPhase('WalkoutAndEval');
   };
 
-  // Automatically proceed to runway after a delay when both images are ready
+  // Evaluate the images when both are ready
   useEffect(() => {
-    if (phase === 'Evaluation' && playerFinalImage && aiPlayerResultUrl) {
+    const evaluateImages = async () => {
+      if (phase === 'Evaluation' && playerFinalImage && aiPlayerResultUrl && !evaluationResult && !isEvaluating) {
+        setIsEvaluating(true);
+        setEvaluationError(null);
+        
+        try {
+          const response = await fetch('/api/evaluate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              playerImageUrl: playerFinalImage,
+              aiImageUrl: aiPlayerResultUrl,
+              theme: theme,
+            }),
+          });
+
+          if (!response.ok) {
+            throw new Error('Failed to evaluate images');
+          }
+
+          const result = await response.json();
+          setEvaluationResult(result);
+        } catch (error) {
+          console.error('Evaluation error:', error);
+          setEvaluationError('Failed to evaluate outfits. Please try again.');
+        } finally {
+          setIsEvaluating(false);
+        }
+      }
+    };
+
+    evaluateImages();
+  }, [phase, playerFinalImage, aiPlayerResultUrl, evaluationResult, isEvaluating, theme, setEvaluationResult]);
+
+  // Automatically proceed to runway after evaluation is complete
+  useEffect(() => {
+    if (phase === 'Evaluation' && evaluationResult) {
       // Auto-proceed after 8 seconds to give users time to view scores
       const timer = setTimeout(() => {
         proceedToRunway();
@@ -37,27 +77,32 @@ export default function EvaluationBoard() {
       
       return () => clearTimeout(timer);
     }
-  }, [phase, playerFinalImage, aiPlayerResultUrl]);
+  }, [phase, evaluationResult]);
 
   if (phase !== 'Evaluation') return null;
 
-  // Show a loading state if either player doesn't have a final image
-  if (!playerFinalImage || !aiPlayerResultUrl) {
+  // Show a loading state while evaluating or if images aren't ready
+  if (!playerFinalImage || !aiPlayerResultUrl || isEvaluating || (!evaluationResult && !evaluationError)) {
     return (
       <div className="fixed inset-0 z-50 bg-background flex items-center justify-center p-4">
         <GlassPanel variant="card" className="max-w-md w-full text-center">
           <div className="w-8 h-8 mx-auto rounded-full border-2 border-primary/30 border-t-primary animate-spin mb-4" />
-          <h2 className="text-xl font-bold mb-2">Preparing Evaluation...</h2>
+          <h2 className="text-xl font-bold mb-2">
+            {isEvaluating ? "Evaluating Outfits..." : "Preparing Evaluation..."}
+          </h2>
           <p className="text-muted-foreground mb-4">
             {!playerFinalImage && "Waiting for your final look..."}
             {!aiPlayerResultUrl && "Waiting for ChatGPT to finish..."}
+            {isEvaluating && "AI judge is analyzing both outfits..."}
           </p>
-          <button
-            onClick={() => setPhase('Accessorize')}
-            className="px-4 py-2 bg-muted hover:bg-muted/80 rounded-lg transition-colors"
-          >
-            ← Back to Accessories
-          </button>
+          {!isEvaluating && (
+            <button
+              onClick={() => setPhase('Accessorize')}
+              className="px-4 py-2 bg-muted hover:bg-muted/80 rounded-lg transition-colors"
+            >
+              ← Back to Accessories
+            </button>
+          )}
         </GlassPanel>
       </div>
     );
@@ -102,16 +147,18 @@ export default function EvaluationBoard() {
                 <div className="space-y-2">
                   <div className="bg-yellow-200/50 rounded-lg p-3">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Overall Score</p>
-                    <p className="text-2xl font-bold">-.-</p>
+                    <p className="text-2xl font-bold">
+                      {evaluationResult ? evaluationResult.playerScore.toFixed(1) : '-.-'}
+                    </p>
                   </div>
                   <div className="text-xs text-muted-foreground space-y-1">
                     <div className="flex justify-between">
                       <span>Theme:</span>
-                      <span>-/10</span>
+                      <span>{evaluationResult ? `${evaluationResult.playerThemeScore}/10` : '-/10'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Outfit:</span>
-                      <span>-/10</span>
+                      <span>{evaluationResult ? `${evaluationResult.playerOutfitScore}/10` : '-/10'}</span>
                     </div>
                   </div>
                 </div>
@@ -142,16 +189,18 @@ export default function EvaluationBoard() {
                 <div className="space-y-2">
                   <div className="bg-purple-200/50 rounded-lg p-3">
                     <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Overall Score</p>
-                    <p className="text-2xl font-bold">-.-</p>
+                    <p className="text-2xl font-bold">
+                      {evaluationResult ? evaluationResult.aiScore.toFixed(1) : '-.-'}
+                    </p>
                   </div>
                   <div className="text-xs text-muted-foreground space-y-1">
                     <div className="flex justify-between">
                       <span>Theme:</span>
-                      <span>-/10</span>
+                      <span>{evaluationResult ? `${evaluationResult.aiThemeScore}/10` : '-/10'}</span>
                     </div>
                     <div className="flex justify-between">
                       <span>Outfit:</span>
-                      <span>-/10</span>
+                      <span>{evaluationResult ? `${evaluationResult.aiOutfitScore}/10` : '-/10'}</span>
                     </div>
                   </div>
                 </div>
@@ -159,32 +208,22 @@ export default function EvaluationBoard() {
             </GlassPanel>
           </div>
 
-          {/* Winner Selection */}
-          <GlassPanel variant="card" className="text-center">
-            <h3 className="font-bold mb-4">Who styled better?</h3>
-            <div className="flex flex-col sm:flex-row justify-center gap-3">
-              <button
-                onClick={() => handleWinnerSelection('player')}
-                className={`px-6 py-3 rounded-xl font-semibold transition-all ${
-                  selectedWinner === 'player' 
-                    ? 'bg-yellow-400 text-black shadow-lg scale-105' 
-                    : 'bg-yellow-200 text-black hover:bg-yellow-300'
-                }`}
-              >
-                You Win!
-              </button>
-              <button
-                onClick={() => handleWinnerSelection('ai')}
-                className={`px-6 py-3 rounded-xl font-semibold transition-all ${
-                  selectedWinner === 'ai' 
-                    ? 'bg-purple-400 text-black shadow-lg scale-105' 
-                    : 'bg-purple-200 text-black hover:bg-purple-300'
-                }`}
-              >
-                ChatGPT Wins!
-              </button>
-            </div>
-          </GlassPanel>
+          {/* Winner Display */}
+          {evaluationResult && (
+            <GlassPanel variant="card" className="text-center">
+              <h3 className="font-bold mb-2">Winner</h3>
+              <div className={`inline-block px-8 py-4 rounded-xl font-bold text-lg ${
+                evaluationResult.winner === 'player' 
+                  ? 'bg-yellow-400 text-black' 
+                  : 'bg-purple-400 text-black'
+              }`}>
+                {evaluationResult.winner === 'player' ? '🏆 You Win!' : '🤖 ChatGPT Wins!'}
+              </div>
+              <p className="text-sm text-muted-foreground mt-3 max-w-2xl mx-auto">
+                {evaluationResult.reasoning}
+              </p>
+            </GlassPanel>
+          )}
 
           {/* Auto-progression indicator */}
           <div className="text-center">
