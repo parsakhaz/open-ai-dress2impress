@@ -237,8 +237,7 @@ export default function Wardrobe() {
           const item = wardrobe.find((w) => w.id === pickerForItemId!);
           if (!item) return;
           try {
-            // Immediately reflect the chosen base image on the center stage
-            await selectImage(base.imageUrl, { type: 'avatar', description: 'Base image selection', addToHistory: false });
+            // Do not change the center image to the base avatar; keep current look until try-on result
             await tryOnQueue.enqueue({ baseImageId: base.imageId ?? null, baseImageUrl: base.imageUrl, item });
           } catch (e) {
             setError(e instanceof Error ? e.message : 'Failed to queue try-on');

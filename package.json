@@ -18,8 +18,10 @@
     "react-confetti": "^6.4.0",
     "react-dom": "19.1.0",
     "react-webcam": "^7.2.0",
+    "sharp": "^0.33.5",
     "sonner": "^2.0.7",
     "uuid": "^11.1.0",
+    "zod": "^4.0.17",
     "zustand": "^5.0.7"
   },
   "devDependencies": {

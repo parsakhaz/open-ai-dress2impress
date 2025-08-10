@@ -38,6 +38,13 @@ export function getServerEnv(): ServerEnv {
   };
 }
 
+// Minimal OpenAI-only env (avoids requiring other keys)
+export function getOpenAIEnvOnly(): { OPENAI_API_KEY: string; OPENAI_BASE_URL: string } {
+  const OPENAI_API_KEY = requireEnvVar('OPENAI_API_KEY', process.env.OPENAI_API_KEY);
+  const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'https://api.openai.com';
+  return { OPENAI_API_KEY, OPENAI_BASE_URL };
+}
+
 export function assertEnv(names: string[]): void {
   for (const n of names) {
     const err = ErrorHandler.validateEnvironmentVariable(n, process.env[n]);

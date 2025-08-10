@@ -5,10 +5,13 @@ import { Tooltip } from '@/components/Tooltip';
 
 export default function HistoryStrip() {
   const history = useGameStore((s) => s.history);
+  const phase = useGameStore((s) => s.phase);
   const currentImageUrl = useGameStore((s) => s.currentImageUrl);
   const setCurrentImage = useGameStore((s) => s.setCurrentImage);
 
-  if (history.length === 0) {
+  // Only show during styling / accessorize and when there is meaningful history
+  if (!(phase === 'StylingRound' || phase === 'Accessorize')) return null;
+  if (history.length < 2) {
     return null; // Don't show if no history
   }
 
@@ -51,7 +54,7 @@ export default function HistoryStrip() {
   };
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 hidden sm:block">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-10 hidden sm:block">
       <GlassPanel className="p-2">
         <div className="flex items-center gap-2 overflow-x-auto max-w-[80vw]">
           {/* Current indicator */}
