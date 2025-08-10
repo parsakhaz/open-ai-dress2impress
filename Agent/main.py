@@ -316,6 +316,23 @@ def _save_image_any(path: Path, src: str) -> None:
     _download_image_to(path, src)
 
 
+def _http_url_to_data_uri(url: str, target_max_bytes: int = 2_000_000) -> Optional[str]:
+    """Fetch an HTTP(S) image and return a data URI using the original bytes.
+    Falls back to None on failure.
+    """
+    try:
+        with urllib.request.urlopen(url) as resp:  # nosec B310
+            content_type = resp.headers.get("Content-Type", "image/jpeg")
+            data = resp.read()
+            if len(data) > target_max_bytes:
+                # If too large, don't inline
+                return None
+            b64 = base64.b64encode(data).decode("ascii")
+            return f"data:{content_type};base64,{b64}"
+    except Exception:
+        return None
+
+
 # ------------------------------------------------------------
 # Logging
 # ------------------------------------------------------------
@@ -1063,26 +1080,36 @@ async def fashn_run_and_poll(config: Config, avatar_url: str, garment_url: str) 
         "Authorization": f"Bearer {api_key}",
     }
 
-    # Convert localhost URLs to base64 data URIs for FASHN compatibility
-    def _maybe_to_data_uri(url: str) -> str:
+    # Always submit base64 (data URI) to FASHN for both avatar and garment.
+    # Prefer local file conversion for localhost-served URLs; otherwise fetch and inline.
+    def _to_data_uri(url: str, max_dim_px: int = 1024) -> str:
+        if isinstance(url, str) and url.startswith("data:image/"):
+            return url
+        data_uri: Optional[str] = None
         try:
             parsed = urlparse(url)
             if parsed.scheme in {"http", "https"}:
                 base = urlparse(config.base_url)
                 if parsed.netloc == base.netloc:
-                    data = _local_url_to_data_uri(config, url, max_dim_px=1024)
-                    return data or url
-                return url
-            # Already a data URI; pass through
-            if url.startswith("data:image/"):
-                return url
+                    data_uri = _local_url_to_data_uri(config, url, max_dim_px=max_dim_px)
+                else:
+                    data_uri = _http_url_to_data_uri(url)
+            else:
+                data_uri = None
         except Exception:
-            pass
-        return url
+            data_uri = None
+        if not data_uri:
+            # Last-resort: try to resolve as local path and convert
+            local = _resolve_local_path_from_url(config, url)
+            if local and local.exists():
+                data_uri = _image_to_jpeg_data_uri(local, max_dim_px=max_dim_px)
+        if not data_uri:
+            raise RuntimeError("Failed to inline image for FASHN")
+        return data_uri
 
     payload = {
         "model_name": config.fashn_model_name,
-        "inputs": {"model_image": _maybe_to_data_uri(avatar_url), "garment_image": _maybe_to_data_uri(garment_url)},
+        "inputs": {"model_image": _to_data_uri(avatar_url), "garment_image": _to_data_uri(garment_url)},
     }
 
     # Use stdlib for HTTP in a worker thread
@@ -1289,7 +1316,10 @@ async def run_gpt_round(theme: str, avatar_arg: str, port: int, round_duration_m
         if name == "getCurrentClothes":
             return await tool_getCurrentClothes_real(config, args.get("categories"))
         if name == "callFashnAPI":
-            return await tool_callFashnAPI_real(config, args["avatarImage"], args["items"], int(args["variation"]))
+            avatar_arg_val = args.get("avatarImage")
+            if not isinstance(avatar_arg_val, str) or not (avatar_arg_val.startswith("http") or avatar_arg_val.startswith("data:image/")):
+                avatar_arg_val = avatar_url
+            return await tool_callFashnAPI_real(config, avatar_arg_val, args["items"], int(args["variation"]))
         if name == "evaluate":
             return await tool_evaluate_real(args["theme"], args["items"], args["tryOnImages"])
         return {}
