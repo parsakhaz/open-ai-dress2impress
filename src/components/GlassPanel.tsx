@@ -22,7 +22,7 @@ export function GlassPanel({
     <div
       className={[
         // Layout & shape
-        'relative border',
+        'relative border box-border min-h-0',
         variantStyles[variant],
         // Surface & border with high contrast
         'bg-[var(--surface)] border-2 border-[var(--surface-border)]',
@@ -51,7 +51,7 @@ export function GlassPanel({
       />
 
       {/* Content with relative positioning to appear above overlays */}
-      <div className="relative z-10">
+      <div className="relative z-10 min-h-0">
         {children}
       </div>
     </div>

@@ -85,7 +85,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
       variant="modal" 
       className="relative w-full max-h-[90vh] overflow-hidden"
     >
-      <div className="space-y-6">
+      <div className="space-y-6 flex flex-col h-full min-h-0">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{phase === 'Accessorize' ? 'Accessorize' : 'Edit with AI'}</h2>
           {onClose && !loading && (
@@ -178,7 +178,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
           </div>
         )}
 
-        <div className="overflow-auto max-h-[calc(90vh-20rem)]">
+        <div className="flex-1 min-h-0 overflow-y-auto">
           {variants.length > 0 && !showEditSelector && (
             <div className="text-center space-y-4">
               <div className="text-center">

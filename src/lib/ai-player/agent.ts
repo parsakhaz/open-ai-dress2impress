@@ -119,7 +119,7 @@ export class AIPlayerAgent {
     const { OPENAI_API_KEY, OPENAI_BASE_URL } = getOpenAIEnvOnly();
     const system = 'You are a fashion AI. Respond JSON only. No prose.';
     const user = `Theme: ${this.theme}\nConstraints: max 2 Rapid searches, 1-2 outfits, prefer top+bottom. JSON format: {"palette": string[], "queries": [{"category":"top|bottom|dress","query": string}], "outfits": [{"id": "A"|"B", "items": [{"category":"top|bottom|dress","source":"closet"|"rapid"}]}]}`;
-    const body = { model: 'gpt-5', messages: [ { role: 'system', content: system }, { role: 'user', content: user } ] } as any;
+    const body = { model: 'gpt-5-mini', messages: [ { role: 'system', content: system }, { role: 'user', content: user } ] } as any;
     await this.emit({ phase: 'PLAN', eventType: 'tool:start', tool: { name: 'openai.chat' }, message: 'PLAN JSON' });
     const res = await fetch(`${OPENAI_BASE_URL}/v1/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` }, body: JSON.stringify(body) });
     const data = await res.json();
@@ -212,7 +212,7 @@ export class AIPlayerAgent {
     const { OPENAI_API_KEY, OPENAI_BASE_URL } = getOpenAIEnvOnly();
     const sys = 'You are a fashion AI. Respond JSON only.';
     const user = `Theme: ${this.theme}\nCandidates: ${JSON.stringify(candidates.map(c => ({ id: c.id, images: c.images.slice(0,2) })))}\nChoose best: {"final_outfit_id": "A|B", "reason": string}`;
-    const body = { model: 'gpt-5', messages: [ { role: 'system', content: sys }, { role: 'user', content: user } ] } as any;
+    const body = { model: 'gpt-5-mini', messages: [ { role: 'system', content: sys }, { role: 'user', content: user } ] } as any;
     await this.emit({ phase: 'PICK', eventType: 'tool:start', tool: { name: 'openai.chat' }, message: 'FINAL PICK' });
     const res = await fetch(`${OPENAI_BASE_URL}/v1/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` }, body: JSON.stringify(body) });
     const data = await res.json();

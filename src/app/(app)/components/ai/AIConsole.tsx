@@ -1,6 +1,6 @@
 "use client";
 import { useGameStore } from '@/lib/state/gameStore';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { GlassPanel } from '@/components/GlassPanel';
 import { GlassButton } from '@/components/GlassButton';
 import type { AIStreamEvent } from '@/lib/ai-player/types';
@@ -23,7 +23,7 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
   const [tryOnImages, setTryOnImages] = useState<string[]>([]);
   const [filters, setFilters] = useState<{ thought: boolean; action: boolean }>({ thought: true, action: true });
   const [density, setDensity] = useState<'compact' | 'comfortable'>('compact');
-  const [autoScrollPinned, setAutoScrollPinned] = useState(true);
+  const [autoScrollPinned, setAutoScrollPinned] = useState(false);
   const [activeActions, setActiveActions] = useState<Record<string, { label: string; tool?: string; phase?: string }>>({});
   // Local inline error badge with optional countdown will manage its own state
 
@@ -240,15 +240,27 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
 
   // autoscroll (sticky with pin)
   const [logContainerRef, setLogContainerRef] = useState<HTMLDivElement | null>(null);
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!inline || !logContainerRef || !autoScrollPinned) return;
     const el = logContainerRef;
     el.scrollTop = el.scrollHeight;
-  }, [aiLog.length, inline, logContainerRef, autoScrollPinned]);
+  }, [aiLog.length, inline, logContainerRef, autoScrollPinned, activeActions]);
 
-  // Prepare filtered events and insert phase separators (UI only)
+  useEffect(() => {
+    if (!inline || !logContainerRef || !autoScrollPinned) return;
+    const onResize = () => {
+      const el = logContainerRef;
+      el.scrollTop = el.scrollHeight;
+    };
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [inline, logContainerRef, autoScrollPinned]);
+
+  // Prepare filtered events (latest-first) and insert phase separators; cap length so older messages disappear
   const filteredEvents = useMemo(() => {
-    return aiLog.filter((e) => (filters.thought && e.type === 'thought') || (filters.action && e.type === 'tool_call')) as any[];
+    const all = aiLog.filter((e) => (filters.thought && e.type === 'thought') || (filters.action && e.type === 'tool_call')) as any[];
+    const MAX_VISIBLE = 60;
+    return all.slice(-MAX_VISIBLE).reverse();
   }, [aiLog, filters]);
   const withSeparators = useMemo(() => {
     const out: any[] = [];
@@ -332,8 +344,7 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
               <span>Waiting for instructions…</span>
             </div>
           ) : (
-            withSeparators
-              .map((e: any, i: number) => (
+            withSeparators.map((e: any, i: number) => (
                 '.__sep' in e ? (
                   <div key={e.key} className="my-2 border-t border-white/10">
                     <div className="-mt-3">
@@ -363,7 +374,16 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
                       <div className="mt-2 flex items-center gap-2 overflow-x-auto">
                         {e.images.slice(0, 6).map((u: string, idx: number) => (
                           <div key={`${i}-${idx}`} className="relative">
-                            <img src={u} className="w-14 h-14 object-cover rounded border border-white/10" alt="preview" />
+                            <img
+                              src={u}
+                              className="w-14 h-14 object-cover rounded border border-white/10"
+                              alt="preview"
+                              onLoad={() => {
+                                if (autoScrollPinned && logContainerRef) {
+                                  const el = logContainerRef; el.scrollTop = el.scrollHeight;
+                                }
+                              }}
+                            />
                           </div>
                         ))}
                       </div>
@@ -376,7 +396,7 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
           )}
           {/* Sticky bottom controls: active actions tray + pin toggle */}
           <div className="sticky bottom-0 -mx-4 -mb-4 px-4 py-2 bg-black/60 backdrop-blur border-t border-white/10 flex items-center gap-2">
-            <button onClick={() => setAutoScrollPinned((v) => !v)} className={`text-xs px-2 py-0.5 rounded border ${autoScrollPinned ? 'border-green-400/40 text-green-300' : 'border-white/20 text-slate-300'}`}>{autoScrollPinned ? '📌 Pinned' : '📍 Pin scroll'}</button>
+            <button onClick={() => setAutoScrollPinned((v) => !v)} className={`text-xs px-2 py-0.5 rounded border ${autoScrollPinned ? 'border-green-400/40 text-green-300' : 'border-white/20 text-slate-300'}`}>{autoScrollPinned ? '📌 Auto-scroll on' : '📍 Auto-scroll off'}</button>
             <div className="ml-auto flex items-center gap-2 overflow-x-auto">
               {Object.keys(activeActions).length > 3 ? (
                 <span className="text-[10px] text-amber-200 bg-amber-400/10 border border-amber-400/30 px-2 py-0.5 rounded">{Object.keys(activeActions).length} actions running…</span>

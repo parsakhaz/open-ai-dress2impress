@@ -36,7 +36,7 @@ export function BaseImagePickerModal({ isOpen, onClose, onSelect }: BaseImagePic
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
       <div className="fixed inset-0" onClick={onClose} />
       <GlassPanel variant="modal" className="relative w-full max-w-3xl mx-4 max-h-[90vh] overflow-hidden">
-        <div className="p-6 space-y-4">
+        <div className="p-6 space-y-4 flex flex-col h-full min-h-0">
           <div className="flex items-center justify-between">
             <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Select Base Image</h3>
             <GlassButton size="sm" variant="ghost" onClick={onClose} className="w-8 h-8 p-0">
@@ -46,7 +46,7 @@ export function BaseImagePickerModal({ isOpen, onClose, onSelect }: BaseImagePic
             </GlassButton>
           </div>
 
-          <div className="overflow-auto max-h-[70vh]">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {candidates.map((c) => (
                 <button
