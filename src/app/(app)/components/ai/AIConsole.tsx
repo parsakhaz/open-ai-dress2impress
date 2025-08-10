@@ -2,8 +2,13 @@
 import { useGameStore } from '@/lib/state/gameStore';
 import { useEffect } from 'react';
 import { GlassPanel } from '@/components/GlassPanel';
+import { GlassButton } from '@/components/GlassButton';
 
-export default function AIConsole() {
+interface AIConsoleProps {
+  onClose?: () => void;
+}
+
+export default function AIConsole({ onClose }: AIConsoleProps = {}) {
   const aiLog = useGameStore((s) => s.aiLog);
   const logAIEvent = useGameStore((s) => s.logAIEvent);
 
@@ -13,18 +18,44 @@ export default function AIConsole() {
       logAIEvent({ type: 'thought', content: 'Awaiting instructions…', timestamp: Date.now() });
     }
   }, [aiLog.length, logAIEvent]);
+
+  // Handle Escape key to close modal
+  useEffect(() => {
+    function onEsc(e: KeyboardEvent) {
+      if (e.key === 'Escape' && onClose) onClose();
+    }
+    document.addEventListener('keydown', onEsc);
+    return () => document.removeEventListener('keydown', onEsc);
+  }, [onClose]);
+
   return (
-    <GlassPanel>
-      <div className="space-y-3">
+    <GlassPanel 
+      variant="modal" 
+      className="relative w-full max-h-[90vh] overflow-hidden"
+    >
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Game AI</h3>
-            <span className="text-xs px-2 py-1 bg-green-400/20 text-green-600 dark:text-green-400 rounded-full font-mono">ONLINE</span>
+          <div className="flex items-center gap-3">
+            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Game AI Console</h2>
+            <span className="text-sm px-3 py-1 bg-green-400/20 text-green-600 dark:text-green-400 rounded-full font-mono">ONLINE</span>
           </div>
+          {onClose && (
+            <GlassButton
+              size="sm"
+              variant="ghost"
+              onClick={onClose}
+              className="w-8 h-8 p-0 flex items-center justify-center hover:bg-white/20"
+              title="Close"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </GlassButton>
+          )}
         </div>
         
-        <div className="h-48 overflow-auto rounded-lg bg-black/95 dark:bg-black/70 backdrop-blur-sm p-4 font-mono text-sm border border-green-500/20">
+        <div className="h-96 md:h-[60vh] overflow-auto rounded-lg bg-black/95 dark:bg-black/70 backdrop-blur-sm p-4 font-mono text-sm border border-green-500/20">
           {aiLog.length === 0 ? (
             <div className="text-green-400/60 flex items-center gap-2">
               <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">

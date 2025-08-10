@@ -12,9 +12,11 @@ import EditWithAIPanel from '@/app/(app)/components/panels/EditWithAIPanel';
 import WardrobeModal from '@/app/(app)/components/ui/WardrobeModal';
 import WardrobeContent from '@/app/(app)/components/ui/WardrobeContent';
 import { DebugPanel } from '@/components/DebugPanel';
+import { useToast } from '@/hooks/useToast';
 
 export default function GamePage() {
   const phase = useGameStore((s) => s.phase);
+  const { showToast, ToastContainer } = useToast();
   
   // Panel visibility states
   const [isAmazonPanelVisible, setAmazonPanelVisible] = useState(false);
@@ -95,55 +97,50 @@ export default function GamePage() {
       
       {/* Panel overlays - only render when visible */}
       {isAmazonPanelVisible && (
-        <>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-lg">
           <div 
-            className="fixed inset-0 z-[25] bg-black/20" 
+            className="fixed inset-0"
             onClick={() => setAmazonPanelVisible(false)}
           />
-          {/* Desktop positioning */}
-          <div className="fixed left-24 top-1/2 -translate-y-1/2 z-30 hidden sm:block">
-            <AmazonPanel onClose={() => setAmazonPanelVisible(false)} />
+          <div className="relative max-w-6xl w-full mx-4 max-h-[90vh]">
+            <AmazonPanel onClose={() => setAmazonPanelVisible(false)} showToast={showToast} />
           </div>
-          {/* Mobile positioning */}
-          <div className="fixed inset-4 z-30 flex items-center justify-center sm:hidden">
-            <div className="w-full max-w-md max-h-full overflow-auto">
-              <AmazonPanel onClose={() => setAmazonPanelVisible(false)} />
-            </div>
-          </div>
-        </>
+        </div>
       )}
       
       {isEditPanelVisible && (
-        <>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-lg">
           <div 
-            className="fixed inset-0 z-[25] bg-black/20" 
+            className="fixed inset-0"
             onClick={() => setEditPanelVisible(false)}
           />
-          {/* Desktop positioning */}
-          <div className="fixed left-24 top-1/2 -translate-y-1/2 z-30 hidden sm:block">
+          <div className="relative max-w-4xl w-full mx-4 max-h-[90vh]">
             <EditWithAIPanel onClose={() => setEditPanelVisible(false)} />
           </div>
-          {/* Mobile positioning */}
-          <div className="fixed inset-4 z-30 flex items-center justify-center sm:hidden">
-            <div className="w-full max-w-md max-h-full overflow-auto">
-              <EditWithAIPanel onClose={() => setEditPanelVisible(false)} />
-            </div>
-          </div>
-        </>
+        </div>
       )}
       
       {/* Wardrobe Modal */}
       <WardrobeModal open={isWardrobeOpen} onClose={() => setWardrobeOpen(false)}>
-        <WardrobeContent />
+        <WardrobeContent onClose={() => setWardrobeOpen(false)} />
       </WardrobeModal>
       
       {/* AI Console - conditionally visible */}
       {isAIConsoleVisible && (
-        <div className="fixed bottom-4 right-4 z-30">
-          <AIConsole />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-lg">
+          <div 
+            className="fixed inset-0"
+            onClick={() => setAIConsoleVisible(false)}
+          />
+          <div className="relative max-w-3xl w-full mx-4 max-h-[90vh]">
+            <AIConsole onClose={() => setAIConsoleVisible(false)} />
+          </div>
         </div>
       )}
       <DebugPanel />
+      
+      {/* Toast notifications */}
+      <ToastContainer />
     </main>
   );
 }

@@ -3,12 +3,18 @@ import { useGameStore } from '@/lib/state/gameStore';
 import { createCountdown } from '@/lib/util/timers';
 import { useEffect, useRef } from 'react';
 import { GlassPanel } from '@/components/GlassPanel';
+import { Chip } from '@/components/Chip';
+import { ProgressIndicator } from '@/components/ProgressIndicator';
+import { Tooltip } from '@/components/Tooltip';
 
 export default function TopBar() {
   const phase = useGameStore((s) => s.phase);
+  const theme = useGameStore((s) => s.theme);
   const timer = useGameStore((s) => s.timer);
   const setTimer = useGameStore((s) => s.setTimer);
   const setPhase = useGameStore((s) => s.setPhase);
+  const wardrobe = useGameStore((s) => s.wardrobe);
+  const resetGame = useGameStore((s) => s.resetGame);
   const stopRef = useRef<null | (() => void)>(null);
   
   const phases = ['CharacterSelect', 'ShoppingSpree', 'StylingRound', 'WalkoutAndEval', 'Results'] as const;
@@ -42,36 +48,110 @@ export default function TopBar() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Calculate progress for shopping phase
+  const getProgress = () => {
+    if (phase === 'ShoppingSpree') {
+      return { current: 120 - timer, total: 120, label: 'Shopping Time' };
+    } else if (phase === 'StylingRound') {
+      return { current: 90 - timer, total: 90, label: 'Styling Time' };
+    }
+    return null;
+  };
+
+  const progress = getProgress();
+
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-30">
-      <GlassPanel className="flex items-center gap-4 px-4 py-2">
-        <div className="flex items-center gap-2">
-          <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-accent rounded-full animate-pulse"></div>
-            <span className="text-sm font-medium text-slate-600 dark:text-slate-400">GAME PHASE:</span>
+    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-30 w-full max-w-2xl px-4">
+      <GlassPanel className="p-4 space-y-3">
+        {/* Top row with phase and theme */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            {/* Phase chip */}
+            <Tooltip content="Current game phase" position="bottom">
+              <Chip 
+                label={phase.replace(/([A-Z])/g, ' $1').trim()}
+                variant={phase === 'ShoppingSpree' ? 'primary' : 'default'}
+                icon={
+                  <div className="w-2 h-2 bg-current rounded-full animate-pulse" />
+                }
+              />
+            </Tooltip>
+            
+            {/* Theme chip */}
+            <Tooltip content="Today's theme" position="bottom">
+              <Chip 
+                label={theme}
+                variant="success"
+                icon={
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
+                }
+              />
+            </Tooltip>
+
+            {/* Items collected */}
+            {phase === 'ShoppingSpree' && (
+              <Tooltip content="Items in wardrobe" position="bottom">
+                <Chip 
+                  label={`${wardrobe.length} items`}
+                  variant="warning"
+                  size="sm"
+                />
+              </Tooltip>
+            )}
           </div>
-          <button 
-            onClick={nextPhase}
-            className="font-bold text-slate-900 dark:text-slate-100 hover:text-accent transition-colors cursor-pointer px-2 py-1 rounded bg-accent/10 hover:bg-accent/20"
-            title="Click to cycle through phases (dev)"
-          >
-            {phase}
-          </button>
-        </div>
-        {timer > 0 && (
-          <div className="flex items-center gap-2 border-l border-white/20 pl-4">
-            <div className="flex items-center gap-1">
-              <svg className="w-4 h-4 text-accent animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+          {/* Reset button */}
+          <Tooltip content="Reset game and start over" position="bottom">
+            <button
+              onClick={() => {
+                if (confirm('Are you sure you want to reset the game? All progress will be lost.')) {
+                  resetGame();
+                  window.location.reload(); // Reload to clear any UI state
+                }
+              }}
+              className="ml-auto p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </Tooltip>
+
+          {/* Timer */}
+          {timer > 0 && (
+            <div className="flex items-center gap-2">
+              <svg className={`w-4 h-4 ${timer <= 30 ? 'text-red-500' : 'text-accent'} animate-pulse`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              <span className="text-sm font-medium text-slate-600 dark:text-slate-400">TIME:</span>
+              <span className={`font-mono font-bold text-lg ${
+                timer <= 30 ? 'text-red-500 animate-pulse' : 
+                timer <= 60 ? 'text-orange-500' : 'text-slate-900 dark:text-slate-100'
+              }`}>
+                {formatTime(timer)}
+              </span>
             </div>
-            <span className={`font-mono font-bold text-lg ${
-              timer <= 30 ? 'text-red-500 animate-pulse' : 
-              timer <= 60 ? 'text-orange-500' : 'text-accent'
-            }`}>
-              {formatTime(timer)}
-            </span>
+          )}
+        </div>
+
+        {/* Progress bar */}
+        {progress && (
+          <ProgressIndicator 
+            current={progress.current}
+            total={progress.total}
+            label={progress.label}
+            color={timer <= 30 ? 'bg-red-500' : timer <= 60 ? 'bg-orange-500' : 'bg-blue-500'}
+          />
+        )}
+
+        {/* Time warnings */}
+        {timer > 0 && timer <= 30 && (
+          <div className="flex items-center gap-2 text-red-500 text-sm animate-pulse">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            <span className="font-medium">Time running out!</span>
           </div>
         )}
       </GlassPanel>

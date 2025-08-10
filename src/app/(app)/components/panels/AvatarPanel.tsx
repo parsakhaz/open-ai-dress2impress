@@ -6,6 +6,8 @@ import { useGameStore } from '@/lib/state/gameStore';
 import { GlassPanel } from '@/components/GlassPanel';
 import { GlassButton } from '@/components/GlassButton';
 import { CameraPermissionHelper } from '../CameraPermissionHelper';
+import { Confetti } from '@/components/Confetti';
+import { OnboardingTutorial } from '@/components/OnboardingTutorial';
 import type { Character } from '@/types';
 
 // Use any typing to avoid complex react-webcam TypeScript issues
@@ -24,9 +26,16 @@ export default function AvatarPanel() {
   const [showFlash, setShowFlash] = useState(false);
   const [showAvatarSelector, setShowAvatarSelector] = useState(false);
   const [selectedAvatarIndex, setSelectedAvatarIndex] = useState<number | null>(null);
+  const [showFullscreenPreview, setShowFullscreenPreview] = useState(false);
+  const [previewAvatarIndex, setPreviewAvatarIndex] = useState(0);
+  const [showShoppingConfirmation, setShowShoppingConfirmation] = useState(false);
+  const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const setCharacter = useGameStore((s) => s.setCharacter);
   const setCurrentImage = useGameStore((s) => s.setCurrentImage);
   const setPhase = useGameStore((s) => s.setPhase);
+  const addToHistory = useGameStore((s) => s.addToHistory);
   
   const videoConstraints: MediaTrackConstraints = {
     facingMode: 'user',
@@ -137,18 +146,40 @@ export default function AvatarPanel() {
   }, [processImage]);
 
   function choose(url: string) {
-    console.log('✅ AVATAR PANEL: User selected avatar', { avatarUrl: url.substring(0, 50) + '...' });
+    console.log('✅ AVATAR PANEL: User chose avatar for confirmation', { avatarUrl: url.substring(0, 50) + '...' });
     
-    const c: Character = { id: `char-${Date.now()}`, avatarUrl: url };
+    setSelectedAvatarUrl(url);
+    setShowAvatarSelector(false);
+    setShowFullscreenPreview(false);
+    setSelectedAvatarIndex(null);
+    setShowShoppingConfirmation(true);
+  }
+
+  function confirmAndStartShopping() {
+    if (!selectedAvatarUrl) return;
+    
+    console.log('✅ AVATAR PANEL: Confirmed avatar selection, starting shopping');
+    
+    // Trigger confetti!
+    setShowConfetti(true);
+    
+    const c: Character = { id: `char-${Date.now()}`, avatarUrl: selectedAvatarUrl };
     setCharacter(c);
-    setCurrentImage(url);
-    setShowAvatarSelector(false); // Close fullscreen selector
-    setSelectedAvatarIndex(null); // Reset selection
+    setCurrentImage(selectedAvatarUrl);
+    addToHistory({
+      imageUrl: selectedAvatarUrl,
+      type: 'avatar',
+      description: 'Selected avatar'
+    });
     
-    console.log('🔄 AVATAR PANEL: Transitioning to Shopping phase');
-    setPhase('ShoppingSpree');
-    
-    console.log('🎯 PHASE TRANSITION: CharacterSelect → ShoppingSpree');
+    // Delay phase transition for confetti effect
+    setTimeout(() => {
+      setShowShoppingConfirmation(false);
+      setShowConfetti(false);
+      console.log('🔄 AVATAR PANEL: Transitioning to Shopping phase');
+      setPhase('ShoppingSpree');
+      console.log('🎯 PHASE TRANSITION: CharacterSelect → ShoppingSpree');
+    }, 1500);
   }
 
   const handleWebcamError = (error: string | DOMException) => {
@@ -228,11 +259,21 @@ export default function AvatarPanel() {
                     <div className="relative">
                       {capturedFrame ? (
                         <>
-                          <img
-                            src={capturedFrame}
-                            alt="Captured frame"
-                            className="w-full aspect-[4/3] object-cover"
-                          />
+                          <div className="relative w-full aspect-video bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
+                            <img
+                              src={capturedFrame}
+                              alt="Captured frame"
+                              className="w-full h-full object-contain"
+                            />
+                            {/* Blur edges for elegant background */}
+                            <div className="absolute inset-0 -z-10">
+                              <img
+                                src={capturedFrame}
+                                alt=""
+                                className="w-full h-full object-cover blur-2xl opacity-50"
+                              />
+                            </div>
+                          </div>
                           <div className="absolute top-2 left-2 px-2 py-1 text-xs rounded bg-black/60 text-white">Using this photo</div>
                         </>
                       ) : (
@@ -245,7 +286,7 @@ export default function AvatarPanel() {
                           screenshotFormat="image/png" 
                           // @ts-ignore
                           screenshotQuality={1.0}
-                          className="w-full aspect-[4/3] object-cover" 
+                          className="w-full aspect-video object-cover" 
                           // @ts-ignore
                           onUserMedia={handleWebcamReady}
                           // @ts-ignore
@@ -349,11 +390,21 @@ export default function AvatarPanel() {
                 <div className={`relative rounded-2xl overflow-hidden bg-white shadow-2xl hover:shadow-3xl transition-all duration-300 cursor-pointer ${
                   selectedAvatarIndex === index ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'
                 }`}>
-                  <img 
-                    src={url} 
-                    alt={`Avatar option ${index + 1}`} 
-                    className="w-full aspect-[3/4] object-cover"
-                  />
+                  {/* Avatar with blurred background */}
+                  <div className="relative w-full aspect-[3/4] bg-gradient-to-br from-slate-100 to-slate-200">
+                    {/* Blurred background */}
+                    <img 
+                      src={url} 
+                      alt=""
+                      className="absolute inset-0 w-full h-full object-cover blur-xl opacity-60"
+                    />
+                    {/* Main avatar */}
+                    <img 
+                      src={url} 
+                      alt={`Avatar option ${index + 1}`} 
+                      className="relative w-full h-full object-contain"
+                    />
+                  </div>
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   
                   {/* Select Button - only show when this avatar is selected */}
@@ -379,10 +430,13 @@ export default function AvatarPanel() {
                     </div>
                   )}
 
-                  {/* Click to preview */}
+                  {/* Click to open fullscreen preview */}
                   <div 
                     className="absolute inset-0 cursor-pointer"
-                    onClick={() => setSelectedAvatarIndex(selectedAvatarIndex === index ? null : index)}
+                    onClick={() => {
+                      setPreviewAvatarIndex(index);
+                      setShowFullscreenPreview(true);
+                    }}
                   />
                 </div>
                 
@@ -430,6 +484,200 @@ export default function AvatarPanel() {
           </div>
         </div>
       </div>
+    )}
+
+    {/* Fullscreen Avatar Preview Modal */}
+    {showFullscreenPreview && variants.length > 0 && (
+      <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm flex items-center justify-center">
+        <div className="w-full h-full flex flex-col">
+          {/* Header */}
+          <div className="flex justify-between items-center p-4 md:p-6">
+            <div className="text-white">
+              <h3 className="text-xl md:text-2xl font-bold">Avatar Preview</h3>
+              <p className="text-white/80 text-sm md:text-base">
+                {previewAvatarIndex + 1} of {variants.length}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowFullscreenPreview(false)}
+              className="w-10 h-10 md:w-12 md:h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white text-xl md:text-2xl transition-colors"
+            >
+              ×
+            </button>
+          </div>
+
+          {/* Avatar Image - Responsive */}
+          <div className="flex-1 flex items-center justify-center p-4 md:p-6">
+            <div className="relative max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl w-full">
+              <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-slate-100 to-slate-200">
+                {/* Blurred background for elegant display */}
+                <img
+                  src={variants[previewAvatarIndex]}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40"
+                />
+                {/* Main avatar image */}
+                <img
+                  src={variants[previewAvatarIndex]}
+                  alt={`Avatar option ${previewAvatarIndex + 1}`}
+                  className="relative w-full h-auto max-h-[60vh] md:max-h-[70vh] object-contain"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <div className="flex justify-between items-center p-4 md:p-6">
+            {/* Previous Button */}
+            <button
+              onClick={() => setPreviewAvatarIndex(previewAvatarIndex > 0 ? previewAvatarIndex - 1 : variants.length - 1)}
+              className="flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors"
+            >
+              ← Previous
+            </button>
+
+            {/* Select Button */}
+            <GlassButton
+              variant="primary"
+              className="px-6 py-3 md:px-8 md:py-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold"
+              onClick={() => choose(variants[previewAvatarIndex])}
+            >
+              ✓ Select This Avatar
+            </GlassButton>
+
+            {/* Next Button */}
+            <button
+              onClick={() => setPreviewAvatarIndex(previewAvatarIndex < variants.length - 1 ? previewAvatarIndex + 1 : 0)}
+              className="flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors"
+            >
+              Next →
+            </button>
+          </div>
+
+          {/* Avatar Thumbnails */}
+          <div className="flex justify-center gap-2 md:gap-4 p-4 md:p-6">
+            {variants.map((url, index) => (
+              <button
+                key={index}
+                onClick={() => setPreviewAvatarIndex(index)}
+                className={`w-12 h-12 md:w-16 md:h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                  index === previewAvatarIndex 
+                    ? 'border-blue-500' 
+                    : 'border-white/30 hover:border-white/60'
+                }`}
+              >
+                <div className="relative w-full h-full bg-gradient-to-br from-slate-100 to-slate-200">
+                  <img
+                    src={url}
+                    alt={`Avatar ${index + 1}`}
+                    className="w-full h-full object-contain p-1"
+                  />
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Shopping Confirmation Modal */}
+    {showShoppingConfirmation && selectedAvatarUrl && (
+      <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 md:p-8 max-w-md w-full mx-4 border border-white/20">
+          <div className="text-center space-y-6">
+            {/* Selected Avatar Preview */}
+            <div className="flex justify-center">
+              <div className="relative w-32 h-40 md:w-40 md:h-48 rounded-2xl overflow-hidden shadow-xl bg-gradient-to-br from-slate-100 to-slate-200">
+                {/* Blurred background */}
+                <img
+                  src={selectedAvatarUrl}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover blur-xl opacity-50"
+                />
+                {/* Main avatar */}
+                <img
+                  src={selectedAvatarUrl}
+                  alt="Selected avatar"
+                  className="relative w-full h-full object-contain p-2"
+                />
+              </div>
+            </div>
+
+            {/* Title */}
+            <div className="text-white">
+              <h2 className="text-2xl md:text-3xl font-bold mb-2">Ready to Start Shopping?</h2>
+              <p className="text-white/80 text-sm md:text-base">
+                You'll have <strong>3 minutes</strong> to create the perfect outfit for your avatar!
+              </p>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="space-y-3">
+              <GlassButton
+                variant="primary"
+                className="w-full py-3 md:py-4 bg-green-500 hover:bg-green-600 text-white font-semibold text-lg"
+                onClick={confirmAndStartShopping}
+              >
+                🛍️ Start Shopping Spree!
+              </GlassButton>
+              
+              {/* Onboarding Button */}
+              <GlassButton
+                variant="secondary"
+                className="w-full py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-100 border border-blue-400/30"
+                onClick={() => setShowOnboarding(true)}
+              >
+                <div className="flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  🎓 How to Play (Tutorial)
+                </div>
+              </GlassButton>
+              
+              <div className="flex gap-3">
+                <GlassButton
+                  variant="secondary"
+                  className="flex-1 py-2 bg-white/10 hover:bg-white/20 text-white"
+                  onClick={() => {
+                    setShowShoppingConfirmation(false);
+                    setShowAvatarSelector(true);
+                  }}
+                >
+                  Change Avatar
+                </GlassButton>
+                <GlassButton
+                  variant="secondary"
+                  className="flex-1 py-2 bg-white/10 hover:bg-white/20 text-white"
+                  onClick={() => {
+                    setShowShoppingConfirmation(false);
+                    setSelectedAvatarUrl(null);
+                    setVariants([]);
+                    setCapturedFrame(null);
+                  }}
+                >
+                  Start Over
+                </GlassButton>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Confetti celebration */}
+    <Confetti trigger={showConfetti} />
+
+    {/* Onboarding Tutorial */}
+    {showOnboarding && (
+      <OnboardingTutorial
+        onClose={() => setShowOnboarding(false)}
+        onComplete={() => {
+          setShowOnboarding(false);
+          // You can optionally auto-start shopping after tutorial
+          // confirmAndStartShopping();
+        }}
+      />
     )}
     </>
   );

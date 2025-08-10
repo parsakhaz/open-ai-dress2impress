@@ -3,14 +3,21 @@ import { useState } from 'react';
 import { useGameStore } from '@/lib/state/gameStore';
 import { performTryOn } from '@/lib/adapters/fashn';
 import { GlassButton } from '@/components/GlassButton';
+import { TryOnResultsModal } from '@/components/TryOnResultsModal';
 
-export default function WardrobeContent() {
+interface WardrobeContentProps {
+  onClose?: () => void;
+}
+
+export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) {
   const wardrobe = useGameStore((s) => s.wardrobe);
   const character = useGameStore((s) => s.character);
   const setCurrentImage = useGameStore((s) => s.setCurrentImage);
+  const addToHistory = useGameStore((s) => s.addToHistory);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [variants, setVariants] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [showTryOnModal, setShowTryOnModal] = useState(false);
 
   async function tryOn(itemImageUrl: string) {
     if (!character?.avatarUrl) {
@@ -22,6 +29,9 @@ export default function WardrobeContent() {
     try {
       const urls = await performTryOn(character.avatarUrl, itemImageUrl);
       setVariants(urls);
+      if (urls.length > 0) {
+        setShowTryOnModal(true);
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Try-on failed');
     } finally {
@@ -68,7 +78,14 @@ export default function WardrobeContent() {
                 <GlassButton
                   size="sm"
                   variant="ghost"
-                  onClick={() => setCurrentImage(item.imageUrl)}
+                  onClick={() => {
+                    setCurrentImage(item.imageUrl);
+                    addToHistory({
+                      imageUrl: item.imageUrl,
+                      type: 'tryOn',
+                      description: `Direct use: ${item.name}`
+                    });
+                  }}
                   title="Use directly"
                 >
                   Use
@@ -79,28 +96,21 @@ export default function WardrobeContent() {
         ))}
       </div>
 
-      {variants.length > 0 && (
-        <div className="space-y-4 border-t border-white/20 pt-6">
-          <h4 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Try-On Results</h4>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {variants.map((url, i) => (
-              <div key={i} className="group relative rounded-lg overflow-hidden bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 hover:border-accent/50 transition-colors">
-                <img src={url} alt={`Variant ${i + 1}`} className="w-full aspect-square object-cover" />
-                <div className="p-3">
-                  <GlassButton 
-                    size="sm" 
-                    variant="primary"
-                    className="w-full"
-                    onClick={() => setCurrentImage(url)}
-                  >
-                    Use This
-                  </GlassButton>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Try-On Results Modal */}
+      <TryOnResultsModal
+        isOpen={showTryOnModal}
+        onClose={() => setShowTryOnModal(false)}
+        results={variants}
+        onSelect={(imageUrl) => {
+          setCurrentImage(imageUrl);
+          addToHistory({
+            imageUrl,
+            type: 'tryOn',
+            description: 'Try-on result'
+          });
+          onClose?.();
+        }}
+      />
     </div>
   );
 }

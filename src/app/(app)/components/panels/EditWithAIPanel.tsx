@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { editImage } from '@/lib/adapters/edit';
 import { GlassPanel } from '@/components/GlassPanel';
 import { GlassButton } from '@/components/GlassButton';
@@ -16,6 +16,16 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
   const [error, setError] = useState<string | null>(null);
   const [variants, setVariants] = useState<string[]>([]);
   const setCurrentImage = useGameStore((s) => s.setCurrentImage);
+  const addToHistory = useGameStore((s) => s.addToHistory);
+
+  // Handle Escape key to close modal
+  useEffect(() => {
+    function onEsc(e: KeyboardEvent) {
+      if (e.key === 'Escape' && onClose) onClose();
+    }
+    document.addEventListener('keydown', onEsc);
+    return () => document.removeEventListener('keydown', onEsc);
+  }, [onClose]);
 
   async function onEdit() {
     setLoading(true);
@@ -31,10 +41,13 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
   }
 
   return (
-    <GlassPanel>
-      <div className="space-y-4">
+    <GlassPanel 
+      variant="modal" 
+      className="relative w-full max-h-[90vh] overflow-hidden"
+    >
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Edit with AI</h3>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Edit with AI</h2>
           {onClose && (
             <GlassButton
               size="sm"
@@ -43,7 +56,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
               className="w-8 h-8 p-0 flex items-center justify-center hover:bg-white/20"
               title="Close"
             >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </GlassButton>
@@ -103,29 +116,62 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
           </div>
         )}
 
-        {variants.length > 0 && (
-          <div className="space-y-3">
-            <h4 className="font-medium text-slate-900 dark:text-slate-100">AI Edit Results</h4>
-            <div className="grid grid-cols-2 gap-3">
-              {variants.map((url, i) => (
-                <div key={i} className="group relative rounded-lg overflow-hidden bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 hover:border-accent/50 transition-colors">
-                  <img src={url} alt={`AI edit variant ${i + 1}`} className="w-full aspect-square object-cover" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                  <div className="absolute bottom-2 left-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <GlassButton 
-                      size="sm" 
-                      variant="primary" 
-                      className="w-full"
-                      onClick={() => setCurrentImage(url)}
-                    >
-                      Use This Edit
-                    </GlassButton>
-                  </div>
+        <div className="overflow-auto max-h-[calc(90vh-20rem)]">
+          {variants.length > 0 && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="text-lg font-semibold text-slate-900 dark:text-slate-100">AI Edit Results</h4>
+                <div className="text-sm text-slate-600 dark:text-slate-400">
+                  Click to use the edited version
                 </div>
-              ))}
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {variants.map((url, i) => (
+                  <div key={i} className="group relative rounded-xl overflow-hidden bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 hover:border-accent/50 hover:scale-105 transition-all duration-200">
+                    <div className="aspect-square overflow-hidden">
+                      <img src={url} alt={`AI edit variant ${i + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <GlassButton 
+                        size="sm" 
+                        variant="primary" 
+                        className="w-full"
+                        onClick={() => {
+                          setCurrentImage(url);
+                          addToHistory({
+                            imageUrl: url,
+                            type: 'edit',
+                            description: instruction || 'AI edit'
+                          });
+                        }}
+                      >
+                        <div className="flex items-center justify-center gap-2">
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          Use This Edit
+                        </div>
+                      </GlassButton>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+          
+          {variants.length === 0 && !loading && !error && (
+            <div className="text-center py-12">
+              <div className="text-slate-400 dark:text-slate-500 space-y-2">
+                <svg className="w-16 h-16 mx-auto opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                <p className="text-lg">Ready to transform your image!</p>
+                <p className="text-sm">Add an image URL and describe your edit</p>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </GlassPanel>
   );

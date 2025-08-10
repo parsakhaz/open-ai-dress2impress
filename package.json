@@ -15,6 +15,7 @@
     "next": "15.4.6",
     "p-ratelimit": "^1.0.1",
     "react": "19.1.0",
+    "react-confetti": "^6.4.0",
     "react-dom": "19.1.0",
     "react-webcam": "^7.2.0",
     "uuid": "^11.1.0",
