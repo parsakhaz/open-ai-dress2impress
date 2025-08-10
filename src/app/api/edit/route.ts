@@ -22,7 +22,7 @@ export const POST = createHandler<{ baseImageUrl: string; instruction: string },
   handle: async ({ baseImageUrl, instruction }) => {
     const blob = await fetchBlob(baseImageUrl);
     const prompt = `${EDIT_PROMPT_BASE}\n\nUSER REQUEST\n${instruction}`;
-    const images = await parallel(4, () => editImageWithBlob(blob, prompt, { size: '1024x1536' }));
+    const images = await parallel(4, () => editImageWithBlob(blob, prompt, { size: '1024x1536', timeoutMs: 120_000 }));
     return { images };
   },
 });

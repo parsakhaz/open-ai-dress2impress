@@ -222,9 +222,29 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
 
     {/* Fullscreen Edit Selector Modal */}
       {showEditSelector && variants.length > 0 && (
-        <div className="fixed inset-0 z-50 bg-[var(--color-overlay)] overflow-y-auto">
+        <div
+          className="fixed inset-0 z-50 bg-[var(--color-overlay)] overflow-y-auto"
+          onClick={() => {
+            setShowEditSelector(false);
+            setSelectedEditIndex(null);
+          }}
+        >
         <div className="min-h-[100svh] flex items-start justify-center p-4">
-          <div className="w-full max-w-6xl mx-auto my-6 flex flex-col max-h-[90svh]">
+          <div
+            className="w-full max-w-6xl mx-auto my-6 flex flex-col max-h-[90svh] relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              aria-label="Close"
+              title="Close"
+              className="absolute top-2 right-2 w-10 h-10 bg-foreground/10 hover:bg-foreground/20 rounded-full flex items-center justify-center text-foreground text-xl transition-colors"
+              onClick={() => {
+                setShowEditSelector(false);
+                setSelectedEditIndex(null);
+              }}
+            >
+              ×
+            </button>
             <div className="text-center text-foreground mb-6">
               <h2 className="text-3xl font-bold mb-2">Choose Your Edit</h2>
               <p className="text-foreground/80">Select the best AI edit</p>
@@ -250,26 +270,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
                     </div>
                     <div className="absolute inset-0 bg-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
-                    {selectedEditIndex === index && (
-                      <div className="absolute bottom-4 left-4 right-4">
-                        <GlassButton 
-                          variant="primary" 
-                          className="w-full"
-                          onClick={async (e) => {
-                            e.stopPropagation();
-                            await selectImage(url, { type: 'edit', description: instruction || 'AI edit', addToHistory: true });
-                            setRunwayBaseImageUrl(url);
-                            if (phase === 'Accessorize') {
-                              showToast('Accessories locked in—heading to runway.', 'success', 2200);
-                              setPhase('WalkoutAndEval');
-                              onClose?.();
-                            }
-                          }}
-                        >
-                          ✓ Use This Edit
-                        </GlassButton>
-                      </div>
-                    )}
+
 
                     {selectedEditIndex === index && (
                       <div className="absolute top-3 right-3 bg-foreground text-background px-2 py-1 rounded-full text-xs font-semibold">
@@ -335,22 +336,42 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
 
     {/* Fullscreen Edit Preview Modal */}
       {showFullscreenPreview && variants.length > 0 && (
-        <div className="fixed inset-0 z-50 bg-[var(--color-overlay)] overflow-y-auto">
+        <div
+          className="fixed inset-0 z-50 bg-[var(--color-overlay)] overflow-y-auto"
+          onClick={() => setShowFullscreenPreview(false)}
+        >
         <div className="min-h-[100svh] flex items-start justify-center p-4">
-          <div className="w-full max-w-5xl mx-auto my-6 flex flex-col">
-            <div className="flex justify-between items-center p-4 md:p-6">
+          <div className="w-full max-w-5xl mx-auto my-6 flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-4 md:p-6 pt-8 md:pt-12">
               <div className="text-foreground">
                 <h3 className="text-xl md:text-2xl font-bold">Edit Preview</h3>
                 <p className="text-foreground/80 text-sm md:text-base">
                   {previewEditIndex + 1} of {variants.length}
                 </p>
               </div>
-              <button
-                onClick={() => setShowFullscreenPreview(false)}
-                className="w-10 h-10 md:w-12 md:h-12 bg-foreground/10 hover:bg-foreground/20 rounded-full flex items-center justify-center text-foreground text-xl md:text-2xl transition-colors"
-              >
-                ×
-              </button>
+              <div className="flex items-center gap-3">
+                <button
+                  className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white font-bold rounded-lg shadow-lg transition-colors"
+                  onClick={async () => {
+                    const chosen = variants[previewEditIndex];
+                    await selectImage(chosen, { type: 'edit', description: instruction || 'AI edit', addToHistory: true });
+                    setRunwayBaseImageUrl(chosen);
+                    if (phase === 'Accessorize') {
+                      showToast('Accessories locked in—heading to runway.', 'success', 2200);
+                      setPhase('WalkoutAndEval');
+                      onClose?.();
+                    }
+                  }}
+                >
+                  ✓ Use This Edit
+                </button>
+                <button
+                  onClick={() => setShowFullscreenPreview(false)}
+                  className="w-10 h-10 md:w-12 md:h-12 bg-foreground/10 hover:bg-foreground/20 rounded-full flex items-center justify-center text-foreground text-xl md:text-2xl transition-colors"
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 flex items-center justify-center p-4 md:p-6">
@@ -377,23 +398,6 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
               >
                 ← Previous
               </button>
-
-              <GlassButton
-                variant="primary"
-                className="px-6 py-3 md:px-8 md:py-4"
-                onClick={async () => {
-                  const chosen = variants[previewEditIndex];
-                  await selectImage(chosen, { type: 'edit', description: instruction || 'AI edit', addToHistory: true });
-                  setRunwayBaseImageUrl(chosen);
-                  if (phase === 'Accessorize') {
-                    showToast('Accessories locked in—heading to runway.', 'success', 2200);
-                    setPhase('WalkoutAndEval');
-                    onClose?.();
-                  }
-                }}
-              >
-                ✓ Use This Edit
-              </GlassButton>
 
               <button
                 onClick={() => setPreviewEditIndex(previewEditIndex < variants.length - 1 ? previewEditIndex + 1 : 0)}

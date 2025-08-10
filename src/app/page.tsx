@@ -424,15 +424,29 @@ export default function GamePage() {
         </div>
       )}
 
-      {/* Skip Accessorize CTA */}
+      {/* Accessorize navigation controls (Prev / Skip / Next) */}
       {phase === 'Accessorize' && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
-          <button
-            className="px-4 py-2 rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/20 border border-border"
-            onClick={() => { if (!muteToasts) showToast('Skipping accessories—preparing the runway.', 'info', 2000); setEditPanelVisible(false); setPhase('WalkoutAndEval'); }}
-          >
-            Skip Accessorize
-          </button>
+        <div className="fixed inset-x-0 bottom-4 z-[80] pointer-events-none">
+          <div className="mx-auto max-w-5xl px-4 flex items-center justify-between gap-3">
+            <button
+              className="pointer-events-auto px-4 py-2 rounded-lg bg-white/90 text-black hover:bg-white border border-gray-300 shadow-lg backdrop-blur-sm font-medium"
+              onClick={() => { setEditPanelVisible(false); setPhase('StylingRound'); }}
+            >
+              ← Previous
+            </button>
+            <button
+              className="pointer-events-auto px-4 py-2 rounded-lg bg-white/90 text-black hover:bg-white border border-gray-300 shadow-lg backdrop-blur-sm font-medium"
+              onClick={() => { if (!muteToasts) showToast('Skipping accessories—preparing the runway.', 'info', 2000); setEditPanelVisible(false); setPhase('WalkoutAndEval'); }}
+            >
+              Skip Accessorize
+            </button>
+            <button
+              className="pointer-events-auto px-4 py-2 rounded-lg bg-white/90 text-black hover:bg-white border border-gray-300 shadow-lg backdrop-blur-sm font-medium"
+              onClick={() => { setEditPanelVisible(false); setPhase('WalkoutAndEval'); }}
+            >
+              Next →
+            </button>
+          </div>
         </div>
       )}
 
