@@ -117,7 +117,7 @@ export default function TopBar() {
 
   return (
     <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[70] w-full max-w-3xl px-4 ${phase === 'ThemeSelect' ? 'pointer-events-none' : ''}`}>
-      <GlassPanel className="px-6 pt-6 pb-6 space-y-4 text-center border-0">
+      <GlassPanel className="px-6 pt-6 pb-6 space-y-4 text-center border-0 bg-transparent">
         {/* Theme (top): colored label then theme name */}
         <h2 className="text-[32px] font-extrabold text-foreground">
           <span className="text-[#7D8FE2]">Theme:</span> {theme}
