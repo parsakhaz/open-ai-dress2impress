@@ -400,9 +400,9 @@ export default function GamePage() {
 
       {/* Results overlay with video */}
       {phase === 'Results' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-overlay)]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-overlay)] pt-24">
           <div className="w-full max-w-6xl mx-6 py-8">
-            <div className="w-full aspect-video max-h-[80vh] mx-auto rounded-2xl overflow-hidden shadow-2xl bg-background flex items-center justify-center">
+            <div className="w-full aspect-video max-h-[70vh] mx-auto rounded-2xl overflow-hidden shadow-2xl bg-background flex items-center justify-center">
               {(runwayUrl || persistedRunwayUrl) ? (
                 <video
                   src={runwayUrl || persistedRunwayUrl || ''}
