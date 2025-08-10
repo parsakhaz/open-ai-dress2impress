@@ -268,7 +268,7 @@ export default function AvatarPanel() {
               {/* Style yourself */}
               <div>
                 <h3 className="text-lg font-semibold text-foreground mb-3">Style yourself</h3>
-                <div className="relative rounded-2xl border-2 border-dashed border-border p-6 min-h-[440px] flex flex-col justify-center bg-muted">
+                <div className="relative rounded-2xl border-2 border-dashed border-border p-6 min-h-[440px] flex flex-col justify-center bg-gradient-to-br from-[#7D8FE2]/10 to-transparent">
                   {/* Hidden file input */}
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
@@ -278,13 +278,14 @@ export default function AvatarPanel() {
                     </div>
                   ) : capturedFrame || isWebcamActive ? (
                     <>
-                      <div className="relative w-full aspect-[4/3] max-h-[60svh] sm:max-h-[70svh] bg-muted overflow-hidden rounded-xl">
+                      <div className="relative w-full aspect-[4/3] max-h-[60svh] sm:max-h-[70svh] overflow-hidden rounded-xl">
                         {capturedFrame ? (
                           <>
                             <img src={capturedFrame} alt="Captured frame" className="w-full h-full object-contain" />
                             <div className="absolute inset-0 -z-10">
                               <img src={capturedFrame} alt="" className="w-full h-full object-cover blur-2xl opacity-50" />
                             </div>
+                            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#7D8FE2]/10 to-transparent" />
                           </>
                         ) : (
                           <>
@@ -309,6 +310,7 @@ export default function AvatarPanel() {
                               // @ts-ignore
                               playsInline
                             />
+                            <div className="pointer-events-none absolute inset-0 bg-gradient-to-br from-[#7D8FE2]/10 to-transparent" />
                             {showFlash && <div className="pointer-events-none absolute inset-0 bg-foreground animate-pulse opacity-20" />}
                           </>
                         )}
@@ -318,7 +320,7 @@ export default function AvatarPanel() {
                       <div className="mt-4 flex flex-wrap gap-3">
                         <GlassButton
                           variant="primary"
-                          className="flex-1"
+                          className="w-[157px] h-[56px]"
                           onClick={() => {
                             if (capturedFrame) {
                               void processImage(capturedFrame);
@@ -341,11 +343,11 @@ export default function AvatarPanel() {
                           )}
                         </GlassButton>
                         {capturedFrame && !loading && (
-                        <GlassButton variant="primary" onClick={() => setCapturedFrame(null)}>
+                        <GlassButton variant="primary" className="w-[157px] h-[56px]" onClick={() => setCapturedFrame(null)}>
                             Retake
                           </GlassButton>
                         )}
-                        <GlassButton variant="primary" onClick={() => fileInputRef.current?.click()}>
+                        <GlassButton variant="primary" className="w-[157px] h-[56px]" onClick={() => fileInputRef.current?.click()}>
                           Upload a photo
                         </GlassButton>
                       </div>
@@ -365,11 +367,13 @@ export default function AvatarPanel() {
                   ) : (
                     <div className="text-center">
                       <div className="mx-auto mb-5 flex items-center justify-center">
-                        <img src="/FASHN%20ASSETS/Icons/camera.svg" alt="Camera" className="w-16 h-16 opacity-90" />
+                        <svg width="63" height="53" viewBox="0 0 63 53" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-16 h-16 opacity-90">
+                          <path d="M23.5484 12.4H13.134C9.58695 12.4 7.81213 12.4 6.45736 13.083C5.26566 13.6838 4.29749 14.6418 3.69029 15.821C3 17.1615 3 18.9176 3 22.4273V39.9739C3 43.4836 3 45.236 3.69029 46.5765C4.29749 47.7557 5.26566 48.7168 6.45736 49.3176C7.81081 50 9.58348 50 13.1235 50H49.8765C53.4165 50 55.1866 50 56.5401 49.3176C57.7318 48.7168 58.7032 47.7557 59.3104 46.5765C60 45.2373 60 43.4858 60 39.983V22.417C60 18.9142 60 17.1602 59.3104 15.821C58.7032 14.6418 57.7318 13.6838 56.5401 13.083C55.1853 12.4 53.4143 12.4 49.8673 12.4H39.4509M23.5484 12.4H23.7441M23.5484 12.4C23.5881 12.4 23.6298 12.4 23.6738 12.4L23.7441 12.4M23.5484 12.4C23.2124 12.3999 23.0241 12.3981 22.8752 12.3816C21.0145 12.1755 19.7383 10.4231 20.1291 8.6113C20.1654 8.44269 20.2373 8.22935 20.3796 7.8069L20.3857 7.78903C20.5483 7.30654 20.6296 7.06529 20.7193 6.85241C21.6386 4.67285 23.7202 3.1906 26.1006 3.01696C26.3331 3 26.5885 3 27.1025 3H35.8972C36.4112 3 36.6687 3 36.9012 3.01696C39.2816 3.1906 41.3611 4.67285 42.2803 6.85241C42.3701 7.06529 42.4517 7.30627 42.6143 7.78874C42.7606 8.22324 42.8339 8.44059 42.8707 8.61159C43.2615 10.4234 41.9874 12.1755 40.1267 12.3816C39.9778 12.3981 39.7876 12.3999 39.4509 12.4M23.7441 12.4H39.2551M39.2551 12.4H39.4509M39.2551 12.4L39.3254 12.4C39.3694 12.4 39.4112 12.4 39.4509 12.4M31.5 40.6C26.2533 40.6 22 36.3915 22 31.2C22 26.0085 26.2533 21.8 31.5 21.8C36.7467 21.8 41 26.0085 41 31.2C41 36.3915 36.7467 40.6 31.5 40.6Z" stroke="black" strokeWidth="5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
                       </div>
                       <div className="flex flex-col items-center gap-3">
-                        <GlassButton variant="primary" onClick={() => setIsWebcamActive(true)}>Take a photo</GlassButton>
-                        <GlassButton variant="primary" onClick={() => fileInputRef.current?.click()}>Upload a photo</GlassButton>
+                        <GlassButton variant="primary" className="w-[147px] h-[46px]" onClick={() => setIsWebcamActive(true)}>Take a photo</GlassButton>
+                        <GlassButton variant="primary" className="w-[147px] h-[46px]" onClick={() => fileInputRef.current?.click()}>Upload a photo</GlassButton>
                       </div>
                     </div>
                   )}
@@ -399,7 +403,7 @@ export default function AvatarPanel() {
                     return (
                       <button
                         key={p.id}
-                        className={`group relative transition-all ${isSelected ? 'ring-4 ring-foreground rounded-2xl' : ''}`}
+                        className={`group relative transition-all ${isSelected ? 'ring-4 ring-[#7D8FE2] rounded-2xl' : ''}`}
                         onClick={() => {
                           setSelectedAvatarUrl(p.url);
                           setSelectedAvatarIndex(null);
@@ -407,8 +411,8 @@ export default function AvatarPanel() {
                         title={`Choose ${p.name}`}
                       >
                         <div className="relative w-full h-[400px] rounded-2xl overflow-hidden">
-                          <div className="absolute inset-0 rounded-2xl bg-foreground/5 opacity-0 group-hover:opacity-100 transition-opacity z-0" />
-                          <img src={p.url} alt={p.name} className="absolute inset-0 w-full h-full object-contain z-10" />
+                          <img src={p.url} alt={p.name} className="absolute inset-0 w-full h-full object-contain z-0" />
+                          <div className="absolute inset-0 rounded-2xl bg-[#7D8FE2]/10 opacity-0 group-hover:opacity-100 transition-opacity z-10" />
                         </div>
                         <div className="mt-3 text-center text-foreground text-base font-medium">{p.name}</div>
                       </button>
@@ -426,7 +430,7 @@ export default function AvatarPanel() {
                   <h3 className="font-semibold text-foreground mb-1">Avatars Generated!</h3>
                   <p className="text-foreground/70 text-sm">Click below to view and select your avatar</p>
                 </div>
-                <GlassButton variant="primary" className="w-full" onClick={() => setShowAvatarSelector(true)}>
+                <GlassButton variant="primary" className="w-[157px] h-[56px] mx-auto" onClick={() => setShowAvatarSelector(true)}>
                   View & Select Avatar
                 </GlassButton>
               </div>
@@ -438,7 +442,7 @@ export default function AvatarPanel() {
         <div className="fixed bottom-12 right-20 z-[60]">
           <GlassButton
             variant="primary"
-            className="px-16 py-4 text-lg rounded-xl shadow-lg"
+            className="w-[157px] h-[56px] text-lg rounded-xl shadow-lg"
             disabled={!character && !selectedAvatarUrl}
             onClick={() => {
               if (selectedAvatarUrl || character) {
@@ -518,7 +522,7 @@ export default function AvatarPanel() {
             {/* Footer Actions: Black Back/Next */}
             <div className="mt-6 flex justify-center gap-4">
               <button 
-                className="px-6 py-3 rounded-xl bg-foreground text-background hover:opacity-90"
+                className="w-[157px] h-[56px] rounded-xl bg-foreground text-background hover:opacity-90"
                 onClick={() => {
                   setShowAvatarSelector(false);
                   setSelectedAvatarIndex(null);
@@ -527,7 +531,7 @@ export default function AvatarPanel() {
                 Back to capture
               </button>
               <button 
-                className="px-6 py-3 rounded-xl bg-foreground text-background hover:opacity-90 disabled:opacity-40"
+                className="w-[157px] h-[56px] rounded-xl bg-foreground text-background hover:opacity-90 disabled:opacity-40"
                 disabled={selectedAvatarUrl == null}
                 onClick={() => {
                   if (selectedAvatarUrl) proceedNext();
@@ -587,7 +591,7 @@ export default function AvatarPanel() {
               {/* Previous Button */}
               <button
                 onClick={() => setPreviewAvatarIndex(previewAvatarIndex > 0 ? previewAvatarIndex - 1 : variants.length - 1)}
-                className="flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 bg-foreground/10 hover:bg-foreground/20 text-foreground rounded-xl transition-colors"
+                className="w-[157px] h-[56px] flex items-center justify-center gap-2 bg-foreground/10 hover:bg-foreground/20 text-foreground rounded-xl transition-colors"
               >
                 ← Previous
               </button>
@@ -595,7 +599,7 @@ export default function AvatarPanel() {
               {/* Select Button */}
               <GlassButton
                 variant="primary"
-                className="px-6 py-3 md:px-8 md:py-4"
+                className="w-[157px] h-[56px]"
                 onClick={() => choose(variants[previewAvatarIndex])}
               >
                 ✓ Select This Avatar
@@ -604,7 +608,7 @@ export default function AvatarPanel() {
               {/* Next Button */}
               <button
                 onClick={() => setPreviewAvatarIndex(previewAvatarIndex < variants.length - 1 ? previewAvatarIndex + 1 : 0)}
-                className="flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 bg-foreground/10 hover:bg-foreground/20 text-foreground rounded-xl transition-colors"
+                className="w-[157px] h-[56px] flex items-center justify-center gap-2 bg-foreground/10 hover:bg-foreground/20 text-foreground rounded-xl transition-colors"
               >
                 Next →
               </button>
@@ -673,16 +677,16 @@ export default function AvatarPanel() {
               <div className="space-y-3">
                 <GlassButton
                   variant="primary"
-                  className="w-full py-3 md:py-4 text-lg"
+                  className="w-[157px] h-[56px] text-lg mx-auto"
                   onClick={proceedNext}
                 >
                   🛍️ Start Shopping Spree!
                 </GlassButton>
                 
-                <div className="flex gap-3">
+                <div className="flex gap-3 justify-center">
                   <GlassButton
                     variant="secondary"
-                    className="flex-1 py-2"
+                    className="w-[157px] h-[56px]"
                     onClick={() => {
                       setShowShoppingConfirmation(false);
                       setShowAvatarSelector(true);
@@ -692,7 +696,7 @@ export default function AvatarPanel() {
                   </GlassButton>
                   <GlassButton
                     variant="secondary"
-                    className="flex-1 py-2"
+                    className="w-[157px] h-[56px]"
                     onClick={() => {
                       setShowShoppingConfirmation(false);
                       setSelectedAvatarUrl(null);

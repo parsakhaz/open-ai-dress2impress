@@ -10,8 +10,7 @@
   --color-overlay: rgba(0,0,0,0.75);
 
   /* Keep font variables */
-  --font-geist-sans: var(--font-geist-sans);
-  --font-geist-mono: var(--font-geist-mono);
+  --font-poppins: var(--font-poppins);
 
   /* Legacy aliases for compatibility */
   --background: var(--color-background);
@@ -34,8 +33,7 @@
   --color-border: var(--color-border);
   --color-muted: var(--color-muted);
   --color-overlay: var(--color-overlay);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: var(--font-poppins);
 }
 
 /* Remove auto dark glass behaviors; theming controlled via .dark class */
@@ -64,7 +62,7 @@
 body {
   background: var(--color-background);
   color: var(--color-foreground);
-  font-family: var(--font-sans), system-ui, sans-serif;
+  font-family: var(--font-poppins), system-ui, sans-serif;
   min-height: 100vh;
 }
 
