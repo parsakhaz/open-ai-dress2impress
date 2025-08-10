@@ -38,7 +38,7 @@ export default function TopBar() {
     stopRef.current?.();
     if (!disableAutoTimers) {
       if (phase === 'ShoppingSpree') {
-        stopRef.current = createCountdown(120, (s) => setTimer(s), () => setPhase('StylingRound'));
+        stopRef.current = createCountdown(60, (s) => setTimer(s), () => setPhase('StylingRound'));
       } else if (phase === 'StylingRound') {
         stopRef.current = createCountdown(90, (s) => setTimer(s), () => setPhase('Accessorize'));
       } else {
@@ -62,7 +62,7 @@ export default function TopBar() {
       // Phase start toasts (current)
       if (!muteToasts) {
         if (phase === 'ShoppingSpree') {
-          showToast('Shopping started. You have 2:00.', 'info', 2500);
+          showToast('Shopping started. You have 1:00.', 'info', 2500);
         }
         if (phase === 'StylingRound') {
           showToast('Styling started. You have 1:30.', 'info', 2500);
@@ -130,7 +130,6 @@ export default function TopBar() {
       if (!muteToasts) showToast(message, type, duration);
     };
     if (phase === 'ShoppingSpree') {
-      if (timer === 60) emit(60, '1:00 remaining.', 'info', 2200);
       if (timer === 30) emit(30, '30 seconds remaining before Styling.', 'warning', 2000);
       if (timer === 10) emit(10, '10 seconds remaining before Styling.', 'warning', 1800);
     } else if (phase === 'StylingRound') {

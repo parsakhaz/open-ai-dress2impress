@@ -451,17 +451,23 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
         )}
         
         {/* Try-on image preview */}
-        {inline && showTryOnThumbs && tryOnImages.length > 0 && (
+        {inline && showTryOnThumbs && (
           <div className="mb-3">
             <div className="w-full aspect-video rounded-lg overflow-hidden bg-background border border-border flex items-center justify-center">
               {/* Show latest image */}
-              <img src={tryOnImages[tryOnImages.length - 1]} alt="AI try-on" className="w-full h-full object-contain" />
+              {tryOnImages.length > 0 ? (
+                <img src={tryOnImages[tryOnImages.length - 1]} alt="AI try-on" className="w-full h-full object-contain" />
+              ) : (
+                <div className="text-foreground/40 text-sm">Try-on preview will appear here</div>
+              )}
             </div>
-            <div className="mt-2 flex items-center gap-2 overflow-x-auto">
-              {tryOnImages.map((u, i) => (
-                <img key={u + i} src={u} className="w-16 h-16 object-cover rounded border border-border" alt="try-on thumb" />
-              ))}
-            </div>
+            {tryOnImages.length > 0 && (
+              <div className="mt-2 flex items-center gap-2 overflow-x-auto">
+                {tryOnImages.map((u, i) => (
+                  <img key={u + i} src={u} className="w-16 h-16 object-cover rounded border border-border" alt="try-on thumb" />
+                ))}
+              </div>
+            )}
           </div>
         )}
 
