@@ -210,6 +210,8 @@ export default function GamePage() {
     } else if (phase === 'StylingRound') {
       setEditPanelVisible(false);
       setAIConsoleVisible(false);
+      // Auto-open Wardrobe on entering StylingRound so users can choose/preview try-on results
+      setWardrobeOpen(true);
     } else if (phase === 'Accessorize') {
       // Auto-open Edit; close others
       setWardrobeOpen(false);
