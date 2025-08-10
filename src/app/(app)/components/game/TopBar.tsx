@@ -108,8 +108,8 @@ export default function TopBar() {
       if (timer === 10) emit(10, '10 seconds remaining before Styling.', 'warning', 1800);
     } else if (phase === 'StylingRound') {
       if (timer === 45) emit(45, '0:45 remaining.', 'info', 2200);
-      if (timer === 20) emit(20, '20 seconds remaining before Walkout.', 'warning', 2000);
-      if (timer === 10) emit(10, '10 seconds remaining before Walkout.', 'warning', 1800);
+      if (timer === 20) emit(20, '20 seconds remaining before Accessorize.', 'warning', 2000);
+      if (timer === 10) emit(10, '10 seconds remaining before Accessorize.', 'warning', 1800);
     }
   }, [timer, phase, showToast]);
 
