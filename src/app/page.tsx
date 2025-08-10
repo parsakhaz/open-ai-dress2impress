@@ -5,12 +5,10 @@ import { Confetti } from '@/components/Confetti';
 import TopBar from '@/app/(app)/components/game/TopBar';
 import CenterStage from '@/app/(app)/components/game/CenterStage';
 import HistoryStrip from '@/app/(app)/components/game/HistoryStrip';
-import ToolsIsland from '@/app/(app)/components/ui/ToolsIsland';
 import AIConsole from '@/app/(app)/components/ai/AIConsole';
 import GameBoard from '@/app/(app)/components/game/GameBoard';
 import StylingBoard from '@/app/(app)/components/game/StylingBoard';
 import AvatarPanel from '@/app/(app)/components/panels/AvatarPanel';
-import AmazonPanel from '@/app/(app)/components/panels/AmazonPanel';
 import EditWithAIPanel from '@/app/(app)/components/panels/EditWithAIPanel';
 import WardrobeModal from '@/app/(app)/components/ui/WardrobeModal';
 import WardrobeContent from '@/app/(app)/components/ui/WardrobeContent';
@@ -19,6 +17,8 @@ import { useToast } from '@/hooks/useToast';
 import ThemeDrawModal from '@/app/(app)/components/ui/ThemeDrawModal';
 import UrgencyVignette from '@/app/(app)/components/game/UrgencyVignette';
 import { generateWalkoutVideo } from '@/lib/adapters/video';
+import { useDebugStore } from '@/lib/state/debugStore';
+import { canUseShopping, canUseEdit, canOpenWardrobe, shoppingTooltipFor, editTooltipFor, wardrobeTooltipFor } from '@/lib/constants/phasePermissions';
 
 export default function GamePage() {
   const phase = useGameStore((s) => s.phase);
@@ -33,7 +33,6 @@ export default function GamePage() {
   const { showToast, ToastContainer } = useToast();
   
   // Panel visibility states
-  const [isAmazonPanelVisible, setAmazonPanelVisible] = useState(false);
   const [isEditPanelVisible, setEditPanelVisible] = useState(false);
   const [isWardrobeOpen, setWardrobeOpen] = useState(false);
   const [isAIConsoleVisible, setAIConsoleVisible] = useState(false);
@@ -59,12 +58,15 @@ export default function GamePage() {
   console.log('🚀 INITIAL RENDER: Page component is executing');
 
   // Phase-based gating
-  const canOpenShopping = phase === 'ShoppingSpree';
-  const canOpenEdit = phase === 'Accessorize';
-  const canOpenWardrobe = phase === 'StylingRound';
-  const shoppingTooltip = canOpenShopping ? 'Search real clothes (S)' : (phase === 'StylingRound' ? 'Shopping is disabled during Styling' : 'Shopping is unavailable now');
-  const editTooltip = canOpenEdit ? 'Accessorize: Edit with AI (E)' : (phase === 'StylingRound' ? 'Editing moves to Accessorize' : 'Editing is unavailable now');
-  const wardrobeTooltip = canOpenWardrobe ? 'Your wardrobe (W)' : (phase === 'Accessorize' ? 'Wardrobe is disabled during Accessorize' : 'Wardrobe opens during Styling');
+  const muteToasts = useDebugStore((s) => s.muteToasts);
+  const disableAutoRunway = useDebugStore((s) => s.disableAutoRunway);
+
+  const canOpenShopping = canUseShopping(phase);
+  const canEdit = canUseEdit(phase);
+  const canWardrobe = canOpenWardrobe(phase);
+  const shoppingTooltip = shoppingTooltipFor(phase);
+  const editTooltip = editTooltipFor(phase);
+  const wardrobeTooltip = wardrobeTooltipFor(phase);
   
   useEffect(() => {
     console.log('🚀 DRESS TO IMPRESS: Application started');
@@ -122,7 +124,7 @@ export default function GamePage() {
       setRunwayStarted(false);
       return;
     }
-    if (runwayStarted) return;
+    if (disableAutoRunway || runwayStarted) return;
     const baseUrl = runwayBaseImageUrl || currentImageUrl || character?.avatarUrl || null;
     if (!baseUrl) {
       setRunwayError('No image available to generate a runway video.');
@@ -137,7 +139,7 @@ export default function GamePage() {
     setRunwayLoading(true);
     setRunwayElapsed(0);
     progressToastKeysRef.current.clear();
-    showToast('Runway generation started. This can take ~2 minutes.', 'info', 3200);
+    if (!muteToasts) showToast('Runway generation started. This can take ~2 minutes.', 'info', 3200);
     (async () => {
       try {
         const url = await generateWalkoutVideo(baseUrl);
@@ -147,12 +149,12 @@ export default function GamePage() {
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Failed to generate runway video';
         setRunwayError(msg);
-        showToast('Runway generation failed. Please try again.', 'error');
+        if (!muteToasts) showToast('Runway generation failed. Please try again.', 'error');
       } finally {
         setRunwayLoading(false);
       }
     })();
-  }, [phase, runwayStarted, currentImageUrl, character, setPhase, showToast]);
+  }, [phase, runwayStarted, currentImageUrl, character, setPhase, showToast, disableAutoRunway, muteToasts]);
 
   // Also clear any persisted runway URL when returning to StylingRound
   useEffect(() => {
@@ -175,13 +177,13 @@ export default function GamePage() {
     const notifyOnce = (key: string, message: string, type: Parameters<typeof showToast>[1] = 'info', duration = 2600) => {
       if (progressToastKeysRef.current.has(key)) return;
       progressToastKeysRef.current.add(key);
-      showToast(message, type, duration);
+      if (!muteToasts) showToast(message, type, duration);
     };
     if (runwayElapsed >= 10) notifyOnce('t10', 'Studio is setting the lights and camera…');
     if (runwayElapsed >= 45) notifyOnce('t45', 'Generating your runway motion…');
     if (runwayElapsed >= 90) notifyOnce('t90', 'Color grading and refining details…');
     if (runwayElapsed >= 110) notifyOnce('t110', 'Final touches—preparing your premiere…');
-  }, [phase, runwayLoading, runwayElapsed, showToast]);
+  }, [phase, runwayLoading, runwayElapsed, showToast, muteToasts]);
 
   const RUNWAY_ETA_SECONDS = 120; // ~2 minutes nominal ETA
   const runwayProgressPct = Math.min(95, Math.round((runwayElapsed / RUNWAY_ETA_SECONDS) * 100));
@@ -206,12 +208,10 @@ export default function GamePage() {
       setWardrobeOpen(false);
       setAIConsoleVisible(false);
     } else if (phase === 'StylingRound') {
-      setAmazonPanelVisible(false);
       setEditPanelVisible(false);
       setAIConsoleVisible(false);
     } else if (phase === 'Accessorize') {
       // Auto-open Edit; close others
-      setAmazonPanelVisible(false);
       setWardrobeOpen(false);
       setAIConsoleVisible(false);
       setEditPanelVisible(true);
@@ -220,7 +220,6 @@ export default function GamePage() {
       try { useGameStore.getState().setRunwayBaseImageUrl(null); } catch {}
     } else {
       // In other phases, close all tool panels
-      setAmazonPanelVisible(false);
       setEditPanelVisible(false);
       setWardrobeOpen(false);
       setAIConsoleVisible(false);
@@ -238,7 +237,6 @@ export default function GamePage() {
       const key = e.key.toLowerCase();
 
       if (key === 'escape') {
-        setAmazonPanelVisible(false);
         setEditPanelVisible(false);
         setWardrobeOpen(false);
         setAIConsoleVisible(false);
@@ -250,42 +248,36 @@ export default function GamePage() {
 
       if (key === 's') {
         if (!canOpenShopping) {
-          showToast(shoppingTooltip, 'info');
+          if (!muteToasts) showToast(shoppingTooltip, 'info');
           return;
         }
-        // Open Amazon; close others
-        setEditPanelVisible(false);
-        setWardrobeOpen(false);
-        setAIConsoleVisible(false);
-        setAmazonPanelVisible(true);
+        // Shopping lives in the left sidebar now; nothing to open
+        if (!muteToasts) showToast('Use the left Generate panel to search.', 'info');
       } else if (key === 'e') {
-        if (!canOpenEdit) {
-          showToast(editTooltip, 'info');
+        if (!canEdit) {
+          if (!muteToasts) showToast(editTooltip, 'info');
           return;
         }
         // Open Edit; close others
-        setAmazonPanelVisible(false);
         setWardrobeOpen(false);
         setAIConsoleVisible(false);
         setEditPanelVisible(true);
       } else if (key === 'w') {
-        if (!canOpenWardrobe) {
-          showToast(wardrobeTooltip, 'info');
+        if (!canWardrobe) {
+          if (!muteToasts) showToast(wardrobeTooltip, 'info');
           return;
         }
         // Open Wardrobe; close others
-        setAmazonPanelVisible(false);
         setEditPanelVisible(false);
         setAIConsoleVisible(false);
         setWardrobeOpen(true);
       } else if (key === 'a') {
         // In Accessorize, AI console is disabled
         if (phase === 'Accessorize') {
-          showToast('AI Console is disabled in Accessorize.', 'info', 1800);
+          if (!muteToasts) showToast('AI Console toggle is disabled in Accessorize.', 'info', 1800);
           return;
         }
         // Toggle AI console; close other panels first
-        setAmazonPanelVisible(false);
         setEditPanelVisible(false);
         setWardrobeOpen(false);
         setAIConsoleVisible((v) => !v);
@@ -368,7 +360,7 @@ export default function GamePage() {
       <DebugPanel />
       
       {/* Walkout loading overlay */}
-      {phase === 'WalkoutAndEval' && (
+      {phase === 'WalkoutAndEval' && runwayLoading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-lg">
           <div className="text-center space-y-5">
             <div className="w-12 h-12 mx-auto rounded-full border-4 border-white/30 border-t-white animate-spin" />
@@ -379,6 +371,16 @@ export default function GamePage() {
             </div>
             <div className="text-white/70 text-xs">{runwayProgressPct}% • ~{formatTime(remainingSeconds)} remaining (est.)</div>
             {runwayError && <div className="text-red-300 text-sm">{runwayError}</div>}
+          </div>
+        </div>
+      )}
+
+      {/* Walkout debug overlay when auto-runway is disabled */}
+      {phase === 'WalkoutAndEval' && !runwayLoading && disableAutoRunway && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-lg">
+          <div className="text-center space-y-4 text-white">
+            <div className="text-lg font-semibold">Runway generation disabled by debug.</div>
+            <div className="text-sm text-white/80">Enable it in Debug Panel → FLOW to auto-generate, or jump to Results.</div>
           </div>
         </div>
       )}
@@ -429,7 +431,7 @@ export default function GamePage() {
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
           <button
             className="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 backdrop-blur-md border border-white/20"
-            onClick={() => { showToast('Skipping accessories—preparing the runway.', 'info', 2000); setEditPanelVisible(false); setPhase('WalkoutAndEval'); }}
+            onClick={() => { if (!muteToasts) showToast('Skipping accessories—preparing the runway.', 'info', 2000); setEditPanelVisible(false); setPhase('WalkoutAndEval'); }}
           >
             Skip Accessorize
           </button>

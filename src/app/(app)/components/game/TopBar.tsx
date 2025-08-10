@@ -7,6 +7,8 @@ import { Chip } from '@/components/Chip';
 import { ProgressIndicator } from '@/components/ProgressIndicator';
 import { Tooltip } from '@/components/Tooltip';
 import { useToast } from '@/hooks/useToast';
+import { GAME_PHASES } from '@/lib/constants/gamePhases';
+import { useDebugStore } from '@/lib/state/debugStore';
 
 export default function TopBar() {
   const phase = useGameStore((s) => s.phase);
@@ -18,12 +20,14 @@ export default function TopBar() {
   const resetGame = useGameStore((s) => s.resetGame);
   const stopRef = useRef<null | (() => void)>(null);
   const { showToast } = useToast();
+  const muteToasts = useDebugStore((s) => s.muteToasts);
+  const disableAutoTimers = useDebugStore((s) => s.disableAutoTimers);
   const thresholdsShownRef = useRef<Set<string>>(new Set());
   const lastPhaseRef = useRef<string | null>(null);
   // Removed clamp refs
   
-  const phases = ['CharacterSelect', 'ThemeSelect', 'ShoppingSpree', 'StylingRound', 'Accessorize', 'WalkoutAndEval', 'Results'] as const;
-  type GamePhase = typeof phases[number];
+  const phases = GAME_PHASES;
+  type GamePhase = (typeof GAME_PHASES)[number];
   
   const nextPhase = () => {
     const currentIndex = phases.indexOf(phase as GamePhase);
@@ -32,35 +36,42 @@ export default function TopBar() {
   };
 
   useEffect(() => {
-    if (phase === 'ShoppingSpree') {
-      stopRef.current?.();
-      stopRef.current = createCountdown(120, (s) => setTimer(s), () => setPhase('StylingRound'));
-    } else if (phase === 'StylingRound') {
-      stopRef.current?.();
-      stopRef.current = createCountdown(90, (s) => setTimer(s), () => setPhase('Accessorize'));
+    // Timers
+    stopRef.current?.();
+    if (!disableAutoTimers) {
+      if (phase === 'ShoppingSpree') {
+        stopRef.current = createCountdown(120, (s) => setTimer(s), () => setPhase('StylingRound'));
+      } else if (phase === 'StylingRound') {
+        stopRef.current = createCountdown(90, (s) => setTimer(s), () => setPhase('Accessorize'));
+      } else {
+        stopRef.current = null;
+      }
     } else {
-      stopRef.current?.();
       stopRef.current = null;
     }
     // Reset threshold tracking on phase change and show toasts
     thresholdsShownRef.current.clear();
     if (lastPhaseRef.current !== phase) {
       // Transition toasts (previous -> current)
-      if (lastPhaseRef.current === 'ShoppingSpree' && phase === 'StylingRound') {
-        showToast("Time's up! Moving to Styling.", 'success', 2000);
-      }
-      if (lastPhaseRef.current === 'StylingRound' && phase === 'Accessorize') {
-        showToast("Time's up! Moving to Accessorize.", 'success', 2200);
+      if (!muteToasts) {
+        if (lastPhaseRef.current === 'ShoppingSpree' && phase === 'StylingRound') {
+          showToast("Time's up! Moving to Styling.", 'success', 2000);
+        }
+        if (lastPhaseRef.current === 'StylingRound' && phase === 'Accessorize') {
+          showToast("Time's up! Moving to Accessorize.", 'success', 2200);
+        }
       }
       // Phase start toasts (current)
-      if (phase === 'ShoppingSpree') {
-        showToast('Shopping started. You have 2:00.', 'info', 2500);
-      }
-      if (phase === 'StylingRound') {
-        showToast('Styling started. You have 1:30.', 'info', 2500);
-      }
-      if (phase === 'Accessorize') {
-        showToast('Accessorize: one AI edit for finishing touches (30–100s). Combine instructions; you’ll get 4 options.', 'info', 3600);
+      if (!muteToasts) {
+        if (phase === 'ShoppingSpree') {
+          showToast('Shopping started. You have 2:00.', 'info', 2500);
+        }
+        if (phase === 'StylingRound') {
+          showToast('Styling started. You have 1:30.', 'info', 2500);
+        }
+        if (phase === 'Accessorize') {
+          showToast('Accessorize: one AI edit for finishing touches (30–100s). Combine instructions; you’ll get 4 options.', 'info', 3600);
+        }
       }
       lastPhaseRef.current = phase;
     }
@@ -68,7 +79,7 @@ export default function TopBar() {
       stopRef.current?.();
       stopRef.current = null;
     };
-  }, [phase, setPhase, setTimer]);
+  }, [phase, setPhase, setTimer, disableAutoTimers, muteToasts]);
 
   // Removed clamp effect
   const formatTime = (seconds: number) => {
@@ -100,7 +111,7 @@ export default function TopBar() {
       const k = key(mark);
       if (shown.has(k)) return;
       shown.add(k);
-      showToast(message, type, duration);
+      if (!muteToasts) showToast(message, type, duration);
     };
     if (phase === 'ShoppingSpree') {
       if (timer === 60) emit(60, '1:00 remaining.', 'info', 2200);
@@ -111,7 +122,7 @@ export default function TopBar() {
       if (timer === 20) emit(20, '20 seconds remaining before Accessorize.', 'warning', 2000);
       if (timer === 10) emit(10, '10 seconds remaining before Accessorize.', 'warning', 1800);
     }
-  }, [timer, phase, showToast]);
+  }, [timer, phase, showToast, muteToasts]);
 
   return (
     <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[70] w-full max-w-2xl px-4 ${phase === 'ThemeSelect' ? 'pointer-events-none' : ''}`}>
