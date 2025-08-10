@@ -55,4 +55,37 @@ export async function getResultsByPair(baseImageKey: string, itemId: string): Pr
   return undefined;
 }
 
+export async function getLatestSucceededByItem(itemId: string): Promise<TryOnJob | undefined> {
+  const rows = await db.tryOnJobs
+    .where('status')
+    .equals('succeeded')
+    .and((j) => j.itemId === itemId && Array.isArray(j.images) && j.images.length > 0)
+    .sortBy('updatedAt');
+  return rows[rows.length - 1];
+}
+
+export async function getJobsByItem(itemId: string): Promise<TryOnJob[]> {
+  // Aggregate across statuses; we only have an index on status, so query by status then filter by itemId
+  const [succeeded, running, queued, failed] = await Promise.all([
+    db.tryOnJobs.where('status').equals('succeeded').and((j) => j.itemId === itemId).toArray(),
+    db.tryOnJobs.where('status').equals('running').and((j) => j.itemId === itemId).toArray(),
+    db.tryOnJobs.where('status').equals('queued').and((j) => j.itemId === itemId).toArray(),
+    db.tryOnJobs.where('status').equals('failed').and((j) => j.itemId === itemId).toArray(),
+  ]);
+  const all = [...succeeded, ...running, ...queued, ...failed];
+  all.sort((a, b) => a.updatedAt - b.updatedAt);
+  return all;
+}
+
+export async function getAllImagesByItem(itemId: string): Promise<string[]> {
+  const jobs = await getJobsByItem(itemId);
+  const set = new Set<string>();
+  for (const j of jobs) {
+    if (j.status === 'succeeded' && Array.isArray(j.images)) {
+      for (const url of j.images) set.add(url);
+    }
+  }
+  return Array.from(set);
+}
+
 

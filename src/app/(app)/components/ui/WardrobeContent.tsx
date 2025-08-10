@@ -6,6 +6,7 @@ import { TryOnResultsModal } from '@/components/TryOnResultsModal';
 import { selectImage } from '@/lib/services/stateActions';
 import { BaseImagePickerModal } from '@/app/(app)/components/modals/BaseImagePickerModal';
 import { tryOnQueue } from '@/lib/services/tryOnQueue';
+import { getLatestSucceededByItem } from '@/lib/services/tryOnRepo';
 
 interface WardrobeContentProps {
   onClose?: () => void;
@@ -19,6 +20,13 @@ export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) 
   const [variants, setVariants] = useState<string[]>([]);
 
   async function onPickBaseAndEnqueue(itemId: string, itemImageUrl: string) {
+    // If results already exist for this item, show them immediately
+    const latest = await getLatestSucceededByItem(itemId);
+    if (latest?.images && latest.images.length > 0) {
+      setVariants(latest.images);
+      setShowTryOnModal(true);
+      return;
+    }
     setShowBasePicker(itemId);
   }
 
@@ -118,6 +126,7 @@ export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) 
       <TryOnResultsModal
         isOpen={showTryOnModal}
         onClose={() => setShowTryOnModal(false)}
+        itemId={showBasePicker || undefined}
         results={variants}
         onSelect={async (imageUrl) => {
           await selectImage(imageUrl, { type: 'tryOn', description: 'Try-on result', addToHistory: true });

@@ -8,6 +8,7 @@ import { BaseImagePickerModal } from '@/app/(app)/components/modals/BaseImagePic
 import { tryOnQueue } from '@/lib/services/tryOnQueue';
 import { TryOnResultsModal } from '@/components/TryOnResultsModal';
 import { selectImage } from '@/lib/services/stateActions';
+import { getLatestSucceededByItem } from '@/lib/services/tryOnRepo';
 
 export default function Wardrobe() {
   const wardrobe = useGameStore((s) => s.wardrobe);
@@ -18,7 +19,15 @@ export default function Wardrobe() {
   const [resultsOpen, setResultsOpen] = useState(false);
   const [results, setResults] = useState<string[]>([]);
 
-  function openPicker(itemId: string) {
+  async function onTryOnClick(itemId: string) {
+    // If we already have results for this item (any base), show them immediately
+    const latest = await getLatestSucceededByItem(itemId);
+    if (latest?.images && latest.images.length > 0) {
+      setResults(latest.images);
+      setResultsOpen(true);
+      return;
+    }
+    // Otherwise prompt for base image, then enqueue
     setPickerForItemId(itemId);
   }
 
@@ -72,7 +81,7 @@ export default function Wardrobe() {
                       size="sm"
                       variant="secondary"
                       className="flex-1 text-xs"
-                      onClick={() => openPicker(w.id)}
+                      onClick={() => { void onTryOnClick(w.id); }}
                     >
                       Try On
                     </GlassButton>
@@ -103,7 +112,7 @@ export default function Wardrobe() {
                       size="sm"
                       variant="secondary"
                       className="flex-1"
-                      onClick={() => openPicker(w.id)}
+                      onClick={() => { void onTryOnClick(w.id); }}
                     >
                       Try On
                     </GlassButton>
@@ -127,6 +136,7 @@ export default function Wardrobe() {
       <TryOnResultsModal
         isOpen={resultsOpen}
         onClose={() => setResultsOpen(false)}
+        itemId={pickerForItemId || undefined}
         results={results}
         onSelect={async (imageUrl) => {
           await selectImage(imageUrl, { type: 'tryOn', description: 'Try-on result', addToHistory: true });

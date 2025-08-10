@@ -1,19 +1,45 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { GlassPanel } from '@/components/GlassPanel';
 import { GlassButton } from '@/components/GlassButton';
+import { getAllImagesByItem, getJobsByItem } from '@/lib/services/tryOnRepo';
+import { tryOnQueue } from '@/lib/services/tryOnQueue';
 
 interface TryOnResultsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  results: string[];
+  // If itemId is provided, the modal aggregates results across all base images
+  itemId?: string;
+  results?: string[];
   onSelect: (imageUrl: string) => void;
 }
 
-export function TryOnResultsModal({ isOpen, onClose, results, onSelect }: TryOnResultsModalProps) {
+export function TryOnResultsModal({ isOpen, onClose, itemId, results: initialResults, onSelect }: TryOnResultsModalProps) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [showFullscreenPreview, setShowFullscreenPreview] = useState(false);
   const [previewIndex, setPreviewIndex] = useState(0);
+  const [results, setResults] = useState<string[]>(initialResults || []);
+
+  useEffect(() => {
+    let active = true;
+    const load = async () => {
+      if (!itemId) return;
+      const imgs = await getAllImagesByItem(itemId);
+      if (active) setResults(imgs);
+    };
+    if (isOpen) void load();
+    const unsub = tryOnQueue.onChange(async (job) => {
+      if (!itemId || job.itemId !== itemId) return;
+      if (job.status === 'succeeded') {
+        const imgs = await getAllImagesByItem(itemId);
+        if (active) setResults(imgs);
+      }
+    });
+    return () => {
+      active = false;
+      unsub();
+    };
+  }, [isOpen, itemId]);
 
   if (!isOpen || results.length === 0) return null;
 
@@ -130,6 +156,17 @@ export function TryOnResultsModal({ isOpen, onClose, results, onSelect }: TryOnR
                   >
                     Cancel
                   </GlassButton>
+                  {itemId && (
+                    <GlassButton
+                      variant="ghost"
+                      onClick={() => {
+                        // Fire a custom event the parent screens can listen to and open the base picker
+                        window.dispatchEvent(new CustomEvent('TRYON_RUN_ANOTHER_BASE', { detail: { itemId } }));
+                      }}
+                    >
+                      Run on another base image
+                    </GlassButton>
+                  )}
                   <GlassButton
                     variant="primary"
                     onClick={handleSelect}
