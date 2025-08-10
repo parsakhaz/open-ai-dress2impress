@@ -108,11 +108,7 @@ export default function ClosetNineGrid() {
   };
 
   return (
-    <GlassPanel className="h-full flex flex-col">
-      <div className="flex items-center justify-center mb-3">
-        <h3 className="text-base font-semibold text-foreground">{phase === 'StylingRound' ? 'Wardrobe' : 'Add clothes here'}</h3>
-      </div>
-      
+    <GlassPanel className="h-full flex flex-col">      
       {/* Show empty state if no wardrobe items in StylingRound */}
       {phase === 'StylingRound' && wardrobe.length === 0 && (
         <div className="flex-1 flex items-center justify-center">

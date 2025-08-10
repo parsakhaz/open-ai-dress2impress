@@ -5,6 +5,7 @@ import { useEffect, useRef } from 'react';
 import { GlassPanel } from '@/components/GlassPanel';
 import { useToast } from '@/hooks/useToast';
 import { GAME_PHASES } from '@/lib/constants/gamePhases';
+import { MAX_WARDROBE_ITEMS } from '@/lib/constants';
 import { useDebugStore } from '@/lib/state/debugStore';
 
 export default function TopBar() {
@@ -13,7 +14,7 @@ export default function TopBar() {
   const timer = useGameStore((s) => s.timer);
   const setTimer = useGameStore((s) => s.setTimer);
   const setPhase = useGameStore((s) => s.setPhase);
-  // Access to wardrobe not needed for new header layout
+  const wardrobe = useGameStore((s) => s.wardrobe);
   const resetGame = useGameStore((s) => s.resetGame);
   const stopRef = useRef<null | (() => void)>(null);
   const { showToast } = useToast();
@@ -21,7 +22,7 @@ export default function TopBar() {
   const disableAutoTimers = useDebugStore((s) => s.disableAutoTimers);
   const thresholdsShownRef = useRef<Set<string>>(new Set());
   const lastPhaseRef = useRef<string | null>(null);
-  // Removed clamp refs
+  const wardrobeFullClampedRef = useRef<boolean>(false);
   
   const phases = GAME_PHASES;
   type GamePhase = (typeof GAME_PHASES)[number];
@@ -78,7 +79,31 @@ export default function TopBar() {
     };
   }, [phase, setPhase, setTimer, disableAutoTimers, muteToasts]);
 
-  // Removed clamp effect
+  // Effect to clamp timer to 25 seconds when wardrobe is full during ShoppingSpree
+  useEffect(() => {
+    if (phase === 'ShoppingSpree' && wardrobe.length === MAX_WARDROBE_ITEMS && !wardrobeFullClampedRef.current) {
+      // Mark as clamped to avoid repeated triggers
+      wardrobeFullClampedRef.current = true;
+      
+      // Stop current timer
+      stopRef.current?.();
+      
+      // Show toast notification
+      if (!muteToasts) {
+        showToast('All clothing slots filled! Timer reduced to 25 seconds.', 'success', 2500);
+      }
+      
+      // Start new 25-second timer
+      if (!disableAutoTimers) {
+        stopRef.current = createCountdown(25, (s) => setTimer(s), () => setPhase('StylingRound'));
+      }
+    }
+    
+    // Reset the clamped flag when phase changes
+    if (phase !== 'ShoppingSpree') {
+      wardrobeFullClampedRef.current = false;
+    }
+  }, [phase, wardrobe.length, setTimer, setPhase, disableAutoTimers, muteToasts, showToast]);
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -138,15 +163,6 @@ export default function TopBar() {
           </div>
         )}
 
-        {/* Time warnings */}
-        {timer > 0 && timer <= 30 && (
-          <div className="flex items-center gap-2 text-foreground text-sm animate-pulse">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            <span className="font-medium">Time running out!</span>
-          </div>
-        )}
       </GlassPanel>
     </div>
   );
