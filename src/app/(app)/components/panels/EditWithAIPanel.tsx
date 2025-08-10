@@ -22,6 +22,10 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
   const [error, setError] = useState<string | null>(null);
   const [variants, setVariants] = useState<string[]>([]);
   const [isBasePickerOpen, setBasePickerOpen] = useState(false);
+  const [showEditSelector, setShowEditSelector] = useState(false);
+  const [selectedEditIndex, setSelectedEditIndex] = useState<number | null>(null);
+  const [showFullscreenPreview, setShowFullscreenPreview] = useState(false);
+  const [previewEditIndex, setPreviewEditIndex] = useState(0);
 
   // Handle Escape key to close modal
   useEffect(() => {
@@ -52,6 +56,8 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
     try {
       const urls = await editImage(imageUrl, instruction);
       setVariants(urls);
+      setSelectedEditIndex(null);
+      setShowEditSelector(true);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Edit failed');
     } finally {
@@ -60,6 +66,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
   }
 
   return (
+    <div>
     <GlassPanel 
       variant="modal" 
       className="relative w-full max-h-[90vh] overflow-hidden"
@@ -156,44 +163,22 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
         )}
 
         <div className="overflow-auto max-h-[calc(90vh-20rem)]">
-          {variants.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
+          {variants.length > 0 && !showEditSelector && (
+            <div className="text-center space-y-4">
+              <div className="text-center">
                 <h4 className="text-lg font-semibold text-slate-900 dark:text-slate-100">AI Edit Results</h4>
-                <div className="text-sm text-slate-600 dark:text-slate-400">
-                  Click to use the edited version
-                </div>
+                <p className="text-slate-600 dark:text-slate-400 text-sm">Click below to view and select your edit</p>
               </div>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {variants.map((url, i) => (
-                  <div key={i} className="group relative rounded-xl overflow-hidden bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 hover:border-accent/50 hover:scale-105 transition-all duration-200">
-                    <div className="aspect-square overflow-hidden">
-                      <img src={url} alt={`AI edit variant ${i + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
-                    </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    <div className="absolute bottom-3 left-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <GlassButton 
-                        size="sm" 
-                        variant="primary" 
-                        className="w-full"
-                        onClick={async () => {
-                          await selectImage(url, { type: 'edit', description: instruction || 'AI edit', addToHistory: true });
-                        }}
-                      >
-                        <div className="flex items-center justify-center gap-2">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          Use This Edit
-                        </div>
-                      </GlassButton>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <GlassButton 
+                variant="primary" 
+                className="w-full"
+                onClick={() => setShowEditSelector(true)}
+              >
+                View & Select Edit
+              </GlassButton>
             </div>
           )}
-          
+
           {variants.length === 0 && !loading && !error && (
             <div className="text-center py-12">
               <div className="text-slate-400 dark:text-slate-500 space-y-2">
@@ -218,6 +203,201 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
         />
       )}
     </GlassPanel>
+
+    {/* Fullscreen Edit Selector Modal */}
+    {showEditSelector && variants.length > 0 && (
+      <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm overflow-y-auto">
+        <div className="min-h-[100svh] flex items-start justify-center p-4">
+          <div className="w-full max-w-6xl mx-auto my-6 flex flex-col max-h-[90svh]">
+            <div className="text-center text-white mb-6">
+              <h2 className="text-3xl font-bold mb-2">Choose Your Edit</h2>
+              <p className="text-white/80">Select the best AI edit</p>
+            </div>
+
+            <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6 max-h-[70vh] overflow-y-auto">
+              {variants.map((url, index) => (
+                <div key={index} className="group relative">
+                  <div className={`relative rounded-2xl overflow-hidden bg-white shadow-2xl hover:shadow-3xl transition-all duration-300 cursor-pointer ${
+                    selectedEditIndex === index ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'
+                  }`}>
+                    <div className="relative w-full aspect-square bg-gradient-to-br from-slate-100 to-slate-200">
+                      <img 
+                        src={url} 
+                        alt=""
+                        className="absolute inset-0 w-full h-full object-cover blur-xl opacity-60"
+                      />
+                      <img 
+                        src={url} 
+                        alt={`Edit option ${index + 1}`} 
+                        className="relative w-full h-full object-contain"
+                      />
+                    </div>
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                    {selectedEditIndex === index && (
+                      <div className="absolute bottom-4 left-4 right-4">
+                        <GlassButton 
+                          variant="primary" 
+                          className="w-full text-white bg-blue-500 hover:bg-blue-600 backdrop-blur-sm border-blue-400"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void selectImage(url, { type: 'edit', description: instruction || 'AI edit', addToHistory: true });
+                          }}
+                        >
+                          ✓ Use This Edit
+                        </GlassButton>
+                      </div>
+                    )}
+
+                    {selectedEditIndex === index && (
+                      <div className="absolute top-3 right-3 bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                        PREVIEWING
+                      </div>
+                    )}
+
+                    <div 
+                      className="absolute inset-0 cursor-pointer"
+                      onClick={() => {
+                        setPreviewEditIndex(index);
+                        setSelectedEditIndex(index);
+                        setShowFullscreenPreview(true);
+                      }}
+                    />
+                  </div>
+
+                  <div className="absolute top-3 left-3 w-8 h-8 bg-black/60 backdrop-blur-sm text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                    {index + 1}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 flex justify-center gap-4">
+              <GlassButton 
+                variant="secondary" 
+                className="px-6 py-3 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm border-white/30"
+                onClick={() => {
+                  setShowEditSelector(false);
+                  setSelectedEditIndex(null);
+                }}
+              >
+                ← Back to Editor
+              </GlassButton>
+              {selectedEditIndex !== null && (
+                <GlassButton 
+                  variant="secondary" 
+                  className="px-6 py-3 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm border-white/30"
+                  onClick={() => setSelectedEditIndex(null)}
+                >
+                  Clear Selection
+                </GlassButton>
+              )}
+              <GlassButton 
+                variant="secondary" 
+                className="px-6 py-3 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm border-white/30"
+                onClick={() => {
+                  setShowEditSelector(false);
+                  setSelectedEditIndex(null);
+                  setVariants([]);
+                }}
+              >
+                🔄 Run New Edit
+              </GlassButton>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+
+    {/* Fullscreen Edit Preview Modal */}
+    {showFullscreenPreview && variants.length > 0 && (
+      <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm overflow-y-auto">
+        <div className="min-h-[100svh] flex items-start justify-center p-4">
+          <div className="w-full max-w-5xl mx-auto my-6 flex flex-col">
+            <div className="flex justify-between items-center p-4 md:p-6">
+              <div className="text-white">
+                <h3 className="text-xl md:text-2xl font-bold">Edit Preview</h3>
+                <p className="text-white/80 text-sm md:text-base">
+                  {previewEditIndex + 1} of {variants.length}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowFullscreenPreview(false)}
+                className="w-10 h-10 md:w-12 md:h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white text-xl md:text-2xl transition-colors"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="flex-1 flex items-center justify-center p-4 md:p-6">
+              <div className="relative max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl w-full">
+                <div className="relative rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-slate-100 to-slate-200">
+                  <img
+                    src={variants[previewEditIndex]}
+                    alt=""
+                    className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-40"
+                  />
+                  <img
+                    src={variants[previewEditIndex]}
+                    alt={`Edit option ${previewEditIndex + 1}`}
+                    className="relative w-full h-auto max-h-[60vh] md:max-h-[70vh] object-contain"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center p-4 md:p-6">
+              <button
+                onClick={() => setPreviewEditIndex(previewEditIndex > 0 ? previewEditIndex - 1 : variants.length - 1)}
+                className="flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors"
+              >
+                ← Previous
+              </button>
+
+              <GlassButton
+                variant="primary"
+                className="px-6 py-3 md:px-8 md:py-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold"
+                onClick={() => {
+                  void selectImage(variants[previewEditIndex], { type: 'edit', description: instruction || 'AI edit', addToHistory: true });
+                }}
+              >
+                ✓ Use This Edit
+              </GlassButton>
+
+              <button
+                onClick={() => setPreviewEditIndex(previewEditIndex < variants.length - 1 ? previewEditIndex + 1 : 0)}
+                className="flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors"
+              >
+                Next →
+              </button>
+            </div>
+
+            <div className="flex justify-center gap-2 md:gap-4 p-4 md:p-6">
+              {variants.map((url, index) => (
+                <button
+                  key={index}
+                  onClick={() => setPreviewEditIndex(index)}
+                  className={`w-12 h-12 md:w-16 md:h-16 rounded-lg overflow-hidden border-2 transition-colors ${
+                    index === previewEditIndex 
+                      ? 'border-blue-500' 
+                      : 'border-white/30 hover:border-white/60'
+                  }`}
+                >
+                  <div className="relative w-full h-full bg-gradient-to-br from-slate-100 to-slate-200">
+                    <img
+                      src={url}
+                      alt={`Edit ${index + 1}`}
+                      className="w-full h-full object-contain p-1"
+                    />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+    </div>
   );
 }
 
