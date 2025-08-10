@@ -4,29 +4,33 @@ import { editImage } from '@/lib/adapters/edit';
 import { GlassPanel } from '@/components/GlassPanel';
 import { GlassButton } from '@/components/GlassButton';
 import { useGameStore } from '@/lib/state/gameStore';
+import { selectImage } from '@/lib/services/stateActions';
+import { BaseImagePickerModal } from '@/app/(app)/components/modals/BaseImagePickerModal';
 
 interface EditWithAIPanelProps {
   onClose?: () => void;
 }
 
 export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) {
-  const [imageUrl, setImageUrl] = useState('');
+  const phase = useGameStore((s) => s.phase);
+  const currentImageUrl = useGameStore((s) => s.currentImageUrl);
+  const character = useGameStore((s) => s.character);
+
+  const [imageUrl, setImageUrl] = useState(currentImageUrl || '');
   const [instruction, setInstruction] = useState('add a silver necklace');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [variants, setVariants] = useState<string[]>([]);
-  const setCurrentImage = useGameStore((s) => s.setCurrentImage);
-  const addToHistory = useGameStore((s) => s.addToHistory);
-  const phase = useGameStore((s) => s.phase);
+  const [isBasePickerOpen, setBasePickerOpen] = useState(false);
 
   // Handle Escape key to close modal
   useEffect(() => {
     function onEsc(e: KeyboardEvent) {
-      if (e.key === 'Escape' && onClose) onClose();
+      if (e.key === 'Escape' && onClose && !loading) onClose();
     }
     document.addEventListener('keydown', onEsc);
     return () => document.removeEventListener('keydown', onEsc);
-  }, [onClose]);
+  }, [onClose, loading]);
 
   // Defensive close if phase changes to a disallowed state
   useEffect(() => {
@@ -34,6 +38,13 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
       onClose();
     }
   }, [phase, onClose]);
+
+  // Prefill base url from current image when available
+  useEffect(() => {
+    if (!imageUrl && (currentImageUrl || character?.avatarUrl)) {
+      setImageUrl(currentImageUrl || character?.avatarUrl || '');
+    }
+  }, [currentImageUrl, character?.avatarUrl]);
 
   async function onEdit() {
     setLoading(true);
@@ -56,7 +67,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Edit with AI</h2>
-          {onClose && (
+          {onClose && !loading && (
             <GlassButton
               size="sm"
               variant="ghost"
@@ -70,19 +81,38 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
             </GlassButton>
           )}
         </div>
+        <p className="text-sm text-slate-600 dark:text-slate-400">
+          Note: Editing is blocking and typically takes about 20–30 seconds. Closing is disabled while an edit is running. Tip: For best flow, do edits after choosing your top + bottom combo as a final step.
+        </p>
         
         <div className="space-y-3">
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-              Base Image URL
+              Base Image
             </label>
-            <input
-              className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 backdrop-blur-sm border border-white/60 dark:border-white/20 rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all"
-              placeholder="Paste image URL here..."
-              value={imageUrl}
-              onChange={(e) => setImageUrl(e.target.value)}
-              suppressHydrationWarning
-            />
+            <div className="flex items-center gap-3">
+              {imageUrl ? (
+                <div className="w-20 h-20 rounded-lg overflow-hidden bg-white/20 dark:bg-black/20 border border-white/30 dark:border-white/10">
+                  <img src={imageUrl} alt="Base" className="w-full h-full object-cover" />
+                </div>
+              ) : null}
+              {/*
+              <input
+                className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 backdrop-blur-sm border border-white/60 dark:border-white/20 rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all"
+                placeholder="Paste image URL here..."
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                suppressHydrationWarning
+              />
+              */}
+              <GlassButton
+                variant={imageUrl ? 'ghost' : 'primary'}
+                onClick={() => setBasePickerOpen(true)}
+                title={imageUrl ? 'Change base image' : 'Choose base image'}
+              >
+                {imageUrl ? 'Change' : 'Choose base image'}
+              </GlassButton>
+            </div>
           </div>
           
           <div>
@@ -91,18 +121,19 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
             </label>
             <input
               className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 backdrop-blur-sm border border-white/60 dark:border-white/20 rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all"
-              placeholder="e.g., add a silver necklace, change background to sunset..."
+              placeholder="e.g., add sunglasses, a silver chain, and a fancy belt (you can combine multiple edits in one ask)"
               value={instruction}
               onChange={(e) => setInstruction(e.target.value)}
               suppressHydrationWarning
             />
+            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">You can combine multiple edits in one ask, separated by commas.</div>
           </div>
 
           <GlassButton 
             variant="primary" 
             className="w-full" 
             onClick={onEdit} 
-            disabled={loading || !imageUrl.trim() || !instruction.trim()}
+            disabled={loading || !imageUrl || !instruction.trim()}
           >
             {loading ? (
               <span className="flex items-center gap-2">
@@ -145,13 +176,8 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
                         size="sm" 
                         variant="primary" 
                         className="w-full"
-                        onClick={() => {
-                          setCurrentImage(url);
-                          addToHistory({
-                            imageUrl: url,
-                            type: 'edit',
-                            description: instruction || 'AI edit'
-                          });
+                        onClick={async () => {
+                          await selectImage(url, { type: 'edit', description: instruction || 'AI edit', addToHistory: true });
                         }}
                       >
                         <div className="flex items-center justify-center gap-2">
@@ -181,6 +207,16 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
           )}
         </div>
       </div>
+      {isBasePickerOpen && (
+        <BaseImagePickerModal
+          isOpen={isBasePickerOpen}
+          onClose={() => setBasePickerOpen(false)}
+          onSelect={(base) => {
+            setImageUrl(base.imageUrl);
+            setBasePickerOpen(false);
+          }}
+        />
+      )}
     </GlassPanel>
   );
 }
