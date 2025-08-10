@@ -365,7 +365,7 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
     if (r.phase === 'PICK' && r.finalId) {
       return `Picked ${r.finalId}`;
     }
-    return r.tool || r.phase || 'event';
+    return r.tool || r.phase || 'Processing...';
   }
 
   function formatRowSubtitle(r: AggregatedRow): string | undefined {
@@ -396,6 +396,11 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
     });
     return out;
   }, [filteredEvents]);
+
+  // Check if AI is done
+  const isDone = useMemo(() => {
+    return rows.some(r => r.phase === 'DONE');
+  }, [rows]);
 
   return (
     <GlassPanel 
@@ -467,8 +472,11 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
               <span>Waiting for instructions…</span>
             </div>
           ) : (
-            rows.map((r, i) => (
-              <div key={r.id} className="mb-2 last:mb-0">
+            rows.map((r, i) => {
+              const isThisDoneMessage = r.phase === 'DONE';
+              const shouldBlur = isDone && !isThisDoneMessage;
+              return (
+              <div key={r.id} className={`mb-2 last:mb-0 transition-all duration-500 ${shouldBlur ? 'opacity-30 blur-[1px]' : ''} ${isThisDoneMessage ? 'bg-foreground/5 rounded-lg p-3 border border-foreground/20' : ''}`}>
                 <div className="flex items-start gap-2">
                   <div className="flex-1 min-w-0">
                     <div className={`flex items-center gap-2 ${density === 'compact' ? 'mb-1' : 'mb-2'}`}>
@@ -483,8 +491,8 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
                         <span className="ml-auto text-foreground/40 text-[10px] whitespace-nowrap relative -top-[1px]">[{relativeTimeFrom(r.timestamp)}]</span>
                       )}
                     </div>
-                    <div className={`text-foreground break-words overflow-wrap-anywhere ${density === 'compact' ? 'text-xs' : 'text-sm'}`}>
-                      {formatRowTitle(r)}
+                    <div className={`text-foreground break-words overflow-wrap-anywhere ${density === 'compact' ? 'text-xs' : 'text-sm'} ${r.phase === 'DONE' ? 'font-semibold text-base' : ''}`}>
+                      {r.phase === 'DONE' ? 'ChatGPT is done thinking.' : formatRowTitle(r)}
                       {formatRowSubtitle(r) ? <span className="text-foreground/70"> — {formatRowSubtitle(r)}</span> : null}
                       {r.plan?.queries && Array.isArray(r.plan.queries) && r.plan.queries.length > 0 && (
                         <div className="mt-1 flex flex-wrap gap-1">
@@ -515,7 +523,7 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
                   </div>
                 </div>
               </div>
-            ))
+            )})
           )}
           {/* Sticky bottom controls: active actions tray + pin toggle */}
           <div className="sticky bottom-0 -mx-4 -mb-4 px-4 py-2 bg-background border-t border-border flex items-center gap-2">

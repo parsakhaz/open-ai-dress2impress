@@ -113,7 +113,7 @@ export class AIPlayerAgent {
   }
 
   async run() {
-    await this.emit({ phase: 'INIT', eventType: 'system', message: 'AI Player (GPT) initialized' });
+    await this.emit({ phase: 'INIT', eventType: 'system', message: 'ChatGPT has started analyzing the theme...' });
     const plan = await this.planOnce();
     const candidates = await this.executePlanAndTryOn(plan);
     await this.finalPickOnce(candidates);
@@ -124,7 +124,7 @@ export class AIPlayerAgent {
     const system = 'You are a fashion AI. Respond JSON only. No prose.';
     const user = `Theme: ${this.theme}\nConstraints: max 2 Rapid searches, 1-2 outfits, prefer top+bottom. JSON format: {"palette": string[], "queries": [{"category":"top|bottom|dress","query": string}], "outfits": [{"id": "A"|"B", "items": [{"category":"top|bottom|dress","source":"closet"|"rapid"}]}]}`;
     const body = { model: 'gpt-5-mini', messages: [ { role: 'system', content: system }, { role: 'user', content: user } ] } as any;
-    await this.emit({ phase: 'PLAN', eventType: 'tool:start', tool: { name: 'openai.chat' }, message: 'plan' });
+    await this.emit({ phase: 'PLAN', eventType: 'tool:start', tool: { name: 'openai.chat' }, message: "I'm thinking about outfit ideas for this theme..." });
     const res = await fetch(`${OPENAI_BASE_URL}/v1/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` }, body: JSON.stringify(body) });
     const data = await res.json();
     const text = data?.choices?.[0]?.message?.content || '{}';
@@ -133,22 +133,22 @@ export class AIPlayerAgent {
       const queries = Array.isArray(parsed?.queries) ? parsed.queries.slice(0, 2).map((q: any) => ({ category: (q.category || 'top') as Category, query: String(q.query || '') })) : [];
       const outfits = Array.isArray(parsed?.outfits) ? parsed.outfits.slice(0, 2).map((o: any, i: number) => ({ id: String(o.id || (i === 0 ? 'A' : 'B')), items: Array.isArray(o.items) ? o.items.map((it: any) => ({ category: (it.category || 'top') as Category, source: (it.source || 'closet') as 'closet'|'rapid' })) : [] })) : [];
       const palette = Array.isArray(parsed?.palette) ? parsed.palette.map((s: any) => String(s)) : ['black','white'];
-      await this.emit({ phase: 'PLAN', eventType: 'tool:result', tool: { name: 'openai.chat' }, message: 'plan:done', context: { plan: { queries, outfits, palette } } });
+      await this.emit({ phase: 'PLAN', eventType: 'tool:result', tool: { name: 'openai.chat' }, message: "I've got some great outfit ideas!", context: { plan: { queries, outfits, palette } } });
       return { queries, outfits, palette };
     } catch {
-      await this.emit({ phase: 'PLAN', eventType: 'tool:result', tool: { name: 'openai.chat' }, message: 'plan:done', context: { plan: { queries: [], outfits: [{ id: 'A', items: [{ category: 'top', source: 'rapid' }] }], palette: ['black','white'] } } });
+      await this.emit({ phase: 'PLAN', eventType: 'tool:result', tool: { name: 'openai.chat' }, message: "I've created a simple outfit plan.", context: { plan: { queries: [], outfits: [{ id: 'A', items: [{ category: 'top', source: 'rapid' }] }], palette: ['black','white'] } } });
       return { queries: [], outfits: [{ id: 'A', items: [{ category: 'top', source: 'rapid' }] }], palette: ['black','white'] };
     }
   }
 
   private async executePlanAndTryOn(plan: { queries: { category: Category; query: string }[]; outfits: { id: string; items: { category: Category; source: 'closet'|'rapid' }[] }[]; palette: string[] }) {
-    await this.emit({ phase: 'GATHER', eventType: 'phase:start', message: 'Gathering closet + searching' });
+    await this.emit({ phase: 'GATHER', eventType: 'phase:start', message: "I'm checking the closet and searching for perfect pieces..." });
     // Emit narrative tool messages around RapidAPI calls for better UI visibility
     const closetPromise = localTools.getCurrentClothes(['top','bottom','dress']);
     const rapidPromises: Promise<Product[]>[] = [];
     if (plan.queries[0]) {
       const q0 = plan.queries[0];
-      await this.emit({ phase: 'GATHER', eventType: 'tool:start', tool: { name: 'searchRapid' }, message: `search`, context: { query: q0.query, category: q0.category, callId: 'search-0' } });
+      await this.emit({ phase: 'GATHER', eventType: 'tool:start', tool: { name: 'searchRapid' }, message: `I'm searching for ${q0.category} items...`, context: { query: q0.query, category: q0.category, callId: 'search-0' } });
       rapidPromises.push(
         remote.searchRapid(q0.query, q0.category)
           .then(async (r) => {
@@ -156,7 +156,7 @@ export class AIPlayerAgent {
               phase: 'GATHER',
               eventType: 'tool:result',
               tool: { name: 'searchRapid' },
-              message: `search:done`,
+              message: `Found ${r.length} great options!`,
               context: { images: r.slice(0, 6).map((p) => p.image), callId: 'search-0', count: r.length, query: q0.query, category: q0.category },
             });
             return r;
@@ -166,7 +166,7 @@ export class AIPlayerAgent {
     }
     if (plan.queries[1]) {
       const q1 = plan.queries[1];
-      await this.emit({ phase: 'GATHER', eventType: 'tool:start', tool: { name: 'searchRapid' }, message: `search`, context: { query: q1.query, category: q1.category, callId: 'search-1' } });
+      await this.emit({ phase: 'GATHER', eventType: 'tool:start', tool: { name: 'searchRapid' }, message: `I'm also looking for ${q1.category} pieces...`, context: { query: q1.query, category: q1.category, callId: 'search-1' } });
       rapidPromises.push(
         remote.searchRapid(q1.query, q1.category)
           .then(async (r) => {
@@ -174,7 +174,7 @@ export class AIPlayerAgent {
               phase: 'GATHER',
               eventType: 'tool:result',
               tool: { name: 'searchRapid' },
-              message: `search:done`,
+              message: `Found ${r.length} more options!`,
               context: { images: r.slice(0, 6).map((p) => p.image), callId: 'search-1', count: r.length, query: q1.query, category: q1.category },
             });
             return r;
@@ -199,15 +199,15 @@ export class AIPlayerAgent {
       return { id: o.id, items: chosen };
     });
 
-    await this.emit({ phase: 'TRYON', eventType: 'phase:start', message: 'Trying outfits on the avatar' });
+    await this.emit({ phase: 'TRYON', eventType: 'phase:start', message: "I'm conducting virtual try-ons to see how everything looks..." });
     const modelDataUri = await this.toDataUri(this.avatarUrl);
     const tryonPromises = resolved.map(async (o) => {
       const garment = o.items[0];
       if (!garment) return { id: o.id, images: [] as string[] };
-      await this.emit({ phase: 'TRYON', eventType: 'tool:start', tool: { name: 'fashn.tryon' }, message: `tryon`, context: { callId: o.id, outfitId: o.id } });
+      await this.emit({ phase: 'TRYON', eventType: 'tool:start', tool: { name: 'fashn.tryon' }, message: `I'm trying on Outfit ${o.id}...`, context: { callId: o.id, outfitId: o.id } });
       const garmentDataUri = await this.toDataUri(garment.image);
       const images = await remote.tryOnFashnData(modelDataUri, garmentDataUri);
-      await this.emit({ phase: 'TRYON', eventType: 'tool:result', tool: { name: 'fashn.tryon' }, message: `tryon:done`, context: { images, callId: o.id, outfitId: o.id, count: images.length } });
+      await this.emit({ phase: 'TRYON', eventType: 'tool:result', tool: { name: 'fashn.tryon' }, message: `Outfit ${o.id} try-on complete!`, context: { images, callId: o.id, outfitId: o.id, count: images.length } });
       return { id: o.id, images };
     });
     return Promise.all(tryonPromises);
@@ -218,35 +218,35 @@ export class AIPlayerAgent {
     const sys = 'You are a fashion AI. Respond JSON only.';
     const user = `Theme: ${this.theme}\nCandidates: ${JSON.stringify(candidates.map(c => ({ id: c.id, images: c.images.slice(0,2) })))}\nChoose best: {"final_outfit_id": "A|B", "reason": string}`;
     const body = { model: 'gpt-5-mini', messages: [ { role: 'system', content: sys }, { role: 'user', content: user } ] } as any;
-    await this.emit({ phase: 'PICK', eventType: 'tool:start', tool: { name: 'openai.chat' }, message: 'pick' });
+    await this.emit({ phase: 'PICK', eventType: 'tool:start', tool: { name: 'openai.chat' }, message: "I'm evaluating the outfits to pick the best one..." });
     const res = await fetch(`${OPENAI_BASE_URL}/v1/chat/completions`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${OPENAI_API_KEY}` }, body: JSON.stringify(body) });
     const data = await res.json();
     const text = data?.choices?.[0]?.message?.content || '{}';
     let finalId = candidates[0]?.id || 'A'; let reason = 'Best available.';
     try { const parsed = JSON.parse(text); finalId = parsed.final_outfit_id || finalId; reason = parsed.reason || reason; } catch {}
-    await this.emit({ phase: 'PICK', eventType: 'phase:result', message: `pick:done`, context: { finalId, reason } });
+    await this.emit({ phase: 'PICK', eventType: 'phase:result', message: `I picked Outfit ${finalId}!`, context: { finalId, reason } });
     await saveManifest(this.runId, { runId: this.runId, theme: this.theme, avatarUrl: this.avatarUrl, candidates, final: { id: finalId, reason } });
-    await this.emit({ phase: 'DONE', eventType: 'system', message: 'AI player (GPT) finished.' });
+    await this.emit({ phase: 'DONE', eventType: 'system', message: 'ChatGPT is done thinking.' });
   }
 
   private async executeTool(name: string, args: any): Promise<any> {
     switch (name) {
       case 'getCurrentClothes': {
-        await this.emit({ phase: 'GATHER', eventType: 'tool:start', tool: { name }, message: 'List closet', context: args });
+        await this.emit({ phase: 'GATHER', eventType: 'tool:start', tool: { name }, message: "I'm checking what's in the closet...", context: args });
         const res = await localTools.getCurrentClothes(args.categories as Category[]);
-        await this.emit({ phase: 'GATHER', eventType: 'tool:result', tool: { name }, message: `Found ${res.length}`, context: { count: res.length } });
+        await this.emit({ phase: 'GATHER', eventType: 'tool:result', tool: { name }, message: `I found ${res.length} items in the closet!`, context: { count: res.length } });
         return { wardrobe: res };
       }
       case 'searchRapid': {
         if (this.rapidSearches >= 3) {
-          await this.emit({ phase: 'GATHER', eventType: 'tool:error', tool: { name }, message: 'Rapid search limit reached' });
+          await this.emit({ phase: 'GATHER', eventType: 'tool:error', tool: { name }, message: "I've hit the search limit - I'll work with what I have!" });
           return { error: 'limit_reached' };
         }
         this.rapidSearches++;
-        await this.emit({ phase: 'GATHER', eventType: 'tool:start', tool: { name }, message: 'Rapid search', context: args });
+        await this.emit({ phase: 'GATHER', eventType: 'tool:start', tool: { name }, message: `I'm searching online for ${args.category} items...`, context: args });
         try {
           const res = await remote.searchRapid(args.query, args.category);
-          await this.emit({ phase: 'GATHER', eventType: 'tool:result', tool: { name }, message: `Got ${res.length}` });
+          await this.emit({ phase: 'GATHER', eventType: 'tool:result', tool: { name }, message: `Great! I found ${res.length} items online.` });
           return { products: res };
         } catch (e) {
           await this.emit({ phase: 'GATHER', eventType: 'tool:error', tool: { name }, message: String(e) });
@@ -258,27 +258,27 @@ export class AIPlayerAgent {
         const items = (args.items || []) as { id: string; image: string; category: Category }[];
         // (Optional) derive provider from id format; skip strict enforcement here but can be wired later
         if (this.rapidPicks >= 3) {
-          await this.emit({ phase: 'TRYON', eventType: 'tool:error', tool: { name }, message: 'Rapid picks limit reached' });
+          await this.emit({ phase: 'TRYON', eventType: 'tool:error', tool: { name }, message: "I've reached the try-on limit for this session." });
           return { error: 'rapid_pick_limit' };
         }
-        await this.emit({ phase: 'TRYON', eventType: 'tool:start', tool: { name }, message: 'Fashn try-on', context: { variation: args.variation } });
+        await this.emit({ phase: 'TRYON', eventType: 'tool:start', tool: { name }, message: "I'm generating a virtual try-on preview...", context: { variation: args.variation } });
         // Convert both model and garment images to Base64 data URLs for Fashn
         const modelDataUri = await this.toDataUri(args.avatarImage);
         const garmentDataUri = await this.toDataUri(items[0].image);
         const imgs = await remote.tryOnFashnData(modelDataUri, garmentDataUri);
         this.rapidPicks += 0; // keep simple; real enforcement can inspect source
-        await this.emit({ phase: 'TRYON', eventType: 'tool:result', tool: { name }, message: `Images ${imgs.length}`, context: { images: imgs } });
+        await this.emit({ phase: 'TRYON', eventType: 'tool:result', tool: { name }, message: `Try-on complete! Generated ${imgs.length} preview${imgs.length > 1 ? 's' : ''}.`, context: { images: imgs } });
         return { renderId: 'RF-' + Math.random().toString(36).slice(2, 10), images: imgs, latencyMs: 0 };
       }
       case 'evaluate': {
-        await this.emit({ phase: 'TRYON', eventType: 'tool:start', tool: { name }, message: 'Evaluate outfit' });
+        await this.emit({ phase: 'TRYON', eventType: 'tool:start', tool: { name }, message: "I'm evaluating how well this outfit matches the theme..." });
         const { features } = await localTools.evaluate(args.theme, args.items as Product[], args.tryOnImages as string[]);
-        await this.emit({ phase: 'TRYON', eventType: 'tool:result', tool: { name }, message: `Palette ${features.paletteHint}` });
+        await this.emit({ phase: 'TRYON', eventType: 'tool:result', tool: { name }, message: `The outfit features ${features.paletteHint} colors - perfect for the theme!` });
         return { features };
       }
       case 'saveManifest': {
         await saveManifest(this.runId, args.data);
-        await this.emit({ phase: 'DONE', eventType: 'tool:result', tool: { name }, message: 'Manifest saved' });
+        await this.emit({ phase: 'DONE', eventType: 'tool:result', tool: { name }, message: "I've saved my outfit selection!" });
         return { ok: true };
       }
       case 'log': {

@@ -1,7 +1,8 @@
 'use client';
 
 import { useGameStore } from '@/lib/state/gameStore';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { GlassPanel } from '@/components/GlassPanel';
 
 export default function EvaluationBoard() {
   const phase = useGameStore((s) => s.phase);
@@ -26,150 +27,171 @@ export default function EvaluationBoard() {
     setPhase('WalkoutAndEval');
   };
 
+  // Automatically proceed to runway after a delay when both images are ready
+  useEffect(() => {
+    if (phase === 'Evaluation' && playerFinalImage && aiPlayerResultUrl) {
+      // Auto-proceed after 8 seconds to give users time to view scores
+      const timer = setTimeout(() => {
+        proceedToRunway();
+      }, 8000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [phase, playerFinalImage, aiPlayerResultUrl]);
+
   if (phase !== 'Evaluation') return null;
 
   // Show a loading state if either player doesn't have a final image
   if (!playerFinalImage || !aiPlayerResultUrl) {
     return (
-      <div className="fixed inset-0 z-50 bg-gradient-to-br from-yellow-50 via-purple-50 to-blue-50 flex items-center justify-center p-6">
-        <div className="text-center">
-          <div className="w-12 h-12 mx-auto rounded-full border-4 border-purple-600/30 border-t-purple-600 animate-spin mb-4" />
-          <h2 className="text-2xl font-bold text-black mb-2">Preparing Evaluation...</h2>
-          <p className="text-gray-700">
+      <div className="fixed inset-0 z-50 bg-background flex items-center justify-center p-4">
+        <GlassPanel variant="card" className="max-w-md w-full text-center">
+          <div className="w-8 h-8 mx-auto rounded-full border-2 border-primary/30 border-t-primary animate-spin mb-4" />
+          <h2 className="text-xl font-bold mb-2">Preparing Evaluation...</h2>
+          <p className="text-muted-foreground mb-4">
             {!playerFinalImage && "Waiting for your final look..."}
             {!aiPlayerResultUrl && "Waiting for ChatGPT to finish..."}
           </p>
           <button
             onClick={() => setPhase('Accessorize')}
-            className="mt-4 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+            className="px-4 py-2 bg-muted hover:bg-muted/80 rounded-lg transition-colors"
           >
             ← Back to Accessories
           </button>
-        </div>
+        </GlassPanel>
       </div>
     );
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-gradient-to-br from-yellow-50 via-purple-50 to-blue-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-7xl mx-auto">
-        
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold text-black mb-2">
-            FASHION<span className="text-purple-600">AI</span>
-          </h1>
-          <p className="text-xl text-gray-700">Compare your final looks!</p>
-          <p className="text-lg text-gray-600 mt-2">Theme: <span className="font-semibold">{theme}</span></p>
-        </div>
-
-        {/* Comparison Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+    <div className="fixed inset-0 z-50 bg-background overflow-auto">
+      <div className="min-h-full flex flex-col items-center justify-center p-4 py-8">
+        <div className="w-full max-w-6xl space-y-6">
           
-          {/* Player Card */}
-          <div className="relative">
-            <div className="bg-yellow-100 rounded-3xl p-6 text-center">
-              <div className="inline-block bg-yellow-200 px-6 py-2 rounded-full mb-4">
-                <h2 className="text-xl font-bold text-black">Player 1: You</h2>
-              </div>
-              
-              <div className="aspect-[3/4] bg-white rounded-2xl overflow-hidden shadow-lg mb-6 mx-auto max-w-sm">
-                {playerFinalImage ? (
-                  <img 
-                    src={playerFinalImage} 
-                    alt="Your final look" 
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    No final look selected
+          {/* Theme - minimal display */}
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">
+              Theme: <span className="font-semibold text-foreground">{theme}</span>
+            </p>
+          </div>
+
+          {/* Comparison Cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            {/* Player Card */}
+            <GlassPanel variant="card" className="bg-yellow-50 border-yellow-200">
+              <div className="text-center space-y-4">
+                <div className="inline-block bg-yellow-200 px-4 py-2 rounded-full">
+                  <h2 className="font-bold">You</h2>
+                </div>
+                
+                <div className="aspect-[3/4] bg-white rounded-xl overflow-hidden shadow-sm mx-auto max-w-[200px] sm:max-w-[250px]">
+                  {playerFinalImage ? (
+                    <img 
+                      src={playerFinalImage} 
+                      alt="Your final look" 
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
+                      No final look selected
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="bg-yellow-200/50 rounded-lg p-3">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Overall Score</p>
+                    <p className="text-2xl font-bold">-.-</p>
                   </div>
-                )}
-              </div>
-
-              <div className="space-y-2 mb-4">
-                <div className="bg-yellow-200 rounded-lg p-3">
-                  <p className="text-sm font-semibold text-black">overall:</p>
-                  <p className="text-3xl font-bold text-black">-.-</p>
-                </div>
-                <div className="text-xs text-gray-700 space-y-1">
-                  <p><strong>Theme:</strong> -/10</p>
-                  <p><strong>Outfit:</strong> -/10</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* AI Player Card */}
-          <div className="relative">
-            <div className="bg-purple-100 rounded-3xl p-6 text-center">
-              <div className="inline-block bg-purple-200 px-6 py-2 rounded-full mb-4">
-                <h2 className="text-xl font-bold text-black">Player 2: ChatGPT</h2>
-              </div>
-              
-              <div className="aspect-[3/4] bg-white rounded-2xl overflow-hidden shadow-lg mb-6 mx-auto max-w-sm">
-                {aiPlayerResultUrl ? (
-                  <img 
-                    src={aiPlayerResultUrl} 
-                    alt="ChatGPT's final look" 
-                    className="w-full h-full object-contain"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-400">
-                    ChatGPT hasn't finished
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <div className="flex justify-between">
+                      <span>Theme:</span>
+                      <span>-/10</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Outfit:</span>
+                      <span>-/10</span>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
+            </GlassPanel>
 
-              <div className="space-y-2 mb-4">
-                <div className="bg-purple-200 rounded-lg p-3">
-                  <p className="text-sm font-semibold text-black">overall:</p>
-                  <p className="text-3xl font-bold text-black">-.-</p>
+            {/* AI Player Card */}
+            <GlassPanel variant="card" className="bg-purple-50 border-purple-200">
+              <div className="text-center space-y-4">
+                <div className="inline-block bg-purple-200 px-4 py-2 rounded-full">
+                  <h2 className="font-bold">ChatGPT</h2>
                 </div>
-                <div className="text-xs text-gray-700 space-y-1">
-                  <p><strong>Theme:</strong> -/10</p>
-                  <p><strong>Outfit:</strong> -/10</p>
+                
+                <div className="aspect-[3/4] bg-white rounded-xl overflow-hidden shadow-sm mx-auto max-w-[200px] sm:max-w-[250px]">
+                  {aiPlayerResultUrl ? (
+                    <img 
+                      src={aiPlayerResultUrl} 
+                      alt="ChatGPT's final look" 
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
+                      ChatGPT hasn't finished
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <div className="bg-purple-200/50 rounded-lg p-3">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Overall Score</p>
+                    <p className="text-2xl font-bold">-.-</p>
+                  </div>
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <div className="flex justify-between">
+                      <span>Theme:</span>
+                      <span>-/10</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Outfit:</span>
+                      <span>-/10</span>
+                    </div>
+                  </div>
                 </div>
               </div>
+            </GlassPanel>
+          </div>
+
+          {/* Winner Selection */}
+          <GlassPanel variant="card" className="text-center">
+            <h3 className="font-bold mb-4">Who styled better?</h3>
+            <div className="flex flex-col sm:flex-row justify-center gap-3">
+              <button
+                onClick={() => handleWinnerSelection('player')}
+                className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+                  selectedWinner === 'player' 
+                    ? 'bg-yellow-400 text-black shadow-lg scale-105' 
+                    : 'bg-yellow-200 text-black hover:bg-yellow-300'
+                }`}
+              >
+                You Win!
+              </button>
+              <button
+                onClick={() => handleWinnerSelection('ai')}
+                className={`px-6 py-3 rounded-xl font-semibold transition-all ${
+                  selectedWinner === 'ai' 
+                    ? 'bg-purple-400 text-black shadow-lg scale-105' 
+                    : 'bg-purple-200 text-black hover:bg-purple-300'
+                }`}
+              >
+                ChatGPT Wins!
+              </button>
             </div>
-          </div>
-        </div>
+          </GlassPanel>
 
-        {/* Winner Selection (Optional Interactive Element) */}
-        <div className="text-center mb-8">
-          <h3 className="text-xl font-bold text-black mb-4">Who do you think styled better?</h3>
-          <div className="flex justify-center gap-4">
-            <button
-              onClick={() => handleWinnerSelection('player')}
-              className={`px-6 py-3 rounded-xl font-semibold transition-all ${
-                selectedWinner === 'player' 
-                  ? 'bg-yellow-400 text-black shadow-lg scale-105' 
-                  : 'bg-yellow-200 text-black hover:bg-yellow-300'
-              }`}
-            >
-              You Win!
-            </button>
-            <button
-              onClick={() => handleWinnerSelection('ai')}
-              className={`px-6 py-3 rounded-xl font-semibold transition-all ${
-                selectedWinner === 'ai' 
-                  ? 'bg-purple-400 text-black shadow-lg scale-105' 
-                  : 'bg-purple-200 text-black hover:bg-purple-300'
-              }`}
-            >
-              ChatGPT Wins!
-            </button>
+          {/* Auto-progression indicator */}
+          <div className="text-center">
+            <p className="text-xs text-muted-foreground">
+              Loading runway results...
+            </p>
           </div>
-        </div>
-
-        {/* Continue Button */}
-        <div className="text-center">
-          <button
-            onClick={proceedToRunway}
-            className="bg-black text-white px-8 py-4 rounded-full font-bold text-lg hover:bg-gray-800 transition-colors shadow-lg"
-          >
-            🎬 See Runway Results
-          </button>
         </div>
       </div>
     </div>

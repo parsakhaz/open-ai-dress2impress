@@ -12,6 +12,17 @@ interface HistoryItem {
   imageId?: string; // optional Dexie image id
 }
 
+interface EvaluationResult {
+  playerScore: number;
+  aiScore: number;
+  playerThemeScore: number;
+  aiThemeScore: number;
+  playerOutfitScore: number;
+  aiOutfitScore: number;
+  winner: 'player' | 'ai';
+  reasoning: string;
+}
+
 interface GameState {
   phase: GamePhase;
   theme: string;
@@ -29,6 +40,7 @@ interface GameState {
   runwayBaseImageUrl: string | null;
   aiPlayerResultUrl: string | null;
   aiStyledResultUrl: string | null;
+  evaluationResult: EvaluationResult | null;
   setPhase: (phase: GamePhase) => void;
   setTheme: (theme: string) => void;
   setThemeOptions: (themes: string[]) => void;
@@ -46,6 +58,7 @@ interface GameState {
   setAccessorizeUsed: (used: boolean) => void;
   setRunwayBaseImageUrl: (url: string | null) => void;
   setAiPlayerResultUrl: (url: string | null) => void;
+  setEvaluationResult: (result: EvaluationResult | null) => void;
   resetGame: () => void;
 }
 
