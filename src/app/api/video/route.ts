@@ -4,11 +4,25 @@ import { createHandler } from '@/lib/util/apiRoute';
 import { guards } from '@/lib/util/validation';
 import { generateKlingToken } from '@/lib/server/kling';
 import { poll, sleep } from '@/lib/util/promise';
+import { fetchBlob } from '@/lib/util/http';
 
 export const runtime = 'nodejs';
 export const maxDuration = 600;
 
 const API_HOST = 'https://api-singapore.klingai.com';
+
+async function toBase64(imageInput: string): Promise<string> {
+  // Accept data URLs or remote URLs
+  if (imageInput.startsWith('data:')) {
+    const match = imageInput.match(/^data:(.*?);base64,(.*)$/);
+    if (!match) throw new Error('Invalid data URL');
+    return match[2];
+  }
+  const blob = await fetchBlob(imageInput);
+  const ab = await blob.arrayBuffer();
+  const b64 = Buffer.from(ab).toString('base64');
+  return b64;
+}
 
 export const POST = createHandler<{ imageUrl: string }, { url: string }>({
   parse: async (req: NextRequest) => {
@@ -26,6 +40,8 @@ export const POST = createHandler<{ imageUrl: string }, { url: string }>({
     if (!token) throw new Error('Kling credentials not set');
 
     const external_task_id = uuidv4();
+    // Kling expects base64 payload for image; convert any URL or data URL to raw base64 string
+    const image_base64 = await toBase64(imageUrl);
     const createResponse = await fetch(`${API_HOST}/v1/videos/image2video`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, Accept: 'application/json' },
@@ -37,7 +53,7 @@ export const POST = createHandler<{ imageUrl: string }, { url: string }>({
         resolution: '720p',
         width: 1280,
         height: 720,
-        image: imageUrl,
+        image: image_base64,
         prompt:
           'Full-body wide shot of a fashion model walking straight toward the camera on a runway from a distance quickly; zoomed out; the entire figure (head to toe) visible and centered; professional studio lighting; clean white seamless background; steady camera.',
         external_task_id,
