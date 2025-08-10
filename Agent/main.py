@@ -249,14 +249,25 @@ def _resolve_local_path_from_url(config: Config, url: str) -> Optional[Path]:
 
 
 def _download_image_to(path: Path, url: str) -> None:
-    """Download remote image to local path using stdlib urllib."""
+    """Download remote image to local path using requests library."""
     try:
         _ensure_dir(path.parent)
-        with urllib.request.urlopen(url) as resp:  # nosec B310
-            data = resp.read()
-        with open(path, "wb") as f:
-            f.write(data)
-        _log_event(f"Saved image to {path}")
+        if HAS_REQUESTS:
+            import requests
+            response = requests.get(url, timeout=30)
+            if response.status_code == 200:
+                with open(path, "wb") as f:
+                    f.write(response.content)
+                _log_event(f"Saved image to {path}")
+            else:
+                _log_event(f"Download failed for {url}: Status code {response.status_code}")
+        else:
+            # Fallback to urllib if requests not available
+            with urllib.request.urlopen(url) as resp:  # nosec B310
+                data = resp.read()
+            with open(path, "wb") as f:
+                f.write(data)
+            _log_event(f"Saved image to {path}")
     except Exception as e:
         _log_event(f"Download failed for {url}: {e}")
 
@@ -1457,6 +1468,11 @@ async def run_gpt_round(theme: str, avatar_arg: str, port: int, round_duration_m
             results = await asyncio.gather(*[dispatch_tool_call(tc) for tc in tool_calls])
             # Append assistant turn that requested tool calls
             messages.append({"role": "assistant", "tool_calls": [tc.model_dump() for tc in tool_calls], "content": msg.content or ""})
+
+            # Collect try-on images to reflect back to the model and detect evaluation completion
+            tryon_image_urls: list[str] = []
+            had_evaluate = False
+
             # Append individual tool messages per call id
             for tc, res in zip(tool_calls, results):
                 messages.append({
@@ -1465,7 +1481,34 @@ async def run_gpt_round(theme: str, avatar_arg: str, port: int, round_duration_m
                     "name": tc.function.name,
                     "content": json.dumps(res),
                 })
+                if tc.function.name == "callFashnAPI":
+                    imgs = (res or {}).get("images") or []
+                    for u in imgs:
+                        if isinstance(u, str):
+                            tryon_image_urls.append(u)
+                if tc.function.name == "evaluate":
+                    had_evaluate = True
+
             _log_event("Tools returned: " + _truncate({tc.function.name: res for tc, res in zip(tool_calls, results)}, 2000))
+
+            # If we received any try-on images, reflect them back as image blocks and nudge the model to PICK soon
+            if tryon_image_urls:
+                blocks = [{"type": "text", "text": "Here are your try-on results. Visually compare and proceed. If time is short, PICK now."}]
+                # Cap to a reasonable number of images to avoid context bloat
+                for url in tryon_image_urls[:8]:
+                    blocks.append({"type": "image_url", "image_url": {"url": url}})
+                messages.append({"role": "user", "content": blocks})
+
+            # If we already ran evaluate in this batch, explicitly ask for PICK next
+            if had_evaluate:
+                seconds_left = max(0, int((round_duration_ms / 1000.0) - (time.monotonic() - start_time)))
+                messages.append({
+                    "role": "user",
+                    "content": [
+                        {"type": "text", "text": f"You have evaluation results and try-on images. Time left ~{seconds_left}s. Respond with phase=\"PICK\" only, selecting the best try-on image and reason."}
+                    ],
+                })
+
             continue
 
         # No tool calls: model returned an envelope JSON; print and check phase
