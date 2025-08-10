@@ -10,6 +10,7 @@ export default function EvaluationBoard() {
   const currentImageUrl = useGameStore((s) => s.currentImageUrl);
   const runwayBaseImageUrl = useGameStore((s) => s.runwayBaseImageUrl);
   const aiPlayerResultUrl = useGameStore((s) => s.aiPlayerResultUrl);
+  const aiStyledResultUrl = useGameStore((s) => s.aiStyledResultUrl);
   const evaluationResult = useGameStore((s) => s.evaluationResult);
   const setPhase = useGameStore((s) => s.setPhase);
   const setEvaluationResult = useGameStore((s) => s.setEvaluationResult);
@@ -21,6 +22,9 @@ export default function EvaluationBoard() {
 
   // Use the player's final selected image (runway base or current)
   const playerFinalImage = runwayBaseImageUrl || currentImageUrl || character?.avatarUrl;
+  
+  // Use AI's accessorized version if available, otherwise fall back to try-on result
+  const aiFinalImage = aiStyledResultUrl || aiPlayerResultUrl;
   
   const handleWinnerSelection = (winner: 'player' | 'ai') => {
     setSelectedWinner(winner);
@@ -34,7 +38,7 @@ export default function EvaluationBoard() {
   // Evaluate the images when both are ready
   useEffect(() => {
     const evaluateImages = async () => {
-      if (phase === 'Evaluation' && playerFinalImage && aiPlayerResultUrl && !evaluationResult && !isEvaluating) {
+      if (phase === 'Evaluation' && playerFinalImage && aiFinalImage && !evaluationResult && !isEvaluating) {
         setIsEvaluating(true);
         setEvaluationError(null);
         
@@ -44,7 +48,7 @@ export default function EvaluationBoard() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               playerImageUrl: playerFinalImage,
-              aiImageUrl: aiPlayerResultUrl,
+              aiImageUrl: aiFinalImage,
               theme: theme,
             }),
           });
@@ -65,24 +69,14 @@ export default function EvaluationBoard() {
     };
 
     evaluateImages();
-  }, [phase, playerFinalImage, aiPlayerResultUrl, evaluationResult, isEvaluating, theme, setEvaluationResult]);
+  }, [phase, playerFinalImage, aiFinalImage, evaluationResult, isEvaluating, theme, setEvaluationResult]);
 
-  // Automatically proceed to runway after evaluation is complete
-  useEffect(() => {
-    if (phase === 'Evaluation' && evaluationResult) {
-      // Auto-proceed after 8 seconds to give users time to view scores
-      const timer = setTimeout(() => {
-        proceedToRunway();
-      }, 8000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [phase, evaluationResult]);
+  // Removed automatic navigation - user must manually proceed to runway
 
   if (phase !== 'Evaluation') return null;
 
   // Show a loading state while evaluating or if images aren't ready
-  if (!playerFinalImage || !aiPlayerResultUrl || isEvaluating || (!evaluationResult && !evaluationError)) {
+  if (!playerFinalImage || !aiFinalImage || isEvaluating || (!evaluationResult && !evaluationError)) {
     return (
       <div className="fixed inset-0 z-50 bg-background flex items-center justify-center p-4">
         <GlassPanel variant="card" className="max-w-md w-full text-center">
@@ -92,7 +86,7 @@ export default function EvaluationBoard() {
           </h2>
           <p className="text-muted-foreground mb-4">
             {!playerFinalImage && "Waiting for your final look..."}
-            {!aiPlayerResultUrl && "Waiting for ChatGPT to finish..."}
+            {!aiFinalImage && "Waiting for ChatGPT to finish..."}
             {isEvaluating && "AI judge is analyzing both outfits..."}
           </p>
           {!isEvaluating && (
@@ -173,9 +167,9 @@ export default function EvaluationBoard() {
                 </div>
                 
                 <div className="aspect-[3/4] bg-white rounded-xl overflow-hidden shadow-sm mx-auto max-w-[200px] sm:max-w-[250px]">
-                  {aiPlayerResultUrl ? (
+                  {aiFinalImage ? (
                     <img 
-                      src={aiPlayerResultUrl} 
+                      src={aiFinalImage} 
                       alt="ChatGPT's final look" 
                       className="w-full h-full object-contain"
                     />
@@ -225,12 +219,20 @@ export default function EvaluationBoard() {
             </GlassPanel>
           )}
 
-          {/* Auto-progression indicator */}
-          <div className="text-center">
-            <p className="text-xs text-muted-foreground">
-              Loading runway results...
-            </p>
-          </div>
+          {/* Proceed to runway button */}
+          {evaluationResult && (
+            <div className="text-center">
+              <button
+                onClick={proceedToRunway}
+                className="px-8 py-3 bg-foreground text-background rounded-lg font-semibold hover:opacity-90 transition-opacity"
+              >
+                Proceed to Runway Walk →
+              </button>
+              <p className="text-xs text-muted-foreground mt-2">
+                Click to see your final runway walk
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -16,6 +16,7 @@ export default function UserAccessorizePane() {
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
+  const [hoveredUrl, setHoveredUrl] = useState<string | null>(null);
   // Allow page shortcut (E) to focus the input via a global event
   useEffect(() => {
     const handler = (e: CustomEvent) => {
@@ -72,11 +73,13 @@ export default function UserAccessorizePane() {
 
           {/* Variants grid */}
           {variants.length > 0 && (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 relative">
               {variants.map((u) => (
                 <button
                   key={u}
                   onClick={async () => { await chooseVariant(u); setSelectedUrl(u); }}
+                  onMouseEnter={() => setHoveredUrl(u)}
+                  onMouseLeave={() => setHoveredUrl(null)}
                   className={`relative rounded-xl overflow-hidden border transition shadow-sm ${
                     selectedUrl === u ? 'border-green-500 ring-2 ring-green-500' : 'border-foreground/15 hover:border-foreground/40'
                   }`}
@@ -92,6 +95,27 @@ export default function UserAccessorizePane() {
                   )}
                 </button>
               ))}
+            </div>
+          )}
+          
+          {/* Hover preview overlay */}
+          {hoveredUrl && (
+            <div className="fixed inset-0 z-50 pointer-events-none flex items-center justify-center p-8 bg-black/40 transition-opacity duration-200">
+              <div className="relative w-full max-w-2xl h-full max-h-[80vh] bg-black/90 rounded-2xl shadow-2xl pointer-events-auto overflow-hidden transition-transform duration-200 scale-100">
+                <button
+                  onClick={() => setHoveredUrl(null)}
+                  className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 backdrop-blur hover:bg-white/20 transition-colors flex items-center justify-center text-white"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                <img 
+                  src={hoveredUrl} 
+                  alt="Preview" 
+                  className="w-full h-full object-contain p-4"
+                />
+              </div>
             </div>
           )}
         </div>
