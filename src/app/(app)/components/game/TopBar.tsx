@@ -156,7 +156,7 @@ export default function TopBar() {
         )}
 
         {/* Timer (bottom): large centered */}
-        {timer > 0 && (
+        {timer > 0 && phase !== 'Accessorize' && (
           <div className="text-[24px] font-extrabold text-foreground font-mono">
             {formatTime(timer)}
           </div>
