@@ -21,6 +21,7 @@ export default function ClosetNineGrid() {
   const [results, setResults] = useState<string[]>([]);
   const [tryOnItemId, setTryOnItemId] = useState<string | null>(null);
   const phase = useGameStore((s) => s.phase);
+  const isShoppingSpree = phase === 'ShoppingSpree';
   
   // Debug logging
   useEffect(() => {
@@ -129,7 +130,7 @@ export default function ClosetNineGrid() {
       {(wardrobe.length > 0 || phase !== 'StylingRound') && (
         <div className={phase === 'StylingRound' 
           ? "relative flex-1 min-h-0 h-full flex items-center justify-center py-2"
-          : "relative h-[60vh] md:h-[70vh] flex items-center justify-center"
+          : `relative h-[60vh] md:h-[70vh] flex items-center justify-center ${isShoppingSpree ? 'mt-14 md:mt-20' : ''}`
         }>
         {/* Centered closet background */}
         <img
@@ -138,7 +139,7 @@ export default function ClosetNineGrid() {
           aria-hidden
           className={phase === 'StylingRound' 
             ? "absolute inset-0 z-[1] m-auto max-w-full max-h-full object-contain pointer-events-none select-none scale-110 translate-y-2 md:translate-y-4"
-            : "absolute inset-0 z-0 m-auto max-w-full max-h-full object-contain pointer-events-none select-none scale-110 translate-y-2 md:translate-y-4"
+            : `absolute inset-0 z-0 m-auto max-w-full max-h-full object-contain pointer-events-none select-none scale-110 ${isShoppingSpree ? 'translate-y-4 md:translate-y-6' : 'translate-y-2 md:translate-y-4'}`
           }
         />
         {/* Existing grid overlayed on top */}

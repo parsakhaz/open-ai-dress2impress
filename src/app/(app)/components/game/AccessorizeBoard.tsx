@@ -91,7 +91,7 @@ export default function AccessorizeBoard() {
             <div className="relative z-10 flex-1 flex items-center justify-center p-4">
               <div className="text-center">
                 <div className={`w-12 h-12 mx-auto rounded-full border-4 border-foreground/20 ${status==='done' ? 'border-green-500' : 'border-t-foreground animate-spin'}`} />
-                <div className="mt-3 text-foreground font-semibold text-center">
+                <div className="mt-3 text-foreground font-semibold">
                   {status === 'waitingBase' && 'waiting for ChatGPT try‑on…'}
                   {status === 'prompting' && 'constructing query…'}
                   {status === 'editing' && 'generating images…'}
