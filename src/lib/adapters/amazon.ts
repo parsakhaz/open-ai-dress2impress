@@ -19,8 +19,7 @@ export async function searchAmazon(query: string, options?: Partial<AmazonSearch
         category: 'top',
       };
     })
-    .filter((p): p is WardrobeItem => p !== null)
-    .slice(0, 8);
+    .filter((p): p is WardrobeItem => p !== null);
 }
 
 

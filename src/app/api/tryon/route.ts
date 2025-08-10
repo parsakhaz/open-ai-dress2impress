@@ -62,7 +62,7 @@ export const POST = createHandler<{ characterImageUrl: string; clothingImageUrl:
   parse: async (req: NextRequest) => guards.tryon(await req.json()),
   handle: async ({ characterImageUrl, clothingImageUrl }) => {
     const { FASHN_AI_API_KEY } = getServerEnv();
-    const images = await parallel(4, () => runSingleTryOn(characterImageUrl, clothingImageUrl, FASHN_AI_API_KEY));
+    const images = await parallel(1, () => runSingleTryOn(characterImageUrl, clothingImageUrl, FASHN_AI_API_KEY));
     return { images };
   },
 });

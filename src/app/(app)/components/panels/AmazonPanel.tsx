@@ -12,6 +12,8 @@ interface AmazonPanelProps {
   showToast?: (message: string, type?: 'success' | 'error' | 'info') => void;
 }
 
+const MAX_WARDROBE_ITEMS = 8;
+
 export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {}) {
   const [query, setQuery] = useState('black leather jacket');
   const [loading, setLoading] = useState(false);
@@ -36,6 +38,10 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
       removeFromWardrobe(item.id);
       showToast?.(`Removed "${item.name}" from wardrobe`, 'info');
     } else {
+      if (wardrobe.length >= MAX_WARDROBE_ITEMS) {
+        showToast?.(`You can only add up to ${MAX_WARDROBE_ITEMS} items. Remove something to add more.`, 'info');
+        return;
+      }
       addToWardrobe(item);
       showToast?.(`Added "${item.name}" to wardrobe! 👗`, 'success');
       // Auto-enqueue try-on with latest edit image if available, else fall back to current/character
@@ -73,11 +79,14 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
   return (
     <GlassPanel 
       variant="modal" 
-      className="relative w-full max-h-[90vh] overflow-hidden"
+      className="relative w-full h-full overflow-hidden"
     >
-      <div className="space-y-6">
+      <div className="h-full flex flex-col space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Amazon Shopping</h2>
+          <div>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Amazon Shopping</h2>
+            <div className="text-sm text-slate-600 dark:text-slate-400">Selected {wardrobe.length}/{MAX_WARDROBE_ITEMS} • Max 8 items</div>
+          </div>
           {onClose && (
             <GlassButton
               size="sm"
@@ -132,7 +141,7 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
           </div>
         )}
 
-        <div className="overflow-auto max-h-[calc(90vh-12rem)]">
+        <div className="flex-1 overflow-auto">
           {results.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">

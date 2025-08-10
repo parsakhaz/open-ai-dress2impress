@@ -161,7 +161,7 @@ export default function GamePage() {
             className="fixed inset-0"
             onClick={() => setAmazonPanelVisible(false)}
           />
-          <div className="relative max-w-6xl w-full mx-4 max-h-[90vh]">
+          <div className="relative w-[96vw] max-w-[1600px] mx-2 h-[96vh]">
             <AmazonPanel onClose={() => setAmazonPanelVisible(false)} showToast={showToast} />
           </div>
         </div>
