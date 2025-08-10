@@ -439,27 +439,15 @@ export default function GamePage() {
         </div>
       )}
 
-      {/* Accessorize navigation controls (Prev / Skip / Next) */}
+      {/* Accessorize navigation controls (Skip only) */}
       {phase === 'Accessorize' && (
         <div className="fixed inset-x-0 bottom-4 z-[80] pointer-events-none">
-          <div className="mx-auto max-w-5xl px-4 flex items-center justify-between gap-3">
-            <button
-              className="pointer-events-auto px-4 py-2 rounded-lg bg-white/90 text-black hover:bg-white border border-gray-300 shadow-lg backdrop-blur-sm font-medium"
-              onClick={() => { setEditPanelVisible(false); setPhase('StylingRound'); }}
-            >
-              ← Previous
-            </button>
+          <div className="mx-auto max-w-5xl px-4 flex items-center justify-center gap-3">
             <button
               className="pointer-events-auto px-4 py-2 rounded-lg bg-white/90 text-black hover:bg-white border border-gray-300 shadow-lg backdrop-blur-sm font-medium"
               onClick={() => { if (!muteToasts) showToast('Skipping accessories—heading to evaluation.', 'info', 2000); setEditPanelVisible(false); setPhase('Evaluation'); }}
             >
               Skip Accessorize
-            </button>
-            <button
-              className="pointer-events-auto px-4 py-2 rounded-lg bg-white/90 text-black hover:bg-white border border-gray-300 shadow-lg backdrop-blur-sm font-medium"
-              onClick={() => { setEditPanelVisible(false); setPhase('Evaluation'); }}
-            >
-              Next →
             </button>
           </div>
         </div>
