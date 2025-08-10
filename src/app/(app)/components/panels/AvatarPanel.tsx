@@ -34,6 +34,7 @@ export default function AvatarPanel() {
   const [showShoppingConfirmation, setShowShoppingConfirmation] = useState(false);
   const [selectedAvatarUrl, setSelectedAvatarUrl] = useState<string | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [characterScrollIndex, setCharacterScrollIndex] = useState(0);
   const setCharacter = useGameStore((s) => s.setCharacter);
   const character = useGameStore((s) => s.character);
   const setCurrentImage = useGameStore((s) => s.setCurrentImage);
@@ -50,7 +51,10 @@ export default function AvatarPanel() {
   const presetCharacters: Array<{ id: string; name: string; url: string }> = [
     { id: 'sam-altman', name: 'Sam Altman', url: '/character/sam-altman.webp' },
     { id: 'elon-musk', name: 'Elon Musk', url: '/character/elon-musk.webp' },
+    { id: 'mira-murati', name: 'Mira Murati', url: '/character/mira-murati.webp' },
     { id: 'tina', name: 'Tina', url: '/character/tina.webp' },
+    { id: 'trevor', name: 'Trevor', url: '/character/trevor.webp' },
+    { id: 'tim', name: 'Tim', url: '/character/tim.webp' },
   ];
   
   // Removed debug logging for cleaner production experience
@@ -397,27 +401,53 @@ export default function AvatarPanel() {
               {/* Style a character */}
               <div>
                 <h3 className="text-lg font-semibold text-foreground mb-3">Style a character</h3>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
-                  {presetCharacters.map((p) => {
-                    const isSelected = selectedAvatarUrl === p.url;
-                    return (
-                      <button
-                        key={p.id}
-                        className={`group relative transition-all ${isSelected ? 'ring-4 ring-[#7D8FE2] rounded-2xl' : ''}`}
-                        onClick={() => {
-                          setSelectedAvatarUrl(p.url);
-                          setSelectedAvatarIndex(null);
-                        }}
-                        title={`Choose ${p.name}`}
-                      >
-                        <div className="relative w-full h-[400px] rounded-2xl overflow-hidden">
-                          <img src={p.url} alt={p.name} className="absolute inset-0 w-full h-full object-contain z-0" />
-                          <div className="absolute inset-0 rounded-2xl bg-[#7D8FE2]/10 opacity-0 group-hover:opacity-100 transition-opacity z-10" />
-                        </div>
-                        <div className="mt-3 text-center text-foreground text-base font-medium">{p.name}</div>
-                      </button>
-                    );
-                  })}
+                <div className="relative">
+                  {/* Navigation arrows */}
+                  {characterScrollIndex > 0 && (
+                    <button
+                      onClick={() => setCharacterScrollIndex(Math.max(0, characterScrollIndex - 3))}
+                      className="absolute -left-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 bg-foreground/10 hover:bg-foreground/20 backdrop-blur rounded-full flex items-center justify-center transition-colors shadow-lg"
+                    >
+                      <svg className="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                    </button>
+                  )}
+                  
+                  {characterScrollIndex < presetCharacters.length - 3 && (
+                    <button
+                      onClick={() => setCharacterScrollIndex(Math.min(presetCharacters.length - 3, characterScrollIndex + 3))}
+                      className="absolute -right-6 top-1/2 -translate-y-1/2 z-20 w-12 h-12 bg-foreground/10 hover:bg-foreground/20 backdrop-blur rounded-full flex items-center justify-center transition-colors shadow-lg"
+                    >
+                      <svg className="w-6 h-6 text-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </button>
+                  )}
+
+                  {/* Characters grid - show 3 at a time */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
+                    {presetCharacters.slice(characterScrollIndex, characterScrollIndex + 3).map((p) => {
+                      const isSelected = selectedAvatarUrl === p.url;
+                      return (
+                        <button
+                          key={p.id}
+                          className={`group relative transition-all ${isSelected ? 'ring-4 ring-[#7D8FE2] rounded-2xl' : ''}`}
+                          onClick={() => {
+                            setSelectedAvatarUrl(p.url);
+                            setSelectedAvatarIndex(null);
+                          }}
+                          title={`Choose ${p.name}`}
+                        >
+                          <div className="relative w-full h-[400px] rounded-2xl overflow-hidden">
+                            <img src={p.url} alt={p.name} className="absolute inset-0 w-full h-full object-contain z-0" />
+                            <div className="absolute inset-0 rounded-2xl bg-[#7D8FE2]/10 opacity-0 group-hover:opacity-100 transition-opacity z-10" />
+                          </div>
+                          <div className="mt-3 text-center text-foreground text-base font-medium">{p.name}</div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
               </div>
