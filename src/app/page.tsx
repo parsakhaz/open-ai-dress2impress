@@ -10,8 +10,6 @@ import GameBoard from '@/app/(app)/components/game/GameBoard';
 import StylingBoard from '@/app/(app)/components/game/StylingBoard';
 import AvatarPanel from '@/app/(app)/components/panels/AvatarPanel';
 import EditWithAIPanel from '@/app/(app)/components/panels/EditWithAIPanel';
-import WardrobeModal from '@/app/(app)/components/ui/WardrobeModal';
-import WardrobeContent from '@/app/(app)/components/ui/WardrobeContent';
 import { DebugPanel } from '@/components/DebugPanel';
 import { useToast } from '@/hooks/useToast';
 import ThemeDrawModal from '@/app/(app)/components/ui/ThemeDrawModal';
@@ -34,6 +32,7 @@ export default function GamePage() {
   
   // Panel visibility states
   const [isEditPanelVisible, setEditPanelVisible] = useState(false);
+  // Inline wardrobe during StylingRound: no modal anymore
   const [isWardrobeOpen, setWardrobeOpen] = useState(false);
   const [isAIConsoleVisible, setAIConsoleVisible] = useState(false);
 
@@ -210,7 +209,7 @@ export default function GamePage() {
     } else if (phase === 'StylingRound') {
       setEditPanelVisible(false);
       setAIConsoleVisible(false);
-      // Auto-open Wardrobe on entering StylingRound so users can choose/preview try-on results
+      // Wardrobe becomes the left inline panel; keep flag for keyboard shortcut UX
       setWardrobeOpen(true);
     } else if (phase === 'Accessorize') {
       // Auto-open Edit; close others
@@ -269,10 +268,10 @@ export default function GamePage() {
           if (!muteToasts) showToast(wardrobeTooltip, 'info');
           return;
         }
-        // Open Wardrobe; close others
+        // Toggle inline Wardrobe in StylingRound; no modal
         setEditPanelVisible(false);
         setAIConsoleVisible(false);
-        setWardrobeOpen(true);
+        setWardrobeOpen((v) => !v);
       } else if (key === 'a') {
         // In Accessorize, AI console is disabled
         if (phase === 'Accessorize') {
@@ -330,7 +329,7 @@ export default function GamePage() {
       {phase === 'ThemeSelect' && character ? (
         <ThemeDrawModal open={true} onClose={() => { /* handled by draw */ }} />
       ) : phase === 'CharacterSelect' ? (
-        <div className="fixed inset-0 z-50 overflow-y-auto bg-white">
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-background">
           <div className="min-h-[100svh] flex items-start justify-center p-4 sm:p-6">
             <div className="w-full max-w-6xl my-6">
               <AvatarPanel />
@@ -342,7 +341,7 @@ export default function GamePage() {
       {/* Amazon modal removed in single-screen layout; generation lives in left sidebar */}
       
       {isEditPanelVisible && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-lg">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-overlay)]">
           <div 
             className="fixed inset-0"
             onClick={() => setEditPanelVisible(false)}
@@ -353,45 +352,42 @@ export default function GamePage() {
         </div>
       )}
       
-      {/* Wardrobe Modal */}
-      <WardrobeModal open={isWardrobeOpen} onClose={() => setWardrobeOpen(false)}>
-        <WardrobeContent onClose={() => setWardrobeOpen(false)} />
-      </WardrobeModal>
+      {/* Wardrobe modal removed; handled inline in boards */}
       
       {/* AI Console dialog not needed; logs live on the right in the board */}
       <DebugPanel />
       
       {/* Walkout loading overlay */}
       {phase === 'WalkoutAndEval' && runwayLoading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-lg">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-overlay)]">
           <div className="text-center space-y-5">
-            <div className="w-12 h-12 mx-auto rounded-full border-4 border-white/30 border-t-white animate-spin" />
-            <div className="text-white/95 text-lg font-medium">Generating your runway walk…</div>
-            <div className="text-white/80 text-sm">{statusMessage}</div>
-            <div className="w-80 max-w-[70vw] h-3 mx-auto rounded-full bg-white/10 overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-accent/60 to-accent" style={{ width: `${runwayProgressPct}%` }} />
+            <div className="w-12 h-12 mx-auto rounded-full border-4 border-foreground/30 border-t-foreground animate-spin" />
+            <div className="text-foreground text-lg font-medium">Generating your runway walk…</div>
+            <div className="text-foreground/80 text-sm">{statusMessage}</div>
+            <div className="w-80 max-w-[70vw] h-3 mx-auto rounded-full bg-foreground/10 overflow-hidden">
+              <div className="h-full bg-foreground" style={{ width: `${runwayProgressPct}%` }} />
             </div>
-            <div className="text-white/70 text-xs">{runwayProgressPct}% • ~{formatTime(remainingSeconds)} remaining (est.)</div>
-            {runwayError && <div className="text-red-300 text-sm">{runwayError}</div>}
+            <div className="text-foreground/70 text-xs">{runwayProgressPct}% • ~{formatTime(remainingSeconds)} remaining (est.)</div>
+            {runwayError && <div className="text-foreground text-sm">{runwayError}</div>}
           </div>
         </div>
       )}
 
       {/* Walkout debug overlay when auto-runway is disabled */}
       {phase === 'WalkoutAndEval' && !runwayLoading && disableAutoRunway && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-lg">
-          <div className="text-center space-y-4 text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-overlay)]">
+          <div className="text-center space-y-4 text-foreground">
             <div className="text-lg font-semibold">Runway generation disabled by debug.</div>
-            <div className="text-sm text-white/80">Enable it in Debug Panel → FLOW to auto-generate, or jump to Results.</div>
+            <div className="text-sm text-foreground/80">Enable it in Debug Panel → FLOW to auto-generate, or jump to Results.</div>
           </div>
         </div>
       )}
 
       {/* Results overlay with video */}
       {phase === 'Results' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-lg">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-overlay)]">
           <div className="w-full max-w-6xl mx-6 py-8">
-            <div className="w-full aspect-video max-h-[80vh] mx-auto rounded-2xl overflow-hidden shadow-2xl bg-black/90 flex items-center justify-center">
+            <div className="w-full aspect-video max-h-[80vh] mx-auto rounded-2xl overflow-hidden shadow-2xl bg-background flex items-center justify-center">
               {(runwayUrl || persistedRunwayUrl) ? (
                 <video
                   src={runwayUrl || persistedRunwayUrl || ''}
@@ -412,13 +408,13 @@ export default function GamePage() {
             </div>
             <div className="mt-6 flex items-center justify-center gap-3">
               <button
-                className="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20"
+                className="px-4 py-2 rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/20"
                 onClick={() => { setPersistedRunwayUrl(null); resetGame(); }}
               >
                 Restart
               </button>
               <button
-                className="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20"
+                className="px-4 py-2 rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/20"
                 onClick={() => { setPersistedRunwayUrl(null); setPhase('StylingRound'); }}
               >
                 Back to styling
@@ -432,7 +428,7 @@ export default function GamePage() {
       {phase === 'Accessorize' && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
           <button
-            className="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 backdrop-blur-md border border-white/20"
+            className="px-4 py-2 rounded-lg bg-foreground/10 text-foreground hover:bg-foreground/20 border border-border"
             onClick={() => { if (!muteToasts) showToast('Skipping accessories—preparing the runway.', 'info', 2000); setEditPanelVisible(false); setPhase('WalkoutAndEval'); }}
           >
             Skip Accessorize

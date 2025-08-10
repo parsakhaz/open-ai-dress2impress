@@ -17,7 +17,7 @@ export function GlassButton({
   const baseStyles = [
     'relative inline-flex items-center justify-center',
     'font-medium transition-all duration-200 ease-out',
-    'focus:outline-none focus-visible:ring-2 focus-visible:ring-accent/50',
+    'focus:outline-none focus-visible:ring-2 focus-visible:ring-foreground/50',
     'disabled:opacity-50 disabled:cursor-not-allowed',
   ].join(' ')
 
@@ -29,27 +29,21 @@ export function GlassButton({
 
   const variantStyles = {
     primary: [
-      'bg-black text-white border border-black',
-      'dark:bg-white dark:text-black dark:border-white',
-      'hover:scale-[1.02] hover:shadow-xl',
-      'active:scale-[0.98]',
+      'bg-foreground text-background border border-foreground',
+      'hover:opacity-90',
+      'active:opacity-80',
     ].join(' '),
     
     secondary: [
-      'bg-white/90 border border-black/20 text-black',
-      'dark:bg-black/90 dark:border-white/20 dark:text-white',
-      'hover:bg-white hover:scale-[1.02] hover:shadow-lg hover:border-black/40',
-      'dark:hover:bg-black dark:hover:border-white/40',
-      'active:scale-[0.98]',
-      'backdrop-blur-sm backdrop-saturate-150',
+      'bg-background border border-border text-foreground',
+      'hover:bg-foreground/10',
+      'active:opacity-90',
     ].join(' '),
     
     ghost: [
-      'text-black/80 border border-transparent',
-      'dark:text-white/80',
-      'hover:bg-black/10 hover:text-black hover:border-black/20',
-      'dark:hover:bg-white/10 dark:hover:text-white dark:hover:border-white/20',
-      'active:scale-[0.98]',
+      'text-foreground border border-transparent',
+      'hover:bg-foreground/10',
+      'active:opacity-90',
     ].join(' '),
   }
 
@@ -59,20 +53,13 @@ export function GlassButton({
         baseStyles,
         sizeStyles[size],
         variantStyles[variant],
-        disabled ? '' : 'hover:will-change-transform',
+        disabled ? '' : '',
         className,
       ].join(' ')}
       disabled={disabled}
       {...props}
     >
-      {/* Subtle inner highlight for glass effect */}
-      {variant === 'secondary' && (
-        <div className="absolute inset-0 rounded-[inherit] [mask-image:linear-gradient(180deg,white_30%,transparent_70%)] bg-gradient-to-b from-white/20 to-transparent pointer-events-none" />
-      )}
-      
-      <span className="relative z-10">
-        {children}
-      </span>
+      <span className="relative">{children}</span>
     </button>
   )
 }

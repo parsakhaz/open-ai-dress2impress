@@ -25,26 +25,11 @@ export default function RootLayout({
   console.log('🏠 ROOT LAYOUT: Rendering layout with children');
   
   return (
-    <html lang="en" className="light" suppressHydrationWarning>
-      <head>
-        <meta name="color-scheme" content="light" />
-      </head>
+    <html lang="en" suppressHydrationWarning>
+      <head />
       <body
-        className={`${geistSans.variable} ${geistMono.variable} min-h-screen antialiased text-slate-900 dark:text-slate-100`}
+        className={`${geistSans.variable} ${geistMono.variable} min-h-screen antialiased bg-background text-foreground`}
       >
-        {/* Pure black background */}
-        <div className="fixed inset-0 -z-50 bg-black" />
-        
-        {/* Fine noise over everything (prevents plastic look) */}
-        <div
-          className="pointer-events-none fixed inset-0 -z-30 mix-blend-overlay"
-          style={{ 
-            backgroundImage: 'var(--noise)', 
-            opacity: 'var(--noise-opacity)' 
-          }}
-        />
-        
-        {/* Removed inline script for better hygiene */}
         {children}
       </body>
     </html>

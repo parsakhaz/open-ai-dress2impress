@@ -103,20 +103,20 @@ export default function GenerateSidebar({ className = '', showToast }: GenerateS
   return (
     <GlassPanel className={`h-full flex flex-col overflow-hidden ${className}`}>
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">GENERATE CLOTHES & ACCESSORIES</h3>
+        <h3 className="text-sm font-semibold text-foreground">GENERATE CLOTHES & ACCESSORIES</h3>
       </div>
 
       <form onSubmit={onSearch} className="mb-3">
         <div className="relative">
           <input
-            className="w-full px-3 py-2 bg-white/50 dark:bg-black/20 backdrop-blur-sm border border-white/60 dark:border-white/20 rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all"
+            className="w-full px-3 py-2 bg-background border border-border rounded-xl text-foreground placeholder:opacity-60 focus:outline-none focus:ring-2 focus:ring-foreground/30 focus:border-transparent transition-all"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Describe what you want to wear…"
             suppressHydrationWarning
             disabled={phase !== 'ShoppingSpree'}
           />
-          <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-foreground/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
@@ -126,7 +126,7 @@ export default function GenerateSidebar({ className = '', showToast }: GenerateS
       </form>
 
       {error && (
-        <div className="p-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 text-xs mb-2">
+        <div className="p-2 rounded-lg bg-foreground/10 border border-foreground/20 text-foreground text-xs mb-2">
           {error}
         </div>
       )}
@@ -135,7 +135,7 @@ export default function GenerateSidebar({ className = '', showToast }: GenerateS
         {results.length > itemsPerPage && (
           <div className="flex items-center justify-center gap-2 py-2">
             <GlassButton size="sm" variant="ghost" onClick={() => setCurrentPage(Math.max(0, currentPage - 1))} disabled={currentPage === 0}>Prev</GlassButton>
-            <span className="text-xs text-slate-500">{currentPage + 1} / {totalPages}</span>
+            <span className="text-xs text-foreground/60">{currentPage + 1} / {totalPages}</span>
             <GlassButton size="sm" variant="ghost" onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))} disabled={currentPage === totalPages - 1}>Next</GlassButton>
           </div>
         )}
@@ -143,19 +143,19 @@ export default function GenerateSidebar({ className = '', showToast }: GenerateS
           {paginatedResults.map((r) => (
             <div
               key={r.id}
-              className="group relative rounded-xl overflow-hidden bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 hover:border-accent/50 transition-all duration-200"
+              className="group relative rounded-xl overflow-hidden bg-background border border-border hover:border-foreground/50 transition-all duration-200"
               draggable={phase === 'ShoppingSpree'}
               onDragStart={(e) => {
                 try { e.dataTransfer.setData('application/json', JSON.stringify(r)); } catch {}
               }}
             >
-              <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
+              <div className="relative aspect-square overflow-hidden bg-muted">
                 <img src={r.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover blur-xl opacity-50" />
                 <img src={r.imageUrl} alt={r.name} className="relative w-full h-full object-contain" />
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-black/40 flex items-end p-2">
+                <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-foreground/40 flex items-end p-2">
                   <GlassButton
                     variant="secondary"
-                    className="w-full !bg-black !text-white"
+                    className="w-full"
                     onClick={() => { void toggleWardrobe(r); }}
                     disabled={phase !== 'ShoppingSpree'}
                   >
@@ -170,7 +170,7 @@ export default function GenerateSidebar({ className = '', showToast }: GenerateS
         {results.length > itemsPerPage && (
           <div className="flex items-center justify-center gap-2 py-3">
             <GlassButton size="sm" variant="ghost" onClick={() => setCurrentPage(Math.max(0, currentPage - 1))} disabled={currentPage === 0}>Prev</GlassButton>
-            <span className="text-xs text-slate-500">{currentPage + 1} / {totalPages}</span>
+            <span className="text-xs text-foreground/60">{currentPage + 1} / {totalPages}</span>
             <GlassButton size="sm" variant="ghost" onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))} disabled={currentPage === totalPages - 1}>Next</GlassButton>
           </div>
         )}

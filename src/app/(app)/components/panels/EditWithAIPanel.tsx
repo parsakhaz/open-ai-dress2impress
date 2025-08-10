@@ -87,13 +87,13 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
     >
       <div className="space-y-6 flex flex-col h-full min-h-0">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{phase === 'Accessorize' ? 'Accessorize' : 'Edit with AI'}</h2>
+          <h2 className="text-2xl font-bold text-foreground">{phase === 'Accessorize' ? 'Accessorize' : 'Edit with AI'}</h2>
           {onClose && !loading && (
             <GlassButton
               size="sm"
               variant="ghost"
               onClick={onClose}
-              className="w-8 h-8 p-0 flex items-center justify-center hover:bg-white/20"
+              className="w-8 h-8 p-0 flex items-center justify-center hover:bg-foreground/10"
               title="Close"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -102,7 +102,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
             </GlassButton>
           )}
         </div>
-        <p className="text-sm text-slate-600 dark:text-slate-400">
+        <p className="text-sm text-foreground/70">
           {phase === 'Accessorize'
             ? 'One AI edit for finishing touches (30–100s). Combine multiple instructions (e.g., silver necklace, hoop earrings, black belt, sunglasses). You’ll receive 4 options.'
             : 'Editing typically takes ~30–100s. Tip: combine multiple changes in one request (e.g., add jewelry, a hat, sunglasses, a watch, and shoes).'}
@@ -110,12 +110,12 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
         
         <div className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Base Image
             </label>
             <div className="flex items-center gap-3">
               {imageUrl ? (
-                <div className="w-20 h-20 rounded-lg overflow-hidden bg-white/20 dark:bg-black/20 border border-white/30 dark:border-white/10">
+                <div className="w-20 h-20 rounded-lg overflow-hidden bg-background border border-border">
                   <img src={imageUrl} alt="Base" className="w-full h-full object-cover" />
                 </div>
               ) : null}
@@ -139,17 +139,17 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
           </div>
           
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+            <label className="block text-sm font-medium text-foreground mb-2">
               Edit Instruction
             </label>
             <input
-              className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 backdrop-blur-sm border border-white/60 dark:border-white/20 rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all"
+              className="w-full px-4 py-3 bg-background border border-border rounded-xl text-foreground placeholder:opacity-60 focus:outline-none focus:ring-2 focus:ring-foreground/30 focus:border-transparent transition-all"
               placeholder="e.g., add jewelry, a hat, sunglasses, a wrist watch, and shoes (combine multiple changes in one ask)"
               value={instruction}
               onChange={(e) => setInstruction(e.target.value)}
               suppressHydrationWarning
             />
-            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">You can combine multiple changes in one request, separated by commas. Example: add jewelry, a hat, sunglasses, a wrist watch, and shoes.</div>
+            <div className="mt-1 text-xs text-foreground/60">You can combine multiple changes in one request, separated by commas. Example: add jewelry, a hat, sunglasses, a wrist watch, and shoes.</div>
           </div>
 
           <GlassButton 
@@ -173,7 +173,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
         </div>
 
         {error && (
-          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 text-sm">
+          <div className="p-3 rounded-lg bg-foreground/10 border border-foreground/20 text-foreground text-sm">
             {error}
           </div>
         )}
@@ -182,8 +182,8 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
           {variants.length > 0 && !showEditSelector && (
             <div className="text-center space-y-4">
               <div className="text-center">
-                <h4 className="text-lg font-semibold text-slate-900 dark:text-slate-100">AI Edit Results</h4>
-                <p className="text-slate-600 dark:text-slate-400 text-sm">Click below to view and select your edit</p>
+                <h4 className="text-lg font-semibold text-foreground">AI Edit Results</h4>
+                <p className="text-foreground/70 text-sm">Click below to view and select your edit</p>
               </div>
               <GlassButton 
                 variant="primary" 
@@ -197,7 +197,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
 
           {variants.length === 0 && !loading && !error && (
             <div className="text-center py-12">
-              <div className="text-slate-400 dark:text-slate-500 space-y-2">
+              <div className="text-foreground/60 space-y-2">
                 <svg className="w-16 h-16 mx-auto opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
@@ -221,20 +221,20 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
     </GlassPanel>
 
     {/* Fullscreen Edit Selector Modal */}
-    {showEditSelector && variants.length > 0 && (
-      <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm overflow-y-auto">
+      {showEditSelector && variants.length > 0 && (
+        <div className="fixed inset-0 z-50 bg-[var(--color-overlay)] overflow-y-auto">
         <div className="min-h-[100svh] flex items-start justify-center p-4">
           <div className="w-full max-w-6xl mx-auto my-6 flex flex-col max-h-[90svh]">
-            <div className="text-center text-white mb-6">
+            <div className="text-center text-foreground mb-6">
               <h2 className="text-3xl font-bold mb-2">Choose Your Edit</h2>
-              <p className="text-white/80">Select the best AI edit</p>
+              <p className="text-foreground/80">Select the best AI edit</p>
             </div>
 
             <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6 max-h-[70vh] overflow-y-auto">
               {variants.map((url, index) => (
                 <div key={index} className="group relative">
-                  <div className={`relative rounded-2xl overflow-hidden bg-white shadow-2xl hover:shadow-3xl transition-all duration-300 cursor-pointer ${
-                    selectedEditIndex === index ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'
+                  <div className={`relative rounded-2xl overflow-hidden bg-background border border-border shadow-2xl hover:shadow-3xl transition-all duration-300 cursor-pointer ${
+                    selectedEditIndex === index ? 'ring-4 ring-foreground scale-105' : 'hover:scale-105'
                   }`}>
                     <div className="relative w-full aspect-[3/4] bg-gradient-to-br from-slate-100 to-slate-200">
                       <img 
@@ -248,13 +248,13 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
                         className="relative w-full h-full object-contain"
                       />
                     </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
 
                     {selectedEditIndex === index && (
                       <div className="absolute bottom-4 left-4 right-4">
                         <GlassButton 
                           variant="primary" 
-                          className="w-full text-white bg-blue-500 hover:bg-blue-600 backdrop-blur-sm border-blue-400"
+                          className="w-full"
                           onClick={async (e) => {
                             e.stopPropagation();
                             await selectImage(url, { type: 'edit', description: instruction || 'AI edit', addToHistory: true });
@@ -272,7 +272,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
                     )}
 
                     {selectedEditIndex === index && (
-                      <div className="absolute top-3 right-3 bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                      <div className="absolute top-3 right-3 bg-foreground text-background px-2 py-1 rounded-full text-xs font-semibold">
                         PREVIEWING
                       </div>
                     )}
@@ -287,7 +287,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
                     />
                   </div>
 
-                  <div className="absolute top-3 left-3 w-8 h-8 bg-black/60 backdrop-blur-sm text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                  <div className="absolute top-3 left-3 w-8 h-8 bg-foreground/60 text-background rounded-full flex items-center justify-center text-sm font-semibold">
                     {index + 1}
                   </div>
                 </div>
@@ -334,20 +334,20 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
     )}
 
     {/* Fullscreen Edit Preview Modal */}
-    {showFullscreenPreview && variants.length > 0 && (
-      <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm overflow-y-auto">
+      {showFullscreenPreview && variants.length > 0 && (
+        <div className="fixed inset-0 z-50 bg-[var(--color-overlay)] overflow-y-auto">
         <div className="min-h-[100svh] flex items-start justify-center p-4">
           <div className="w-full max-w-5xl mx-auto my-6 flex flex-col">
             <div className="flex justify-between items-center p-4 md:p-6">
-              <div className="text-white">
+              <div className="text-foreground">
                 <h3 className="text-xl md:text-2xl font-bold">Edit Preview</h3>
-                <p className="text-white/80 text-sm md:text-base">
+                <p className="text-foreground/80 text-sm md:text-base">
                   {previewEditIndex + 1} of {variants.length}
                 </p>
               </div>
               <button
                 onClick={() => setShowFullscreenPreview(false)}
-                className="w-10 h-10 md:w-12 md:h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white text-xl md:text-2xl transition-colors"
+                className="w-10 h-10 md:w-12 md:h-12 bg-foreground/10 hover:bg-foreground/20 rounded-full flex items-center justify-center text-foreground text-xl md:text-2xl transition-colors"
               >
                 ×
               </button>
@@ -373,14 +373,14 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
             <div className="flex justify-between items-center p-4 md:p-6">
               <button
                 onClick={() => setPreviewEditIndex(previewEditIndex > 0 ? previewEditIndex - 1 : variants.length - 1)}
-                className="flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors"
+                className="flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 bg-foreground/10 hover:bg-foreground/20 text-foreground rounded-xl transition-colors"
               >
                 ← Previous
               </button>
 
               <GlassButton
                 variant="primary"
-                className="px-6 py-3 md:px-8 md:py-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold"
+                className="px-6 py-3 md:px-8 md:py-4"
                 onClick={async () => {
                   const chosen = variants[previewEditIndex];
                   await selectImage(chosen, { type: 'edit', description: instruction || 'AI edit', addToHistory: true });
@@ -397,7 +397,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
 
               <button
                 onClick={() => setPreviewEditIndex(previewEditIndex < variants.length - 1 ? previewEditIndex + 1 : 0)}
-                className="flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors"
+                className="flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 bg-foreground/10 hover:bg-foreground/20 text-foreground rounded-xl transition-colors"
               >
                 Next →
               </button>
@@ -410,11 +410,11 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
                   onClick={() => setPreviewEditIndex(index)}
                   className={`w-12 h-12 md:w-16 md:h-16 rounded-lg overflow-hidden border-2 transition-colors ${
                     index === previewEditIndex 
-                      ? 'border-blue-500' 
-                      : 'border-white/30 hover:border-white/60'
+                      ? 'border-foreground' 
+                      : 'border-border hover:border-foreground/60'
                   }`}
                 >
-                  <div className="relative w-full h-full bg-gradient-to-br from-slate-100 to-slate-200">
+                  <div className="relative w-full h-full bg-muted">
                     <img
                       src={url}
                       alt={`Edit ${index + 1}`}

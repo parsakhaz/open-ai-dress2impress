@@ -220,7 +220,7 @@ export function DebugPanel() {
         <div className="space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">🔍 Debug Panel</h3>
+            <h3 className="text-lg font-bold text-foreground">🔍 Debug Panel</h3>
             <div className="flex gap-2">
               <GlassButton size="sm" onClick={refreshDebugInfo}>
                 🔄 Refresh
@@ -235,15 +235,15 @@ export function DebugPanel() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 p-1 bg-white/20 dark:bg-black/20 rounded-lg relative z-[9999]">
+          <div className="flex gap-1 p-1 bg-background border border-border rounded-lg relative z-[9999]">
             {(['state', 'env', 'performance', 'logs', 'flow'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
                 className={`px-3 py-1 text-xs rounded transition-colors relative z-[9999] ${
                   activeTab === tab 
-                    ? 'bg-accent text-white' 
-                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
+                    ? 'bg-foreground text-background' 
+                    : 'text-foreground/60 hover:text-foreground'
                 }`}
               >
                 {tab.toUpperCase()}
@@ -255,8 +255,8 @@ export function DebugPanel() {
           <div className="max-h-[50vh] overflow-y-auto text-xs">
             {activeTab === 'state' && debugInfo && (
               <div className="space-y-2">
-                <h4 className="font-semibold text-slate-900 dark:text-slate-100">Game State</h4>
-                <pre className="bg-black/20 p-2 rounded text-green-400 font-mono overflow-x-auto">
+                <h4 className="font-semibold text-foreground">Game State</h4>
+                <pre className="bg-background p-2 rounded text-foreground font-mono overflow-x-auto border border-border">
                   {JSON.stringify(debugInfo.gameState, null, 2)}
                 </pre>
               </div>
@@ -264,12 +264,12 @@ export function DebugPanel() {
 
             {activeTab === 'env' && debugInfo && (
               <div className="space-y-2">
-                <h4 className="font-semibold text-slate-900 dark:text-slate-100">Environment</h4>
+                <h4 className="font-semibold text-foreground">Environment</h4>
                 <div className="space-y-1">
                   {Object.entries(debugInfo.environment).map(([key, value]) => (
-                    <div key={key} className="flex justify-between p-2 bg-white/10 rounded">
-                      <span className="font-mono text-slate-600 dark:text-slate-400">{key}</span>
-                      <span className={`font-mono ${value?.includes('Set') ? 'text-green-600' : 'text-red-600'}`}>
+                    <div key={key} className="flex justify-between p-2 bg-background border border-border rounded">
+                      <span className="font-mono text-foreground/70">{key}</span>
+                      <span className={`font-mono ${value?.includes('Set') ? 'text-foreground' : 'text-foreground/70'}`}>
                         {value}
                       </span>
                     </div>
@@ -280,13 +280,13 @@ export function DebugPanel() {
 
             {activeTab === 'performance' && debugInfo && (
               <div className="space-y-2">
-                <h4 className="font-semibold text-slate-900 dark:text-slate-100">Performance</h4>
+                <h4 className="font-semibold text-foreground">Performance</h4>
                 <div className="space-y-1">
                   {debugInfo.performance.slice(-10).map((entry, i) => (
-                    <div key={i} className="p-2 bg-white/10 rounded">
+                    <div key={i} className="p-2 bg-background border border-border rounded">
                       <div className="flex justify-between">
-                        <span className="font-mono text-slate-600 dark:text-slate-400">{entry.name}</span>
-                        <span className="font-mono text-accent">{entry.duration?.toFixed(2)}ms</span>
+                        <span className="font-mono text-foreground/70">{entry.name}</span>
+                        <span className="font-mono text-foreground">{entry.duration?.toFixed(2)}ms</span>
                       </div>
                     </div>
                   ))}
@@ -296,8 +296,8 @@ export function DebugPanel() {
 
             {activeTab === 'logs' && (
               <div className="space-y-2">
-                <h4 className="font-semibold text-slate-900 dark:text-slate-100">Console Logs</h4>
-                <div className="bg-black/20 p-2 rounded text-green-400 font-mono text-xs">
+                <h4 className="font-semibold text-foreground">Console Logs</h4>
+                <div className="bg-background p-2 rounded text-foreground font-mono text-xs border border-border">
                   <p>Check browser DevTools console for detailed logs</p>
                   <p>All app logs are prefixed with emojis for easy filtering</p>
                   <div className="mt-2 space-y-1 text-xs">
@@ -314,13 +314,13 @@ export function DebugPanel() {
 
             {activeTab === 'flow' && (
               <div className="space-y-3">
-                <h4 className="font-semibold text-slate-900 dark:text-slate-100">Flow Control</h4>
+                <h4 className="font-semibold text-foreground">Flow Control</h4>
                 <div className="flex items-center gap-2">
-                  <span className="text-slate-600 dark:text-slate-300">Current:</span>
+                  <span className="text-foreground/70">Current:</span>
                   <span className="font-mono">{currentPhase}</span>
                 </div>
                 <div className="space-y-2">
-                  <div className="text-slate-600 dark:text-slate-300">Jump to</div>
+                  <div className="text-foreground/70">Jump to</div>
                   <div className="flex flex-wrap gap-2">
                     {GAME_PHASES.map((p) => (
                       <GlassButton
@@ -336,7 +336,7 @@ export function DebugPanel() {
                   </div>
                 </div>
                 {readinessWarning && (
-                  <div className="text-amber-600 dark:text-amber-400 text-xs">⚠️ {readinessWarning}</div>
+                  <div className="text-foreground/70 text-xs">⚠️ {readinessWarning}</div>
                 )}
                 <div className="flex items-center gap-3">
                   <label className="flex items-center gap-2 text-xs">
@@ -374,14 +374,14 @@ export function DebugPanel() {
                     Mute toasts
                   </label>
                 </div>
-                <div className="text-xs text-slate-500">
+                <div className="text-xs text-foreground/60">
                   Tip: Ctrl+Shift+D to toggle this panel.
                 </div>
               </div>
             )}
           </div>
 
-          <div className="text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-white/20 dark:border-white/10">
+          <div className="text-xs text-foreground/60 pt-2 border-t border-border">
             Press Ctrl+Shift+D to toggle • Development only
           </div>
         </div>

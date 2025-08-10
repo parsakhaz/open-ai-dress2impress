@@ -97,7 +97,7 @@ export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) 
 
   if (wardrobe.length === 0) {
     return (
-      <div className="text-center py-16 text-slate-500 dark:text-slate-400">
+      <div className="text-center py-16 text-foreground/60">
         <svg className="w-16 h-16 mx-auto mb-4 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
         </svg>
@@ -110,7 +110,7 @@ export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) 
   return (
     <div className="space-y-6">
       {error && (
-        <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 text-sm">
+        <div className="p-3 rounded-lg bg-foreground/10 border border-foreground/20 text-foreground text-sm">
           {error}
         </div>
       )}
@@ -119,38 +119,38 @@ export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) 
         {wardrobe.map((item) => (
           <div
             key={item.id}
-            className="group relative rounded-lg overflow-hidden bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 hover:border-accent/50 transition-colors"
+            className="group relative rounded-lg overflow-hidden bg-background border border-border hover:border-foreground/50 transition-colors"
             onMouseEnter={() => { setHoveredId(item.id); void ensurePreview(item.id); }}
             onMouseLeave={() => { setHoveredId((id) => (id === item.id ? null : id)); }}
           >
-            <div className="relative w-full aspect-square overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
+            <div className="relative w-full aspect-square overflow-hidden bg-muted">
               {/* Blurred background */}
               <img src={item.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover blur-xl opacity-50" />
               {/* Main image */}
               <img src={item.imageUrl} alt={item.name} className="relative w-full h-full object-contain p-2" />
               {/* Hover Preview Overlay */}
               {hoveredId === item.id && canHover() && (
-                <div className="absolute inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-2">
+                <div className="absolute inset-0 bg-foreground/60 flex items-center justify-center p-2">
                   {previewById[item.id]?.status === 'loading' && (
-                    <div className="text-white/80 text-xs">Loading preview…</div>
+                    <div className="text-background/90 text-xs">Loading preview…</div>
                   )}
                   {previewById[item.id]?.status === 'ready' && previewById[item.id]?.url && (
                     <div className="relative w-full h-full">
                       <img src={previewById[item.id]!.url!} alt="Latest try-on" className="absolute inset-0 w-full h-full object-contain" />
-                      <div className="absolute top-2 left-2 text-[10px] px-2 py-1 rounded bg-white/20 text-white">Latest try-on</div>
+                      <div className="absolute top-2 left-2 text-[10px] px-2 py-1 rounded bg-foreground/20 text-background">Latest try-on</div>
                     </div>
                   )}
                   {previewById[item.id]?.status === 'none' && (
-                    <div className="text-white/80 text-xs">No try-on yet</div>
+                    <div className="text-background/90 text-xs">No try-on yet</div>
                   )}
                   {previewById[item.id]?.status === 'error' && (
-                    <div className="text-white/80 text-xs">Preview unavailable</div>
+                    <div className="text-background/90 text-xs">Preview unavailable</div>
                   )}
                 </div>
               )}
             </div>
             <div className="p-3">
-              <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-2 line-clamp-2">{item.name}</p>
+              <p className="text-sm font-medium text-foreground mb-2 line-clamp-2">{item.name}</p>
               <div className="flex gap-2">
                 <GlassButton
                   size="sm"

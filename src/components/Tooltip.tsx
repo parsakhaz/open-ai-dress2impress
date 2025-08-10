@@ -38,10 +38,10 @@ export function Tooltip({
   };
 
   const arrowClasses = {
-    top: 'top-full left-1/2 -translate-x-1/2 border-t-slate-800 dark:border-t-slate-200',
-    bottom: 'bottom-full left-1/2 -translate-x-1/2 border-b-slate-800 dark:border-b-slate-200',
-    left: 'left-full top-1/2 -translate-y-1/2 border-l-slate-800 dark:border-l-slate-200',
-    right: 'right-full top-1/2 -translate-y-1/2 border-r-slate-800 dark:border-r-slate-200',
+    top: 'top-full left-1/2 -translate-x-1/2 border-t-[var(--color-background)]',
+    bottom: 'bottom-full left-1/2 -translate-x-1/2 border-b-[var(--color-background)]',
+    left: 'left-full top-1/2 -translate-y-1/2 border-l-[var(--color-background)]',
+    right: 'right-full top-1/2 -translate-y-1/2 border-r-[var(--color-background)]',
   };
 
   return (
@@ -53,7 +53,7 @@ export function Tooltip({
       {children}
       {isVisible && (
         <div className={`absolute z-50 ${positionClasses[position]} pointer-events-none`}>
-          <div className="relative bg-slate-800 dark:bg-slate-200 text-white dark:text-slate-800 text-sm px-3 py-2 rounded-lg shadow-lg whitespace-nowrap">
+          <div className="relative bg-background text-foreground border border-border text-sm px-3 py-2 rounded-lg shadow-lg whitespace-nowrap">
             {content}
             <div 
               className={`absolute w-0 h-0 border-4 border-transparent ${arrowClasses[position]}`}

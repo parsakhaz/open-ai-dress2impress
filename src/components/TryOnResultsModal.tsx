@@ -68,19 +68,19 @@ export function TryOnResultsModal({ isOpen, onClose, itemId, results: initialRes
     <>
       {/* Main grid view */}
       {!showFullscreenPreview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-lg">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-overlay)]">
           <div 
             className="fixed inset-0"
             onClick={onClose}
           />
-          <GlassPanel 
+            <GlassPanel 
             variant="modal" 
             className="relative max-w-6xl w-full mx-4 max-h-[90vh] overflow-hidden"
           >
             <div className="p-6 space-y-6">
               {/* Header */}
               <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Try-On Results</h2>
+                <h2 className="text-2xl font-bold text-foreground">Try-On Results</h2>
                 <GlassButton
                   size="sm"
                   variant="ghost"
@@ -99,16 +99,16 @@ export function TryOnResultsModal({ isOpen, onClose, itemId, results: initialRes
                   {results.map((url, index) => (
                     <div 
                       key={index} 
-                      className={`
+                    className={`
                         group relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200
                         ${selectedIndex === index 
-                          ? 'ring-4 ring-blue-500 scale-105' 
-                          : 'hover:scale-105 bg-white/20 dark:bg-black/20 border border-white/30 dark:border-white/10 hover:border-accent/50'
+                          ? 'ring-4 ring-foreground scale-105' 
+                          : 'hover:scale-105 bg-foreground/10 border border-border hover:border-foreground/50'
                         }
                       `}
                       onClick={() => setSelectedIndex(index)}
                     >
-                      <div className="aspect-[3/4] overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
+                      <div className="aspect-[3/4] overflow-hidden bg-muted">
                         {/* Blurred background */}
                         <img
                           src={url}
@@ -142,9 +142,9 @@ export function TryOnResultsModal({ isOpen, onClose, itemId, results: initialRes
 
                       {/* Selection indicator */}
                       {selectedIndex === index && (
-                        <div className="absolute top-2 left-2">
-                          <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                       <div className="absolute top-2 left-2">
+                          <div className="w-6 h-6 bg-foreground text-background rounded-full flex items-center justify-center">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                             </svg>
                           </div>
@@ -156,8 +156,8 @@ export function TryOnResultsModal({ isOpen, onClose, itemId, results: initialRes
               </div>
 
               {/* Action buttons */}
-              <div className="flex items-center justify-between pt-4 border-t border-white/20">
-                <div className="text-sm text-slate-600 dark:text-slate-400">
+              <div className="flex items-center justify-between pt-4 border-t border-border">
+                <div className="text-sm text-foreground/70">
                   Click an image to select, then use it as your new avatar
                 </div>
                 <div className="flex gap-3">
@@ -186,7 +186,6 @@ export function TryOnResultsModal({ isOpen, onClose, itemId, results: initialRes
                   <GlassButton
                     variant="primary"
                     onClick={handleSelect}
-                    className="bg-blue-500 hover:bg-blue-600"
                   >
                     <div className="flex items-center gap-2">
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -204,7 +203,7 @@ export function TryOnResultsModal({ isOpen, onClose, itemId, results: initialRes
 
       {/* Fullscreen preview */}
       {showFullscreenPreview && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/90 backdrop-blur-lg">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-[var(--color-overlay)]">
           <div 
             className="fixed inset-0"
             onClick={() => setShowFullscreenPreview(false)}
@@ -213,7 +212,7 @@ export function TryOnResultsModal({ isOpen, onClose, itemId, results: initialRes
           {/* Navigation arrows */}
           {previewIndex > 0 && (
             <button
-              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition-all"
+            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-foreground/20 hover:bg-foreground/30 rounded-full flex items-center justify-center transition-all"
               onClick={() => setPreviewIndex(previewIndex - 1)}
             >
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,7 +223,7 @@ export function TryOnResultsModal({ isOpen, onClose, itemId, results: initialRes
           
           {previewIndex < results.length - 1 && (
             <button
-              className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition-all"
+            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-12 h-12 bg-foreground/20 hover:bg-foreground/30 rounded-full flex items-center justify-center transition-all"
               onClick={() => setPreviewIndex(previewIndex + 1)}
             >
               <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -235,7 +234,7 @@ export function TryOnResultsModal({ isOpen, onClose, itemId, results: initialRes
 
           {/* Close button */}
           <button
-            className="absolute top-4 right-4 z-10 w-12 h-12 bg-white/20 hover:bg-white/30 backdrop-blur-sm rounded-full flex items-center justify-center transition-all"
+            className="absolute top-4 right-4 z-10 w-12 h-12 bg-foreground/20 hover:bg-foreground/30 rounded-full flex items-center justify-center transition-all"
             onClick={() => setShowFullscreenPreview(false)}
           >
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -244,7 +243,7 @@ export function TryOnResultsModal({ isOpen, onClose, itemId, results: initialRes
           </button>
 
           {/* Main image */}
-          <div className="relative max-w-2xl max-h-[80vh] bg-gradient-to-br from-slate-100 to-slate-200 rounded-2xl overflow-hidden shadow-2xl">
+          <div className="relative max-w-2xl max-h-[80vh] bg-muted rounded-2xl overflow-hidden shadow-2xl">
             {/* Blurred background */}
             <img
               src={results[previewIndex]}
@@ -276,7 +275,6 @@ export function TryOnResultsModal({ isOpen, onClose, itemId, results: initialRes
                 onSelect(results[previewIndex]);
                 onClose();
               }}
-              className="bg-blue-500 hover:bg-blue-600"
             >
               Use This Look
             </GlassButton>

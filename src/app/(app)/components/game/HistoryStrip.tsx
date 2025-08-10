@@ -41,15 +41,16 @@ export default function HistoryStrip() {
   };
 
   const getTypeColor = (type: string) => {
+    // Monochrome accents by type using opacity only
     switch (type) {
       case 'avatar':
-        return 'border-blue-400/50 bg-blue-500/20';
+        return 'border-foreground/40 bg-foreground/10';
       case 'tryOn':
-        return 'border-green-400/50 bg-green-500/20';
+        return 'border-foreground/40 bg-foreground/10';
       case 'edit':
-        return 'border-purple-400/50 bg-purple-500/20';
+        return 'border-foreground/40 bg-foreground/10';
       default:
-        return 'border-white/30 bg-white/20';
+        return 'border-border bg-foreground/5';
     }
   };
 
@@ -58,7 +59,7 @@ export default function HistoryStrip() {
       <GlassPanel className="p-2">
         <div className="flex items-center gap-2 overflow-x-auto max-w-[80vw]">
           {/* Current indicator */}
-          <div className="flex-shrink-0 text-xs text-slate-400 px-2">
+          <div className="flex-shrink-0 text-xs text-foreground/60 px-2">
             History:
           </div>
           
@@ -73,8 +74,8 @@ export default function HistoryStrip() {
                 className={`
                   flex-shrink-0 w-12 h-12 rounded-lg border-2 transition-all duration-200 hover:scale-110 group
                   ${item.imageUrl === currentImageUrl 
-                    ? 'border-accent scale-105 shadow-lg' 
-                    : `${getTypeColor(item.type)} hover:border-accent/70`
+                    ? 'border-foreground scale-105 shadow-lg' 
+                    : `${getTypeColor(item.type)} hover:border-foreground/70`
                   }
                 `}
                 onClick={() => setCurrentImage(item.imageUrl)}
@@ -89,15 +90,15 @@ export default function HistoryStrip() {
                   
                   {/* Type indicator */}
                   <div className="absolute top-1 right-1 opacity-70 group-hover:opacity-100 transition-opacity">
-                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-white text-xs ${getTypeColor(item.type)}`}>
+                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-background text-xs ${getTypeColor(item.type)}`}>
                       {getTypeIcon(item.type)}
                     </div>
                   </div>
                   
                   {/* Current indicator */}
                   {item.imageUrl === currentImageUrl && (
-                    <div className="absolute inset-0 bg-accent/20 flex items-center justify-center">
-                      <div className="w-3 h-3 bg-accent rounded-full animate-pulse" />
+                    <div className="absolute inset-0 bg-foreground/10 flex items-center justify-center">
+                      <div className="w-3 h-3 bg-foreground rounded-full animate-pulse" />
                     </div>
                   )}
                 </div>
@@ -109,9 +110,9 @@ export default function HistoryStrip() {
           {Array.from({ length: Math.max(0, 5 - history.length) }).map((_, i) => (
             <div
               key={`empty-${i}`}
-              className="flex-shrink-0 w-12 h-12 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center"
+              className="flex-shrink-0 w-12 h-12 rounded-lg bg-foreground/5 border border-border flex items-center justify-center"
             >
-              <svg className="w-4 h-4 text-slate-400 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-foreground/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
             </div>

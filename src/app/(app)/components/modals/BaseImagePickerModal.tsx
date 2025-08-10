@@ -33,12 +33,12 @@ export function BaseImagePickerModal({ isOpen, onClose, onSelect }: BaseImagePic
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-overlay)]">
       <div className="fixed inset-0" onClick={onClose} />
       <GlassPanel variant="modal" className="relative w-full max-w-3xl mx-4 max-h-[90vh] overflow-hidden">
         <div className="p-6 space-y-4 flex flex-col h-full min-h-0">
           <div className="flex items-center justify-between">
-            <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Select Base Image</h3>
+            <h3 className="text-xl font-semibold text-foreground">Select Base Image</h3>
             <GlassButton size="sm" variant="ghost" onClick={onClose} className="w-8 h-8 p-0">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -51,14 +51,14 @@ export function BaseImagePickerModal({ isOpen, onClose, onSelect }: BaseImagePic
               {candidates.map((c) => (
                 <button
                   key={c.key}
-                  className="group relative rounded-xl overflow-hidden bg-white/20 dark:bg-black/20 border border-white/30 dark:border-white/10 hover:border-accent/50 hover:scale-[1.02] transition-all"
+                  className="group relative rounded-xl overflow-hidden bg-background border border-border hover:border-foreground/50 hover:scale-[1.02] transition-all"
                   onClick={() => onSelect({ imageId: c.imageId ?? null, imageUrl: c.imageUrl })}
                 >
-                  <div className="relative w-full aspect-[3/4] overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
+                  <div className="relative w-full aspect-[3/4] overflow-hidden bg-muted">
                     <img src={c.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover blur-xl opacity-50" />
                     <img src={c.imageUrl} alt="" className="relative w-full h-full object-contain p-2" />
                   </div>
-                  <div className="absolute bottom-2 left-2 rounded bg-black/60 text-white text-xs px-2 py-1">
+                  <div className="absolute bottom-2 left-2 rounded bg-foreground/60 text-background text-xs px-2 py-1">
                     {c.label}
                   </div>
                 </button>

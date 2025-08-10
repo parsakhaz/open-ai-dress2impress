@@ -2,65 +2,43 @@
 
 :root {
   color-scheme: light;
-  /* Accent as H S L; use with hsl(var(--accent) / <alpha>) */
-  --accent: 0 0% 100%;  /* Pure white accent */
+  /* Monochrome tokens (light) */
+  --color-background: #ffffff;
+  --color-foreground: #000000;
+  --color-border: #e5e5e5; /* neutral-200 */
+  --color-muted: #f5f5f5;  /* neutral-100 */
+  --color-overlay: rgba(0,0,0,0.75);
 
-  /* Surface tokens (light) - High contrast white glass */
-  --surface: rgba(255,255,255,0.9);
-  --surface-border: rgba(255,255,255,0.8);
-  --edge: 0.8;                 /* stronger top highlight */
-  --blur: 18px;
-  --saturate: 1.2;
-  --elev-1: 0 8px 24px rgba(0,0,0,0.4);
-  --elev-2: 0 16px 48px rgba(0,0,0,0.6);
-  --noise: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTI4IiBoZWlnaHQ9IjEyOCIgdmlld0JveD0iMCAwIDEyOCAxMjgiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxmaWx0ZXIgaWQ9Im5vaXNlIj4KPGZ1cmJ1bGVuY2UgbnVtT2N0YXZlcz0iNCIgc2VlZD0iMiIgc3RpdGNoVGlsZXM9InN0aXRjaCIvPgo8L2ZpbHRlcj4KPHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsdGVyPSJ1cmwoI25vaXNlKSIgb3BhY2l0eT0iMC4yIi8+Cjwvc3ZnPgo=');   /* stronger noise pattern */
-  --noise-opacity: 0.025;
+  /* Keep font variables */
+  --font-geist-sans: var(--font-geist-sans);
+  --font-geist-mono: var(--font-geist-mono);
 
-  /* Legacy variables for compatibility */
-  --background: #ffffff; /* Light background */
-  --foreground: #0f172a; /* Slate-900 text for strong contrast */
+  /* Legacy aliases for compatibility */
+  --background: var(--color-background);
+  --foreground: var(--color-foreground);
 }
 
 :root.dark {
-  /* Dark mode - High contrast black glass */
-  --accent: 0 0% 0%;  /* Pure black accent in dark mode */
-  
-  --surface: rgba(0,0,0,0.9);
-  --surface-border: rgba(255,255,255,0.3);
-  --edge: 0.8;
-  --blur: 18px;
-  --saturate: 1.2;
-  --noise-opacity: 0.03;
-  
-  /* Legacy variables for dark mode */
-  --background: #000000;
-  --foreground: #ffffff;
+  color-scheme: dark;
+  /* Monochrome tokens (dark) */
+  --color-background: #000000;
+  --color-foreground: #ffffff;
+  --color-border: #262626; /* neutral-800 */
+  --color-muted: #111111;  /* near black */
+  --color-overlay: rgba(0,0,0,0.75);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--color-background);
+  --color-foreground: var(--color-foreground);
+  --color-border: var(--color-border);
+  --color-muted: var(--color-muted);
+  --color-overlay: var(--color-overlay);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not(.light) {
-    /* Auto dark mode - High contrast black glass */
-    --accent: 0 0% 0%;
-    
-    --surface: rgba(0,0,0,0.9);
-    --surface-border: rgba(255,255,255,0.3);
-    --edge: 0.8;
-    --blur: 18px;
-    --saturate: 1.2;
-    --noise-opacity: 0.03;
-    
-    /* Legacy variables for dark mode */
-    --background: #000000;
-    --foreground: #ffffff;
-  }
-}
+/* Remove auto dark glass behaviors; theming controlled via .dark class */
 
 /* Backdrop fallback when unsupported */
 @supports not ((-webkit-backdrop-filter: none) or (backdrop-filter: none)) {
@@ -84,41 +62,19 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-background);
+  color: var(--color-foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
   min-height: 100vh;
 }
 
-/* Modern minimal scrollbars (WebKit/Blink) */
-*::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-*::-webkit-scrollbar-track {
-  background: transparent;
-}
-*::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(255,255,255,0.25), rgba(255,255,255,0.08));
-  border-radius: 999px;
-  border: 2px solid transparent;
-  background-clip: padding-box;
-}
-:root.dark *::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, rgba(255,255,255,0.2), rgba(255,255,255,0.06));
-}
-*::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, rgba(255,255,255,0.35), rgba(255,255,255,0.15));
-}
-
-/* Firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255,255,255,0.25) transparent;
-}
-:root.dark * {
-  scrollbar-color: rgba(255,255,255,0.2) transparent;
-}
+/* Neutral, minimal scrollbars */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: transparent; }
+*::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.2); border-radius: 999px; }
+:root.dark *::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); }
+* { scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.25) transparent; }
+:root.dark * { scrollbar-color: rgba(255,255,255,0.25) transparent; }
 
 /* Attention ring animation used by ThemeWheelModal */
 @keyframes pulseRing {

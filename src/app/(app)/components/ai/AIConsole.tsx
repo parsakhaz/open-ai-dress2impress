@@ -388,16 +388,16 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
       <div className="flex flex-col h-full gap-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-green-400 animate-pulse' : 'bg-slate-400'}`}></div>
-            <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-slate-100">Game AI Console</h2>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-mono ${isRunning ? 'bg-green-400/20 text-green-600 dark:text-green-400' : 'bg-slate-400/20 text-slate-600 dark:text-slate-400'}`}>{isRunning ? 'RUNNING' : 'IDLE'}</span>
+            <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-foreground animate-pulse' : 'bg-foreground/40'}`}></div>
+            <h2 className="text-lg md:text-xl font-bold text-foreground">Game AI Console</h2>
+            <span className={`text-xs px-2 py-0.5 rounded-full font-mono ${isRunning ? 'bg-foreground/10 text-foreground' : 'bg-foreground/10 text-foreground/70'}`}>{isRunning ? 'RUNNING' : 'IDLE'}</span>
           </div>
           {!inline && onClose && (
             <GlassButton
               size="sm"
               variant="ghost"
               onClick={onClose}
-              className="w-8 h-8 p-0 flex items-center justify-center hover:bg-white/20"
+              className="w-8 h-8 p-0 flex items-center justify-center hover:bg-foreground/10"
               title="Close"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -408,42 +408,42 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
         </div>
 
         {/* Controls: filters + density */}
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-300/80">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-foreground/70">
           <div className="flex flex-wrap items-center gap-2">
-            <label className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border ${filters.thought ? 'border-blue-400/30 bg-blue-400/10 text-blue-200' : 'border-white/10 text-slate-300/70' }`}>
-              <input type="checkbox" className="accent-blue-400" checked={filters.thought} onChange={(e) => setFilters((f) => ({ ...f, thought: e.target.checked }))} />
+            <label className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border ${filters.thought ? 'border-foreground/30 bg-foreground/10 text-foreground' : 'border-border text-foreground/70' }`}>
+              <input type="checkbox" className="accent-[var(--color-foreground)]" checked={filters.thought} onChange={(e) => setFilters((f) => ({ ...f, thought: e.target.checked }))} />
               <Icon.Message className="w-3 h-3" aria-hidden /> Thought
             </label>
-            <label className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border ${filters.action ? 'border-amber-400/30 bg-amber-400/10 text-amber-200' : 'border-white/10 text-slate-300/70' }`}>
-              <input type="checkbox" className="accent-amber-400" checked={filters.action} onChange={(e) => setFilters((f) => ({ ...f, action: e.target.checked }))} />
+            <label className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border ${filters.action ? 'border-foreground/30 bg-foreground/10 text-foreground' : 'border-border text-foreground/70' }`}>
+              <input type="checkbox" className="accent-[var(--color-foreground)]" checked={filters.action} onChange={(e) => setFilters((f) => ({ ...f, action: e.target.checked }))} />
               <Icon.Play className="w-3 h-3" aria-hidden /> Action
             </label>
           </div>
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <span className="text-slate-400">Density</span>
-            <button onClick={() => setDensity('compact')} className={`px-2 py-0.5 rounded border ${density === 'compact' ? 'border-white/20 bg-white/5 text-white' : 'border-white/10 text-slate-300'}`}>Compact</button>
-            <button onClick={() => setDensity('comfortable')} className={`px-2 py-0.5 rounded border ${density === 'comfortable' ? 'border-white/20 bg-white/5 text-white' : 'border-white/10 text-slate-300'}`}>Comfortable</button>
+            <span className="text-foreground/60">Density</span>
+            <button onClick={() => setDensity('compact')} className={`px-2 py-0.5 rounded border ${density === 'compact' ? 'border-foreground/30 bg-foreground/10 text-foreground' : 'border-border text-foreground/70'}`}>Compact</button>
+            <button onClick={() => setDensity('comfortable')} className={`px-2 py-0.5 rounded border ${density === 'comfortable' ? 'border-foreground/30 bg-foreground/10 text-foreground' : 'border-border text-foreground/70'}`}>Comfortable</button>
           </div>
         </div>
         
         {/* Try-on image preview */}
         {inline && showTryOnThumbs && tryOnImages.length > 0 && (
           <div className="mb-3">
-            <div className="w-full aspect-video rounded-lg overflow-hidden bg-black/80 border border-white/10 flex items-center justify-center">
+            <div className="w-full aspect-video rounded-lg overflow-hidden bg-background border border-border flex items-center justify-center">
               {/* Show latest image */}
               <img src={tryOnImages[tryOnImages.length - 1]} alt="AI try-on" className="w-full h-full object-contain" />
             </div>
             <div className="mt-2 flex items-center gap-2 overflow-x-auto">
               {tryOnImages.map((u, i) => (
-                <img key={u + i} src={u} className="w-16 h-16 object-cover rounded border border-white/10" alt="try-on thumb" />
+                <img key={u + i} src={u} className="w-16 h-16 object-cover rounded border border-border" alt="try-on thumb" />
               ))}
             </div>
           </div>
         )}
 
-        <div ref={setLogContainerRef} className={`rounded-lg bg-black/95 dark:bg-black/70 backdrop-blur-sm p-4 font-mono text-sm border border-green-500/20 flex-1 min-h-0 overflow-y-auto`}>
+        <div ref={setLogContainerRef} className={`rounded-lg bg-background p-4 font-mono text-sm border border-border flex-1 min-h-0 overflow-y-auto`}>
           {aiLog.length === 0 ? (
-            <div className="text-green-400/70 flex items-center gap-2">
+            <div className="text-foreground/70 flex items-center gap-2">
               <Icon.Spinner className="w-4 h-4" />
               <span>Waiting for instructions…</span>
             </div>
@@ -453,24 +453,24 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
                 <div className="flex items-start gap-2">
                   <div className="flex-1 min-w-0">
                     <div className={`flex items-center gap-2 ${density === 'compact' ? 'mb-1' : 'mb-2'}`}>
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] md:text-xs rounded border ${r.tool ? 'text-amber-300 border-amber-400/30 bg-amber-400/10' : 'text-blue-300 border-blue-400/30 bg-blue-400/10'}`}> 
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] md:text-xs rounded border text-foreground bg-foreground/10 border-border`}> 
                         {r.tool ? <Icon.Play className="w-3 h-3" /> : <Icon.Message className="w-3 h-3" />}
                         <span>{r.tool ? 'Action' : 'Thought'}</span>
                       </span>
-                      {r.status === 'running' && <Icon.Spinner className="w-3 h-3 text-green-300/80" />}
-                      {r.status === 'ok' && <span className="inline-flex items-center gap-1 text-[10px] text-green-300/80"><Icon.Check className="w-3 h-3" /> done</span>}
+                      {r.status === 'running' && <Icon.Spinner className="w-3 h-3 text-foreground/70" />}
+                      {r.status === 'ok' && <span className="inline-flex items-center gap-1 text-[10px] text-foreground/70"><Icon.Check className="w-3 h-3" /> done</span>}
                       {r.status === 'error' && <ErrorBadge />}
                       {relativeTimeFrom(r.timestamp) && (
-                        <span className="ml-auto text-green-300/40 text-[10px] whitespace-nowrap relative -top-[1px]">[{relativeTimeFrom(r.timestamp)}]</span>
+                        <span className="ml-auto text-foreground/40 text-[10px] whitespace-nowrap relative -top-[1px]">[{relativeTimeFrom(r.timestamp)}]</span>
                       )}
                     </div>
-                    <div className={`text-green-100 break-words overflow-wrap-anywhere ${density === 'compact' ? 'text-xs' : 'text-sm'}`}>
+                    <div className={`text-foreground break-words overflow-wrap-anywhere ${density === 'compact' ? 'text-xs' : 'text-sm'}`}>
                       {formatRowTitle(r)}
-                      {formatRowSubtitle(r) ? <span className="text-green-300/70"> — {formatRowSubtitle(r)}</span> : null}
+                      {formatRowSubtitle(r) ? <span className="text-foreground/70"> — {formatRowSubtitle(r)}</span> : null}
                       {r.plan?.queries && Array.isArray(r.plan.queries) && r.plan.queries.length > 0 && (
                         <div className="mt-1 flex flex-wrap gap-1">
                           {r.plan.queries.slice(0,3).map((q: any, idx: number) => (
-                            <span key={idx} className="px-2 py-0.5 text-[10px] rounded border border-white/10 text-slate-200/90">{q.category}: “{q.query}”</span>
+                            <span key={idx} className="px-2 py-0.5 text-[10px] rounded border border-border text-foreground/90">{q.category}: “{q.query}”</span>
                           ))}
                         </div>
                       )}
@@ -481,7 +481,7 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
                           <div key={`${i}-${idx}`} className="relative">
                             <img
                               src={u}
-                              className="w-14 h-14 object-cover rounded border border-white/10"
+                              className="w-14 h-14 object-cover rounded border border-border"
                               alt="preview"
                               onLoad={() => {
                                 if (autoScrollPinned && logContainerRef) {
@@ -499,14 +499,14 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
             ))
           )}
           {/* Sticky bottom controls: active actions tray + pin toggle */}
-          <div className="sticky bottom-0 -mx-4 -mb-4 px-4 py-2 bg-black/60 backdrop-blur border-t border-white/10 flex items-center gap-2">
-            <button onClick={() => setAutoScrollPinned((v) => !v)} className={`text-xs px-2 py-0.5 rounded border ${autoScrollPinned ? 'border-green-400/40 text-green-300' : 'border-white/20 text-slate-300'}`}>{autoScrollPinned ? '📌 Auto-scroll on' : '📍 Auto-scroll off'}</button>
+          <div className="sticky bottom-0 -mx-4 -mb-4 px-4 py-2 bg-background border-t border-border flex items-center gap-2">
+            <button onClick={() => setAutoScrollPinned((v) => !v)} className={`text-xs px-2 py-0.5 rounded border ${autoScrollPinned ? 'border-foreground/40 text-foreground' : 'border-border text-foreground/70'}`}>{autoScrollPinned ? '📌 Auto-scroll on' : '📍 Auto-scroll off'}</button>
             <div className="ml-auto flex items-center gap-2 overflow-x-auto">
               {Object.keys(activeActions).length > 3 ? (
-                <span className="text-[10px] text-amber-200 bg-amber-400/10 border border-amber-400/30 px-2 py-0.5 rounded">{Object.keys(activeActions).length} actions running…</span>
+                <span className="text-[10px] text-foreground bg-foreground/10 border border-border px-2 py-0.5 rounded">{Object.keys(activeActions).length} actions running…</span>
               ) : (
                 Object.entries(activeActions).map(([id, a]) => (
-                  <span key={id} className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border border-amber-400/30 bg-amber-400/10 text-amber-200 whitespace-nowrap">
+                  <span key={id} className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border border-border bg-foreground/10 text-foreground whitespace-nowrap">
                     <Icon.Spinner className="w-3 h-3" /> {a.tool || 'action'}
                   </span>
                 ))

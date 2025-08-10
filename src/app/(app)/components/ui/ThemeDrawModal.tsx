@@ -143,12 +143,12 @@ export default function ThemeDrawModal({ open, onClose }: ThemeDrawModalProps) {
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-6 md:p-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-overlay)] p-6 md:p-8">
       <div className="absolute inset-0" onClick={() => (spinning ? null : onClose())} />
       <div className="relative w-full max-w-4xl mx-auto min-h-[80vh] flex flex-col">
         <div className="mb-4 md:mb-6 text-center space-y-2">
-          <h2 className="text-3xl font-extrabold text-white">Draw Today&apos;s Theme</h2>
-          <p className="text-slate-300 text-sm">Randomly pick one of 15 game categories</p>
+          <h2 className="text-3xl font-extrabold text-foreground">Draw Today&apos;s Theme</h2>
+          <p className="text-foreground/70 text-sm">Randomly pick one of 15 game categories</p>
           {showResult && resultTheme && (
             <div
               className="mx-auto w-fit mt-2 px-4 py-2 rounded-full bg-pink-600/30 border border-pink-400/40 text-white font-semibold shadow-[0_0_0_0_rgba(236,72,153,0.6)] animate-[pulseRing_1.2s_ease-out_1] transition-transform duration-500 scale-110"
@@ -159,7 +159,7 @@ export default function ThemeDrawModal({ open, onClose }: ThemeDrawModalProps) {
           )}
         </div>
 
-        <div className="mx-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 shadow-2xl overflow-visible select-none">
+        <div className="mx-auto rounded-2xl border border-border bg-background p-4 shadow-2xl overflow-visible select-none">
           <div
             className="relative mx-auto w-[min(92vw,48rem)] max-w-full"
             aria-label="Click to draw a theme"
@@ -184,9 +184,8 @@ export default function ThemeDrawModal({ open, onClose }: ThemeDrawModalProps) {
                   <div
                     key={i}
                     className={`relative w-[min(26vw,7.6rem)] h-[min(26vw,7.6rem)] sm:w-[min(18vw,8.4rem)] sm:h-[min(18vw,8.4rem)] rounded-xl flex items-center justify-center text-center px-2
-                      bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900
-                      border ${isHighlighted ? 'border-accent ring-4 ring-accent/40' : isTrail ? 'border-accent/40 ring-2 ring-accent/20' : 'border-slate-200 dark:border-slate-700'}
-                      text-slate-800 dark:text-slate-100 shadow-lg transition-all duration-150
+                      bg-muted border ${isHighlighted ? 'border-foreground ring-4 ring-foreground/40' : isTrail ? 'border-foreground/40 ring-2 ring-foreground/20' : 'border-border'}
+                      text-foreground shadow-lg transition-all duration-150
                       ${isHighlighted ? 'scale-105' : 'hover:scale-[1.02]'}
                     `}
                   >
@@ -198,7 +197,7 @@ export default function ThemeDrawModal({ open, onClose }: ThemeDrawModalProps) {
               })}
             </div>
 
-            <div className="mt-4 text-center text-slate-500 dark:text-slate-300">
+            <div className="mt-4 text-center text-foreground/60">
               {themeLoading ? 'Loading themes…' : spinning ? 'Drawing…' : 'Tap anywhere to draw'}
             </div>
           </div>

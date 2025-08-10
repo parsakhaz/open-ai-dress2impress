@@ -28,9 +28,9 @@ export function Toast({ message, type = 'success', duration = 3000, onClose }: T
   }, [duration, onClose]);
 
   const typeStyles = {
-    success: 'bg-green-500/90 text-white border-green-400/50',
-    error: 'bg-red-500/90 text-white border-red-400/50',
-    info: 'bg-blue-500/90 text-white border-blue-400/50'
+    success: 'bg-background text-foreground border-border',
+    error: 'bg-foreground text-background border-foreground',
+    info: 'bg-background text-foreground border-border'
   };
 
   const icons = {
@@ -60,7 +60,7 @@ export function Toast({ message, type = 'success', duration = 3000, onClose }: T
       `}
     >
       <div className={`
-        backdrop-blur-md border rounded-xl p-4 shadow-lg
+        border rounded-xl p-4 shadow-lg
         ${typeStyles[type]}
       `}>
         <div className="flex items-center gap-3">

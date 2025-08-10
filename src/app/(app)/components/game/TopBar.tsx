@@ -175,7 +175,7 @@ export default function TopBar() {
                   window.location.reload(); // Reload to clear any UI state
                 }
               }}
-              className="ml-auto p-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-500 transition-colors"
+              className="ml-auto p-2 rounded-lg bg-foreground/10 hover:bg-foreground/20 text-foreground transition-colors"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -186,12 +186,11 @@ export default function TopBar() {
           {/* Timer */}
           {timer > 0 && (
             <div className="flex items-center gap-2">
-              <svg className={`w-4 h-4 ${timer <= 30 ? 'text-red-500' : 'text-accent'} animate-pulse`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`w-4 h-4 ${timer <= 30 ? 'text-foreground' : 'text-foreground/60'} animate-pulse`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
               <span className={`font-mono font-bold text-lg ${
-                timer <= 30 ? 'text-red-500 animate-pulse' : 
-                timer <= 60 ? 'text-orange-500' : 'text-slate-900 dark:text-slate-100'
+                timer <= 30 ? 'text-foreground animate-pulse' : 'text-foreground'
               }`}>
                 {formatTime(timer)}
               </span>
@@ -205,13 +204,13 @@ export default function TopBar() {
             current={progress.current}
             total={progress.total}
             label={progress.label}
-            color={timer <= 30 ? 'bg-red-500' : timer <= 60 ? 'bg-orange-500' : 'bg-blue-500'}
+            color={'bg-foreground'}
           />
         )}
 
         {/* Time warnings */}
         {timer > 0 && timer <= 30 && (
-          <div className="flex items-center gap-2 text-red-500 text-sm animate-pulse">
+          <div className="flex items-center gap-2 text-foreground text-sm animate-pulse">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
             </svg>

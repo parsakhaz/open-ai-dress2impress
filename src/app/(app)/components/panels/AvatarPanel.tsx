@@ -251,7 +251,7 @@ export default function AvatarPanel() {
 
   return (
     <>
-    <div className="w-full max-w-6xl mx-auto py-8 text-slate-900">
+    <div className="w-full max-w-6xl mx-auto py-8 text-foreground">
       <div className="grid grid-cols-1 gap-6 min-h-0">
         <div className="space-y-6">
           {/* Brand */}
@@ -267,8 +267,8 @@ export default function AvatarPanel() {
               <div className="grid grid-cols-1 lg:grid-cols-[1fr_60px_1.4fr] gap-6 w-full">
               {/* Style yourself */}
               <div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-3">Style yourself</h3>
-                <div className="relative rounded-2xl border-2 border-dashed border-slate-300/70 dark:border-white/20 p-6 min-h-[440px] flex flex-col justify-center bg-violet-50">
+                <h3 className="text-lg font-semibold text-foreground mb-3">Style yourself</h3>
+                <div className="relative rounded-2xl border-2 border-dashed border-border p-6 min-h-[440px] flex flex-col justify-center bg-muted">
                   {/* Hidden file input */}
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
 
@@ -278,7 +278,7 @@ export default function AvatarPanel() {
                     </div>
                   ) : capturedFrame || isWebcamActive ? (
                     <>
-                      <div className="relative w-full aspect-[4/3] max-h-[60svh] sm:max-h-[70svh] bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 overflow-hidden rounded-xl">
+                      <div className="relative w-full aspect-[4/3] max-h-[60svh] sm:max-h-[70svh] bg-muted overflow-hidden rounded-xl">
                         {capturedFrame ? (
                           <>
                             <img src={capturedFrame} alt="Captured frame" className="w-full h-full object-contain" />
@@ -309,7 +309,7 @@ export default function AvatarPanel() {
                               // @ts-ignore
                               playsInline
                             />
-                            {showFlash && <div className="pointer-events-none absolute inset-0 bg-white animate-pulse opacity-80" />}
+                            {showFlash && <div className="pointer-events-none absolute inset-0 bg-foreground animate-pulse opacity-20" />}
                           </>
                         )}
                       </div>
@@ -351,13 +351,13 @@ export default function AvatarPanel() {
                       </div>
 
                       {/* Status indicator */}
-                      <div className="mt-2 flex items-center gap-2 text-sm">
+                       <div className="mt-2 flex items-center gap-2 text-sm">
                         <div
                           className={`w-2 h-2 rounded-full ${
-                            webcamError ? 'bg-red-500' : webcamReady ? 'bg-green-500' : 'bg-yellow-500'
+                            webcamError ? 'bg-foreground' : webcamReady ? 'bg-foreground' : 'bg-foreground/50'
                           }`}
                         />
-                          <span className="text-slate-700">
+                          <span className="text-foreground/70">
                           {webcamError ? 'Camera unavailable' : webcamReady ? 'Camera ready' : 'Initializing camera...'}
                         </span>
                       </div>
@@ -388,18 +388,18 @@ export default function AvatarPanel() {
               </div>
 
               {/* OR divider */}
-              <div className="hidden lg:flex items-center justify-center text-slate-500 font-semibold select-none text-xl">or</div>
+              <div className="hidden lg:flex items-center justify-center text-foreground/60 font-semibold select-none text-xl">or</div>
 
               {/* Style a character */}
               <div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-3">Style a character</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-3">Style a character</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
                   {presetCharacters.map((p) => {
                     const isSelected = selectedAvatarUrl === p.url;
                     return (
                       <button
                         key={p.id}
-                        className={`group relative transition-all ${isSelected ? 'ring-4 ring-violet-300 rounded-2xl' : ''}`}
+                        className={`group relative transition-all ${isSelected ? 'ring-4 ring-foreground rounded-2xl' : ''}`}
                         onClick={() => {
                           setSelectedAvatarUrl(p.url);
                           setSelectedAvatarIndex(null);
@@ -407,10 +407,10 @@ export default function AvatarPanel() {
                         title={`Choose ${p.name}`}
                       >
                         <div className="relative w-full h-[400px] rounded-2xl overflow-hidden">
-                          <div className="absolute inset-0 rounded-2xl bg-violet-100/50 opacity-0 group-hover:opacity-100 transition-opacity z-0" />
+                          <div className="absolute inset-0 rounded-2xl bg-foreground/5 opacity-0 group-hover:opacity-100 transition-opacity z-0" />
                           <img src={p.url} alt={p.name} className="absolute inset-0 w-full h-full object-contain z-10" />
                         </div>
-                        <div className="mt-3 text-center text-slate-900 text-base font-medium">{p.name}</div>
+                        <div className="mt-3 text-center text-foreground text-base font-medium">{p.name}</div>
                       </button>
                     );
                   })}
@@ -423,8 +423,8 @@ export default function AvatarPanel() {
             {variants.length > 0 && !showAvatarSelector && (
               <div className="text-center space-y-4">
                 <div className="text-center">
-                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">Avatars Generated!</h3>
-                  <p className="text-slate-600 dark:text-slate-400 text-sm">Click below to view and select your avatar</p>
+                  <h3 className="font-semibold text-foreground mb-1">Avatars Generated!</h3>
+                  <p className="text-foreground/70 text-sm">Click below to view and select your avatar</p>
                 </div>
                 <GlassButton variant="primary" className="w-full" onClick={() => setShowAvatarSelector(true)}>
                   View & Select Avatar
@@ -453,23 +453,23 @@ export default function AvatarPanel() {
     </div>
 
     {/* Fullscreen Avatar Selector Modal */}
-    {showAvatarSelector && (
-      <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm overflow-y-auto">
+      {showAvatarSelector && (
+      <div className="fixed inset-0 z-50 bg-[var(--color-overlay)] overflow-y-auto">
         <div className="min-h-[100svh] flex items-start justify-center p-4">
           <div className="w-full max-w-6xl mx-auto my-6 flex flex-col max-h-[90svh]">
           {/* Header */}
             {/* Header */}
-            <div className="text-center text-white mb-6">
+            <div className="text-center text-foreground mb-6">
               <h2 className="text-3xl font-bold mb-2">Choose Your Avatar</h2>
-              <p className="text-white/80">Select the avatar that best represents you</p>
+              <p className="text-foreground/80">Select the avatar that best represents you</p>
             </div>
 
             {/* Avatar Grid - selection only (no extra CTA), with black Back/Next */}
             <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4 gap-6 max-h-[70vh] overflow-y-auto">
               {variants.map((url, index) => (
                 <div key={index} className="group relative">
-                  <div className={`relative rounded-2xl overflow-hidden bg-white shadow-2xl hover:shadow-3xl transition-all duration-300 cursor-pointer ${
-                    selectedAvatarIndex === index ? 'ring-4 ring-blue-500 scale-105' : 'hover:scale-105'
+                  <div className={`relative rounded-2xl overflow-hidden bg-background border border-border shadow-2xl hover:shadow-3xl transition-all duration-300 cursor-pointer ${
+                    selectedAvatarIndex === index ? 'ring-4 ring-foreground scale-105' : 'hover:scale-105'
                   }`}>
                     {/* Avatar with blurred background */}
                     <div className="relative w-full aspect-[3/4] bg-gradient-to-br from-slate-100 to-slate-200">
@@ -492,7 +492,7 @@ export default function AvatarPanel() {
 
                     {/* Preview indicator when selected */}
                     {selectedAvatarIndex === index && (
-                      <div className="absolute top-3 right-3 bg-blue-500 text-white px-2 py-1 rounded-full text-xs font-semibold">
+                      <div className="absolute top-3 right-3 bg-foreground text-background px-2 py-1 rounded-full text-xs font-semibold">
                         PREVIEWING
                       </div>
                     )}
@@ -508,7 +508,7 @@ export default function AvatarPanel() {
                   </div>
                   
                   {/* Avatar Number */}
-                  <div className="absolute top-3 left-3 w-8 h-8 bg-black/60 backdrop-blur-sm text-white rounded-full flex items-center justify-center text-sm font-semibold">
+                  <div className="absolute top-3 left-3 w-8 h-8 bg-foreground/60 text-background rounded-full flex items-center justify-center text-sm font-semibold">
                     {index + 1}
                   </div>
                 </div>
@@ -518,7 +518,7 @@ export default function AvatarPanel() {
             {/* Footer Actions: Black Back/Next */}
             <div className="mt-6 flex justify-center gap-4">
               <button 
-                className="px-6 py-3 rounded-xl bg-black text-white hover:bg-black/90"
+                className="px-6 py-3 rounded-xl bg-foreground text-background hover:opacity-90"
                 onClick={() => {
                   setShowAvatarSelector(false);
                   setSelectedAvatarIndex(null);
@@ -527,7 +527,7 @@ export default function AvatarPanel() {
                 Back to capture
               </button>
               <button 
-                className="px-6 py-3 rounded-xl bg-black text-white hover:bg-black/90 disabled:opacity-40"
+                className="px-6 py-3 rounded-xl bg-foreground text-background hover:opacity-90 disabled:opacity-40"
                 disabled={selectedAvatarUrl == null}
                 onClick={() => {
                   if (selectedAvatarUrl) proceedNext();
@@ -543,20 +543,20 @@ export default function AvatarPanel() {
 
     {/* Fullscreen Avatar Preview Modal */}
     {showFullscreenPreview && variants.length > 0 && (
-      <div className="fixed inset-0 z-50 bg-black/90 backdrop-blur-sm overflow-y-auto">
+      <div className="fixed inset-0 z-50 bg-[var(--color-overlay)] overflow-y-auto">
         <div className="min-h-[100svh] flex items-start justify-center p-4">
           <div className="w-full max-w-5xl mx-auto my-6 flex flex-col">
             {/* Header */}
             <div className="flex justify-between items-center p-4 md:p-6">
-              <div className="text-white">
+              <div className="text-foreground">
                 <h3 className="text-xl md:text-2xl font-bold">Avatar Preview</h3>
-                <p className="text-white/80 text-sm md:text-base">
+                <p className="text-foreground/80 text-sm md:text-base">
                   {previewAvatarIndex + 1} of {variants.length}
                 </p>
               </div>
               <button
                 onClick={() => setShowFullscreenPreview(false)}
-                className="w-10 h-10 md:w-12 md:h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center text-white text-xl md:text-2xl transition-colors"
+                className="w-10 h-10 md:w-12 md:h-12 bg-foreground/10 hover:bg-foreground/20 rounded-full flex items-center justify-center text-foreground text-xl md:text-2xl transition-colors"
               >
                 ×
               </button>
@@ -587,7 +587,7 @@ export default function AvatarPanel() {
               {/* Previous Button */}
               <button
                 onClick={() => setPreviewAvatarIndex(previewAvatarIndex > 0 ? previewAvatarIndex - 1 : variants.length - 1)}
-                className="flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors"
+                className="flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 bg-foreground/10 hover:bg-foreground/20 text-foreground rounded-xl transition-colors"
               >
                 ← Previous
               </button>
@@ -595,7 +595,7 @@ export default function AvatarPanel() {
               {/* Select Button */}
               <GlassButton
                 variant="primary"
-                className="px-6 py-3 md:px-8 md:py-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold"
+                className="px-6 py-3 md:px-8 md:py-4"
                 onClick={() => choose(variants[previewAvatarIndex])}
               >
                 ✓ Select This Avatar
@@ -604,7 +604,7 @@ export default function AvatarPanel() {
               {/* Next Button */}
               <button
                 onClick={() => setPreviewAvatarIndex(previewAvatarIndex < variants.length - 1 ? previewAvatarIndex + 1 : 0)}
-                className="flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors"
+                className="flex items-center gap-2 px-4 py-2 md:px-6 md:py-3 bg-foreground/10 hover:bg-foreground/20 text-foreground rounded-xl transition-colors"
               >
                 Next →
               </button>
@@ -618,11 +618,11 @@ export default function AvatarPanel() {
                   onClick={() => setPreviewAvatarIndex(index)}
                   className={`w-12 h-12 md:w-16 md:h-16 rounded-lg overflow-hidden border-2 transition-colors ${
                     index === previewAvatarIndex 
-                      ? 'border-blue-500' 
-                      : 'border-white/30 hover:border-white/60'
+                      ? 'border-foreground' 
+                      : 'border-border hover:border-foreground/60'
                   }`}
                 >
-                  <div className="relative w-full h-full bg-gradient-to-br from-slate-100 to-slate-200">
+                  <div className="relative w-full h-full bg-muted">
                     <img
                       src={url}
                       alt={`Avatar ${index + 1}`}
@@ -639,13 +639,13 @@ export default function AvatarPanel() {
 
     {/* Shopping Confirmation Modal */}
     {showShoppingConfirmation && selectedAvatarUrl && (
-      <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm overflow-y-auto">
+      <div className="fixed inset-0 z-50 bg-[var(--color-overlay)] overflow-y-auto">
         <div className="min-h-[100svh] flex items-start justify-center p-4">
-          <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 md:p-8 max-w-md w-full mx-4 my-6 border border-white/20">
+          <div className="bg-background rounded-3xl p-6 md:p-8 max-w-md w-full mx-4 my-6 border border-border">
             <div className="text-center space-y-6">
               {/* Selected Avatar Preview */}
               <div className="flex justify-center">
-                <div className="relative w-32 h-40 md:w-40 md:h-48 rounded-2xl overflow-hidden shadow-xl bg-gradient-to-br from-slate-100 to-slate-200">
+                <div className="relative w-32 h-40 md:w-40 md:h-48 rounded-2xl overflow-hidden shadow-xl bg-muted">
                   {/* Blurred background */}
                   <img
                     src={selectedAvatarUrl ?? ''}
@@ -662,9 +662,9 @@ export default function AvatarPanel() {
               </div>
 
               {/* Title */}
-              <div className="text-white">
+              <div className="text-foreground">
                 <h2 className="text-2xl md:text-3xl font-bold mb-2">Ready to Start Shopping?</h2>
-                <p className="text-white/80 text-sm md:text-base">
+                <p className="text-foreground/80 text-sm md:text-base">
                   You'll have <strong>3 minutes</strong> to create the perfect outfit for your avatar!
                 </p>
               </div>
@@ -673,7 +673,7 @@ export default function AvatarPanel() {
               <div className="space-y-3">
                 <GlassButton
                   variant="primary"
-                  className="w-full py-3 md:py-4 bg-green-500 hover:bg-green-600 text-white font-semibold text-lg"
+                  className="w-full py-3 md:py-4 text-lg"
                   onClick={proceedNext}
                 >
                   🛍️ Start Shopping Spree!
@@ -682,7 +682,7 @@ export default function AvatarPanel() {
                 <div className="flex gap-3">
                   <GlassButton
                     variant="secondary"
-                    className="flex-1 py-2 bg-white/10 hover:bg-white/20 text-white"
+                    className="flex-1 py-2"
                     onClick={() => {
                       setShowShoppingConfirmation(false);
                       setShowAvatarSelector(true);
@@ -692,7 +692,7 @@ export default function AvatarPanel() {
                   </GlassButton>
                   <GlassButton
                     variant="secondary"
-                    className="flex-1 py-2 bg-white/10 hover:bg-white/20 text-white"
+                    className="flex-1 py-2"
                     onClick={() => {
                       setShowShoppingConfirmation(false);
                       setSelectedAvatarUrl(null);
