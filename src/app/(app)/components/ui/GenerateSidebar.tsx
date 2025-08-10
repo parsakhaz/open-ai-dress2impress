@@ -103,16 +103,16 @@ export default function GenerateSidebar({ className = '', showToast }: GenerateS
   return (
     <GlassPanel className={`h-full flex flex-col overflow-hidden ${className}`}>
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-sm font-semibold text-foreground">GENERATE CLOTHES & ACCESSORIES</h3>
+        <h3 className="text-sm font-bold text-foreground">GENERATE CLOTHES & ACCESSORIES</h3>
       </div>
 
       <form onSubmit={onSearch} className="mb-3">
         <div className="relative">
           <input
-            className="w-full px-3 py-2 bg-background border border-border rounded-xl text-foreground placeholder:opacity-60 focus:outline-none focus:ring-2 focus:ring-foreground/30 focus:border-transparent transition-all"
+            className="w-full px-3 py-2 bg-[#7D8FE2]/10 border border-border rounded-xl text-foreground placeholder:opacity-60 focus:outline-none focus:ring-2 focus:ring-foreground/30 focus:border-transparent transition-all"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Describe what you want to wear…"
+            placeholder="Describe what you want to wear"
             suppressHydrationWarning
             disabled={phase !== 'ShoppingSpree'}
           />

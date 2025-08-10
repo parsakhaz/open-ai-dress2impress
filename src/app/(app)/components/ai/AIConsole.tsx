@@ -17,6 +17,7 @@ interface AIConsoleProps {
 export default function AIConsole({ onClose, autoRunOnMount = false, inline = false, showTryOnThumbs = false }: AIConsoleProps = {}) {
   const aiLog = useGameStore((s) => s.aiLog);
   const logAIEvent = useGameStore((s) => s.logAIEvent);
+  const phase = useGameStore((s) => s.phase);
   const [isRunning, setIsRunning] = useState(false);
   const seededRef = useRef(false);
   const startedRef = useRef(false);
@@ -407,24 +408,26 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
           )}
         </div>
 
-        {/* Controls: filters + density */}
-        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-foreground/70">
-          <div className="flex flex-wrap items-center gap-2">
-            <label className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border ${filters.thought ? 'border-foreground/30 bg-foreground/10 text-foreground' : 'border-border text-foreground/70' }`}>
-              <input type="checkbox" className="accent-[var(--color-foreground)]" checked={filters.thought} onChange={(e) => setFilters((f) => ({ ...f, thought: e.target.checked }))} />
-              <Icon.Message className="w-3 h-3" aria-hidden /> Thought
-            </label>
-            <label className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border ${filters.action ? 'border-foreground/30 bg-foreground/10 text-foreground' : 'border-border text-foreground/70' }`}>
-              <input type="checkbox" className="accent-[var(--color-foreground)]" checked={filters.action} onChange={(e) => setFilters((f) => ({ ...f, action: e.target.checked }))} />
-              <Icon.Play className="w-3 h-3" aria-hidden /> Action
-            </label>
+        {/* Controls: filters + density (hidden during ShoppingSpree) */}
+        {phase !== 'ShoppingSpree' && (
+          <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-foreground/70">
+            <div className="flex flex-wrap items-center gap-2">
+              <label className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border ${filters.thought ? 'border-foreground/30 bg-foreground/10 text-foreground' : 'border-border text-foreground/70' }`}>
+                <input type="checkbox" className="accent-[var(--color-foreground)]" checked={filters.thought} onChange={(e) => setFilters((f) => ({ ...f, thought: e.target.checked }))} />
+                <Icon.Message className="w-3 h-3" aria-hidden /> Thought
+              </label>
+              <label className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border ${filters.action ? 'border-foreground/30 bg-foreground/10 text-foreground' : 'border-border text-foreground/70' }`}>
+                <input type="checkbox" className="accent-[var(--color-foreground)]" checked={filters.action} onChange={(e) => setFilters((f) => ({ ...f, action: e.target.checked }))} />
+                <Icon.Play className="w-3 h-3" aria-hidden /> Action
+              </label>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <span className="text-foreground/60">Density</span>
+              <button onClick={() => setDensity('compact')} className={`px-2 py-0.5 rounded border ${density === 'compact' ? 'border-foreground/30 bg-foreground/10 text-foreground' : 'border-border text-foreground/70'}`}>Compact</button>
+              <button onClick={() => setDensity('comfortable')} className={`px-2 py-0.5 rounded border ${density === 'comfortable' ? 'border-foreground/30 bg-foreground/10 text-foreground' : 'border-border text-foreground/70'}`}>Comfortable</button>
+            </div>
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <span className="text-foreground/60">Density</span>
-            <button onClick={() => setDensity('compact')} className={`px-2 py-0.5 rounded border ${density === 'compact' ? 'border-foreground/30 bg-foreground/10 text-foreground' : 'border-border text-foreground/70'}`}>Compact</button>
-            <button onClick={() => setDensity('comfortable')} className={`px-2 py-0.5 rounded border ${density === 'comfortable' ? 'border-foreground/30 bg-foreground/10 text-foreground' : 'border-border text-foreground/70'}`}>Comfortable</button>
-          </div>
-        </div>
+        )}
         
         {/* Try-on image preview */}
         {inline && showTryOnThumbs && tryOnImages.length > 0 && (
