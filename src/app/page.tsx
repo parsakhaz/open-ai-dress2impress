@@ -75,12 +75,28 @@ export default function GamePage() {
       if (phase === 'CharacterSelect') return;
 
       if (key === 's') {
+        // Open Amazon; close others
+        setEditPanelVisible(false);
+        setWardrobeOpen(false);
+        setAIConsoleVisible(false);
         setAmazonPanelVisible(true);
       } else if (key === 'e') {
+        // Open Edit; close others
+        setAmazonPanelVisible(false);
+        setWardrobeOpen(false);
+        setAIConsoleVisible(false);
         setEditPanelVisible(true);
       } else if (key === 'w') {
+        // Open Wardrobe; close others
+        setAmazonPanelVisible(false);
+        setEditPanelVisible(false);
+        setAIConsoleVisible(false);
         setWardrobeOpen(true);
       } else if (key === 'a') {
+        // Toggle AI console; close other panels first
+        setAmazonPanelVisible(false);
+        setEditPanelVisible(false);
+        setWardrobeOpen(false);
         setAIConsoleVisible((v) => !v);
       }
     };

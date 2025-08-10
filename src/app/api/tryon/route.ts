@@ -21,7 +21,15 @@ async function runSingleTryOn(characterImageUrl: string, clothingImageUrl: strin
     {
       method: 'POST',
       headers,
-      body: JSON.stringify({ model_name: 'tryon-v1.6', inputs: { model_image: characterImageUrl, garment_image: clothingImageUrl } }),
+      // Use performance mode inside inputs per API guide
+      body: JSON.stringify({
+        model_name: 'tryon-v1.6',
+        inputs: {
+          model_image: characterImageUrl,
+          garment_image: clothingImageUrl,
+          mode: 'performance',
+        },
+      }),
     },
     { apiName: 'FASHN' }
   );
