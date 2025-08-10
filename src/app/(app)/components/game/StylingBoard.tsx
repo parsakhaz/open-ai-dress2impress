@@ -46,10 +46,10 @@ export default function StylingBoard() {
             onClick={proceedToAccessorize}
             className="px-8 py-3 font-semibold shadow-xl"
           >
-            Both Players Ready - Proceed to Accessorize →
+            Proceed to Accessorize →
           </GlassButton>
           <p className="text-xs text-foreground/60 text-center mt-2">
-            ChatGPT has finished. Skip the timer and continue!
+            Skip the timer and continue!
           </p>
         </div>
       )}
