@@ -251,7 +251,7 @@ export default function AvatarPanel() {
 
   return (
     <>
-    <div className="w-full max-w-6xl mx-auto py-8">
+    <div className="w-full max-w-6xl mx-auto py-8 text-slate-900">
       <div className="grid grid-cols-1 gap-6 min-h-0">
         <div className="space-y-6">
           {/* Brand */}
@@ -267,7 +267,7 @@ export default function AvatarPanel() {
               <div className="grid grid-cols-1 lg:grid-cols-[1fr_60px_1.4fr] gap-6 w-full">
               {/* Style yourself */}
               <div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">Style yourself</h3>
+                <h3 className="text-lg font-semibold text-slate-900 mb-3">Style yourself</h3>
                 <div className="relative rounded-2xl border-2 border-dashed border-slate-300/70 dark:border-white/20 p-6 min-h-[440px] flex flex-col justify-center bg-violet-50">
                   {/* Hidden file input */}
                   <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
@@ -357,7 +357,7 @@ export default function AvatarPanel() {
                             webcamError ? 'bg-red-500' : webcamReady ? 'bg-green-500' : 'bg-yellow-500'
                           }`}
                         />
-                        <span className="text-slate-600 dark:text-slate-400">
+                          <span className="text-slate-700">
                           {webcamError ? 'Camera unavailable' : webcamReady ? 'Camera ready' : 'Initializing camera...'}
                         </span>
                       </div>
@@ -392,7 +392,7 @@ export default function AvatarPanel() {
 
               {/* Style a character */}
               <div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-3">Style a character</h3>
+                <h3 className="text-lg font-semibold text-slate-900 mb-3">Style a character</h3>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-6">
                   {presetCharacters.map((p) => {
                     const isSelected = selectedAvatarUrl === p.url;
@@ -410,7 +410,7 @@ export default function AvatarPanel() {
                           <div className="absolute inset-0 rounded-2xl bg-violet-100/50 opacity-0 group-hover:opacity-100 transition-opacity z-0" />
                           <img src={p.url} alt={p.name} className="absolute inset-0 w-full h-full object-contain z-10" />
                         </div>
-                        <div className="mt-3 text-center text-slate-700 dark:text-slate-200 text-base font-medium">{p.name}</div>
+                        <div className="mt-3 text-center text-slate-900 text-base font-medium">{p.name}</div>
                       </button>
                     );
                   })}

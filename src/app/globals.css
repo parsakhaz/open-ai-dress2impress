@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light;
   /* Accent as H S L; use with hsl(var(--accent) / <alpha>) */
   --accent: 0 0% 100%;  /* Pure white accent */
 
@@ -16,8 +17,8 @@
   --noise-opacity: 0.025;
 
   /* Legacy variables for compatibility */
-  --background: #000000;
-  --foreground: #ffffff;
+  --background: #ffffff; /* Light background */
+  --foreground: #0f172a; /* Slate-900 text for strong contrast */
 }
 
 :root.dark {
@@ -87,7 +88,6 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
   min-height: 100vh;
-  antialiased: true;
 }
 
 /* Modern minimal scrollbars (WebKit/Blink) */

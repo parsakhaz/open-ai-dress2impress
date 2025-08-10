@@ -25,7 +25,10 @@ export default function RootLayout({
   console.log('🏠 ROOT LAYOUT: Rendering layout with children');
   
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" className="light" suppressHydrationWarning>
+      <head>
+        <meta name="color-scheme" content="light" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen antialiased text-slate-900 dark:text-slate-100`}
       >
