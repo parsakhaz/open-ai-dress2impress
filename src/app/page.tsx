@@ -23,6 +23,7 @@ export default function GamePage() {
   const theme = useGameStore((s) => s.theme);
   const character = useGameStore((s) => s.character);
   const currentImageUrl = useGameStore((s) => s.currentImageUrl);
+  const runwayBaseImageUrl = useGameStore((s) => s.runwayBaseImageUrl);
   const setPhase = useGameStore((s) => s.setPhase);
   const resetGame = useGameStore((s) => s.resetGame);
   const persistedRunwayUrl = useGameStore((s) => s.runwayUrl);
@@ -120,7 +121,7 @@ export default function GamePage() {
       return;
     }
     if (runwayStarted) return;
-    const baseUrl = currentImageUrl || character?.avatarUrl || null;
+    const baseUrl = runwayBaseImageUrl || currentImageUrl || character?.avatarUrl || null;
     if (!baseUrl) {
       setRunwayError('No image available to generate a runway video.');
       showToast('No final look selected to generate a runway video.', 'error');
@@ -213,6 +214,8 @@ export default function GamePage() {
       setAIConsoleVisible(false);
       setEditPanelVisible(true);
       try { useGameStore.getState().setAccessorizeUsed(false); } catch {}
+      // Clear previous runway base to avoid stale usages
+      try { useGameStore.getState().setRunwayBaseImageUrl(null); } catch {}
     } else {
       // In other phases, close all tool panels
       setAmazonPanelVisible(false);

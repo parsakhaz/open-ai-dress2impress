@@ -20,6 +20,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
   const character = useGameStore((s) => s.character);
   const setPhase = useGameStore((s) => s.setPhase);
   const { showToast } = useToast();
+  const setRunwayBaseImageUrl = useGameStore((s) => s.setRunwayBaseImageUrl);
 
   const [imageUrl, setImageUrl] = useState(currentImageUrl || '');
   const [instruction, setInstruction] = useState('add a silver necklace');
@@ -257,6 +258,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
                           onClick={async (e) => {
                             e.stopPropagation();
                             await selectImage(url, { type: 'edit', description: instruction || 'AI edit', addToHistory: true });
+                            setRunwayBaseImageUrl(url);
                             if (phase === 'Accessorize') {
                               showToast('Accessories locked in—heading to runway.', 'success', 2200);
                               setPhase('WalkoutAndEval');
@@ -380,7 +382,9 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
                 variant="primary"
                 className="px-6 py-3 md:px-8 md:py-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold"
                 onClick={async () => {
-                  await selectImage(variants[previewEditIndex], { type: 'edit', description: instruction || 'AI edit', addToHistory: true });
+                  const chosen = variants[previewEditIndex];
+                  await selectImage(chosen, { type: 'edit', description: instruction || 'AI edit', addToHistory: true });
+                  setRunwayBaseImageUrl(chosen);
                   if (phase === 'Accessorize') {
                     showToast('Accessories locked in—heading to runway.', 'success', 2200);
                     setPhase('WalkoutAndEval');
