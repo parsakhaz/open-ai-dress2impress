@@ -49,7 +49,7 @@ export const POST = createHandler<{ imageUrl: string }, { url: string }>({
         },
         isDone: (r) => r.data.task_status === 'succeed' && !!r.data.task_result?.videos?.[0]?.url,
         intervalMs: 5000,
-        timeoutMs: 150_000,
+        timeoutMs: 360_000,
       }
     );
 
