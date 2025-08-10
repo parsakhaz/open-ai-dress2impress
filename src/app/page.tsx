@@ -29,6 +29,14 @@ export default function GamePage() {
   const [isAIConsoleVisible, setAIConsoleVisible] = useState(false);
   
   console.log('🚀 INITIAL RENDER: Page component is executing');
+
+  // Phase-based gating
+  const canOpenShopping = phase === 'ShoppingSpree';
+  const canOpenEdit = phase === 'StylingRound';
+  const canOpenWardrobe = phase === 'StylingRound';
+  const shoppingTooltip = canOpenShopping ? 'Search real clothes (S)' : (phase === 'StylingRound' ? 'Shopping is disabled during Styling' : 'Shopping becomes available during Shopping');
+  const editTooltip = canOpenEdit ? 'Edit with AI (E)' : 'Editing is available during Styling';
+  const wardrobeTooltip = canOpenWardrobe ? 'Your wardrobe (W)' : 'Wardrobe opens during Styling';
   
   useEffect(() => {
     console.log('🚀 DRESS TO IMPRESS: Application started');
@@ -56,6 +64,21 @@ export default function GamePage() {
     console.log('💡 TIP: Press Ctrl+Shift+D to open debug panel (development only)');
     console.log('⌨️  KEYBOARD: Press ESC to close panels, click Phase to cycle');
   }, [phase]);
+
+  // Auto-close disallowed panels on phase changes
+  useEffect(() => {
+    if (phase === 'ShoppingSpree') {
+      setEditPanelVisible(false);
+      setWardrobeOpen(false);
+    } else if (phase === 'StylingRound') {
+      setAmazonPanelVisible(false);
+    } else {
+      // In other phases, close all tool panels
+      setAmazonPanelVisible(false);
+      setEditPanelVisible(false);
+      setWardrobeOpen(false);
+    }
+  }, [phase]);
   
   // Keyboard shortcuts
   useEffect(() => {
@@ -79,18 +102,30 @@ export default function GamePage() {
       if (phase === 'CharacterSelect') return;
 
       if (key === 's') {
+        if (!canOpenShopping) {
+          showToast(shoppingTooltip, 'info');
+          return;
+        }
         // Open Amazon; close others
         setEditPanelVisible(false);
         setWardrobeOpen(false);
         setAIConsoleVisible(false);
         setAmazonPanelVisible(true);
       } else if (key === 'e') {
+        if (!canOpenEdit) {
+          showToast(editTooltip, 'info');
+          return;
+        }
         // Open Edit; close others
         setAmazonPanelVisible(false);
         setWardrobeOpen(false);
         setAIConsoleVisible(false);
         setEditPanelVisible(true);
       } else if (key === 'w') {
+        if (!canOpenWardrobe) {
+          showToast(wardrobeTooltip, 'info');
+          return;
+        }
         // Open Wardrobe; close others
         setAmazonPanelVisible(false);
         setEditPanelVisible(false);
@@ -151,10 +186,25 @@ export default function GamePage() {
         </div>
       ) : (
         <ToolsIsland 
-          onSearchClick={() => setAmazonPanelVisible(true)}
-          onEditClick={() => setEditPanelVisible(true)}
-          onWardrobeClick={() => setWardrobeOpen(true)}
+          onSearchClick={() => {
+            if (!canOpenShopping) { showToast(shoppingTooltip, 'info'); return; }
+            setAmazonPanelVisible(true);
+          }}
+          onEditClick={() => {
+            if (!canOpenEdit) { showToast(editTooltip, 'info'); return; }
+            setEditPanelVisible(true);
+          }}
+          onWardrobeClick={() => {
+            if (!canOpenWardrobe) { showToast(wardrobeTooltip, 'info'); return; }
+            setWardrobeOpen(true);
+          }}
           onAIConsoleClick={() => setAIConsoleVisible(!isAIConsoleVisible)}
+          searchDisabled={!canOpenShopping}
+          editDisabled={!canOpenEdit}
+          wardrobeDisabled={!canOpenWardrobe}
+          searchTooltip={shoppingTooltip}
+          editTooltip={editTooltip}
+          wardrobeTooltip={wardrobeTooltip}
         />
       )}
       

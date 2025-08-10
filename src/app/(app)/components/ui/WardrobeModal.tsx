@@ -1,5 +1,6 @@
 "use client";
 import { useEffect } from 'react';
+import { useGameStore } from '@/lib/state/gameStore';
 import { GlassPanel } from '@/components/GlassPanel';
 import { GlassButton } from '@/components/GlassButton';
 
@@ -10,6 +11,7 @@ interface WardrobeModalProps {
 }
 
 export default function WardrobeModal({ open, onClose, children }: WardrobeModalProps) {
+  const phase = useGameStore((s) => s.phase);
   useEffect(() => {
     function onEsc(e: KeyboardEvent) {
       if (e.key === 'Escape') onClose();
@@ -17,6 +19,13 @@ export default function WardrobeModal({ open, onClose, children }: WardrobeModal
     if (open) document.addEventListener('keydown', onEsc);
     return () => document.removeEventListener('keydown', onEsc);
   }, [open, onClose]);
+  
+  // Defensive close if phase changes to a disallowed state
+  useEffect(() => {
+    if (open && phase !== 'StylingRound') {
+      onClose();
+    }
+  }, [open, phase, onClose]);
 
   if (!open) return null;
   return (

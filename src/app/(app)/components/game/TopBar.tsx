@@ -6,6 +6,7 @@ import { GlassPanel } from '@/components/GlassPanel';
 import { Chip } from '@/components/Chip';
 import { ProgressIndicator } from '@/components/ProgressIndicator';
 import { Tooltip } from '@/components/Tooltip';
+import { useToast } from '@/hooks/useToast';
 
 export default function TopBar() {
   const phase = useGameStore((s) => s.phase);
@@ -16,6 +17,9 @@ export default function TopBar() {
   const wardrobe = useGameStore((s) => s.wardrobe);
   const resetGame = useGameStore((s) => s.resetGame);
   const stopRef = useRef<null | (() => void)>(null);
+  const { showToast } = useToast();
+  const thresholdsShownRef = useRef<Set<string>>(new Set());
+  const lastPhaseRef = useRef<string | null>(null);
   
   const phases = ['CharacterSelect', 'ThemeSelect', 'ShoppingSpree', 'StylingRound', 'WalkoutAndEval', 'Results'] as const;
   type GamePhase = typeof phases[number];
@@ -37,6 +41,25 @@ export default function TopBar() {
       stopRef.current?.();
       stopRef.current = null;
     }
+    // Reset threshold tracking on phase change and show toasts
+    thresholdsShownRef.current.clear();
+    if (lastPhaseRef.current !== phase) {
+      // Transition toasts (previous -> current)
+      if (lastPhaseRef.current === 'ShoppingSpree' && phase === 'StylingRound') {
+        showToast("Time's up! Moving to Styling.", 'success', 2000);
+      }
+      if (lastPhaseRef.current === 'StylingRound' && phase === 'WalkoutAndEval') {
+        showToast("Time's up! Moving to Walkout.", 'success', 2000);
+      }
+      // Phase start toasts (current)
+      if (phase === 'ShoppingSpree') {
+        showToast('Shopping started. You have 2:00.', 'info', 2500);
+      }
+      if (phase === 'StylingRound') {
+        showToast('Styling started. You have 1:30.', 'info', 2500);
+      }
+      lastPhaseRef.current = phase;
+    }
     return () => {
       stopRef.current?.();
       stopRef.current = null;
@@ -48,17 +71,41 @@ export default function TopBar() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Calculate progress for shopping phase
+  // Calculate progress for timed phases
   const getProgress = () => {
-    if (phase === 'ShoppingSpree') {
-      return { current: 120 - timer, total: 120, label: 'Shopping Time' };
-    } else if (phase === 'StylingRound') {
-      return { current: 90 - timer, total: 90, label: 'Styling Time' };
+    switch (phase) {
+      case 'ShoppingSpree':
+        return { current: 120 - timer, total: 120, label: 'Shopping Time' };
+      case 'StylingRound':
+        return { current: 90 - timer, total: 90, label: 'Styling Time' };
+      default:
+        return null;
     }
-    return null;
   };
 
   const progress = getProgress();
+
+  // Threshold toasts for time remaining
+  useEffect(() => {
+    if (timer <= 0) return;
+    const key = (mark: number) => `${phase}:${mark}`;
+    const shown = thresholdsShownRef.current;
+    const emit = (mark: number, message: string, type: 'info' | 'warning', duration = 2000) => {
+      const k = key(mark);
+      if (shown.has(k)) return;
+      shown.add(k);
+      showToast(message, type, duration);
+    };
+    if (phase === 'ShoppingSpree') {
+      if (timer === 60) emit(60, '1:00 remaining.', 'info', 2200);
+      if (timer === 30) emit(30, '30 seconds remaining before Styling.', 'warning', 2000);
+      if (timer === 10) emit(10, '10 seconds remaining before Styling.', 'warning', 1800);
+    } else if (phase === 'StylingRound') {
+      if (timer === 45) emit(45, '0:45 remaining.', 'info', 2200);
+      if (timer === 20) emit(20, '20 seconds remaining before Walkout.', 'warning', 2000);
+      if (timer === 10) emit(10, '10 seconds remaining before Walkout.', 'warning', 1800);
+    }
+  }, [timer, phase, showToast]);
 
   return (
     <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[70] w-full max-w-2xl px-4 ${phase === 'ThemeSelect' ? 'pointer-events-none' : ''}`}>

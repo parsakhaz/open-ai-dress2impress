@@ -17,6 +17,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
   const [variants, setVariants] = useState<string[]>([]);
   const setCurrentImage = useGameStore((s) => s.setCurrentImage);
   const addToHistory = useGameStore((s) => s.addToHistory);
+  const phase = useGameStore((s) => s.phase);
 
   // Handle Escape key to close modal
   useEffect(() => {
@@ -26,6 +27,13 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
     document.addEventListener('keydown', onEsc);
     return () => document.removeEventListener('keydown', onEsc);
   }, [onClose]);
+
+  // Defensive close if phase changes to a disallowed state
+  useEffect(() => {
+    if (phase !== 'StylingRound' && onClose) {
+      onClose();
+    }
+  }, [phase, onClose]);
 
   async function onEdit() {
     setLoading(true);

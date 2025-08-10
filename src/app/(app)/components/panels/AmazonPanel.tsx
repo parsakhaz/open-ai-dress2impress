@@ -22,6 +22,7 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
   const addToWardrobe = useGameStore((s) => s.addToWardrobe);
   const removeFromWardrobe = useGameStore((s) => s.removeFromWardrobe);
   const wardrobe = useGameStore((s) => s.wardrobe);
+  const phase = useGameStore((s) => s.phase);
 
   // Handle Escape key to close modal
   useEffect(() => {
@@ -32,18 +33,25 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
     return () => document.removeEventListener('keydown', onEsc);
   }, [onClose]);
 
+  // Defensive close if phase changes to a disallowed state
+  useEffect(() => {
+    if (phase !== 'ShoppingSpree' && onClose) {
+      onClose();
+    }
+  }, [phase, onClose]);
+
   const toggleWardrobe = async (item: WardrobeItem) => {
     const inWardrobe = wardrobe.some((w) => w.id === item.id);
     if (inWardrobe) {
       removeFromWardrobe(item.id);
-      showToast?.(`Removed "${item.name}" from wardrobe`, 'info');
+      showToast?.('Removed item from wardrobe.', 'info');
     } else {
       if (wardrobe.length >= MAX_WARDROBE_ITEMS) {
         showToast?.(`You can only add up to ${MAX_WARDROBE_ITEMS} items. Remove something to add more.`, 'info');
         return;
       }
       addToWardrobe(item);
-      showToast?.(`Added "${item.name}" to wardrobe! 👗`, 'success');
+      showToast?.('Added item to wardrobe. 👗', 'success');
       // Auto-enqueue try-on with latest edit image if available, else fall back to current/character
       try {
         const s = useGameStore.getState();
@@ -79,7 +87,7 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
   return (
     <GlassPanel 
       variant="modal" 
-      className="relative w-full h-full overflow-hidden"
+      className="relative w-full h-full"
     >
       <div className="h-full min-h-0 flex flex-col space-y-6">
         <div className="flex items-center justify-between">
