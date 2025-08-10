@@ -19,21 +19,36 @@ export default function GenerateSidebar({ className = '', showToast }: GenerateS
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<WardrobeItem[]>([]);
   const [currentPage, setCurrentPage] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
   const addToWardrobe = useGameStore((s) => s.addToWardrobe);
   const removeFromWardrobe = useGameStore((s) => s.removeFromWardrobe);
   const wardrobe = useGameStore((s) => s.wardrobe);
   const phase = useGameStore((s) => s.phase);
 
-  // items per page; sidebar is tall/scrollable but keep pagination to reuse the same logic
-  const itemsPerPage = 20;
+  // Responsive items per page based on viewport height; grid is fixed to 2 columns
+  useEffect(() => {
+    const calc = () => {
+      const h = typeof window !== 'undefined' ? window.innerHeight : 900;
+      // rows tuned to roughly fill the card minus header/form/pagination
+      if (h < 700) return 10;      // 5 rows * 2 cols
+      if (h < 850) return 12;      // 6 rows * 2 cols
+      if (h < 1000) return 14;     // 7 rows * 2 cols
+      return 16;                   // 8 rows * 2 cols
+    };
+    const apply = () => setItemsPerPage(calc());
+    apply();
+    window.addEventListener('resize', apply);
+    return () => window.removeEventListener('resize', apply);
+  }, []);
   const paginatedResults = useMemo(() => {
     const start = currentPage * itemsPerPage;
     const end = start + itemsPerPage;
     return results.slice(start, end);
-  }, [results, currentPage]);
+  }, [results, currentPage, itemsPerPage]);
   const totalPages = Math.ceil(results.length / itemsPerPage);
 
   useEffect(() => { setCurrentPage(0); }, [results.length]);
+  useEffect(() => { setCurrentPage(0); }, [itemsPerPage]);
 
   const toggleWardrobe = async (item: WardrobeItem) => {
     if (phase !== 'ShoppingSpree') {
@@ -86,7 +101,7 @@ export default function GenerateSidebar({ className = '', showToast }: GenerateS
   }
 
   return (
-    <GlassPanel className={`h-full flex flex-col ${className}`}>
+    <GlassPanel className={`h-full flex flex-col overflow-hidden ${className}`}>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">GENERATE CLOTHES & ACCESSORIES</h3>
       </div>
@@ -116,7 +131,14 @@ export default function GenerateSidebar({ className = '', showToast }: GenerateS
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto pr-1">
+      <div className="flex-1 min-h-0 max-h-full overflow-y-auto pr-1">
+        {results.length > itemsPerPage && (
+          <div className="flex items-center justify-center gap-2 py-2">
+            <GlassButton size="sm" variant="ghost" onClick={() => setCurrentPage(Math.max(0, currentPage - 1))} disabled={currentPage === 0}>Prev</GlassButton>
+            <span className="text-xs text-slate-500">{currentPage + 1} / {totalPages}</span>
+            <GlassButton size="sm" variant="ghost" onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))} disabled={currentPage === totalPages - 1}>Next</GlassButton>
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-3">
           {paginatedResults.map((r) => (
             <div

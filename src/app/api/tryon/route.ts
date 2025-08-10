@@ -6,11 +6,52 @@ import { typedFetch } from '@/lib/util/http';
 import { parallel, poll, sleep } from '@/lib/util/promise';
 import { runWithFashnConcurrency } from '@/lib/util/concurrency';
 import { withRetry } from '@/lib/util/errorHandling';
+import path from 'node:path';
+import fs from 'node:fs/promises';
+import sharp from 'sharp';
 
 export const runtime = 'nodejs';
 export const maxDuration = 600;
 
 const BASE_URL = 'https://api.fashn.ai/v1';
+
+async function toBase64DataUrl(input: string): Promise<string> {
+  // Already a data URL
+  if (input.startsWith('data:')) return input;
+
+  let buffer: Buffer;
+  let contentType = 'image/png';
+
+  if (input.startsWith('/')) {
+    // Treat as asset under public/
+    const publicDir = path.join(process.cwd(), 'public');
+    const filePath = path.join(publicDir, input.replace(/^\//, ''));
+    buffer = await fs.readFile(filePath);
+  } else if (/^https?:\/\//i.test(input)) {
+    const res = await fetch(input as string);
+    if (!res.ok) throw new Error(`Failed to fetch image URL: ${res.status} ${res.statusText}`);
+    const arr = await res.arrayBuffer();
+    buffer = Buffer.from(arr);
+    const ct = res.headers.get('content-type');
+    if (ct && /^image\//.test(ct)) contentType = ct;
+  } else {
+    // Fallback: try to read as relative path from public
+    const publicDir = path.join(process.cwd(), 'public');
+    const filePath = path.join(publicDir, input);
+    buffer = await fs.readFile(filePath);
+  }
+
+  // Downscale/compress to keep payloads reasonable
+  const optimized = await sharp(buffer)
+    .rotate()
+    .resize({ width: 1024, height: 1024, fit: 'inside', withoutEnlargement: true })
+    .webp({ quality: 80 })
+    .toBuffer();
+  contentType = 'image/webp';
+
+  const b64 = optimized.toString('base64');
+  return `data:${contentType};base64,${b64}`;
+}
 
 async function runSingleTryOn(characterImageUrl: string, clothingImageUrl: string, apiKey: string): Promise<string> {
   return runWithFashnConcurrency(async () => {
@@ -18,6 +59,12 @@ async function runSingleTryOn(characterImageUrl: string, clothingImageUrl: strin
       'Content-Type': 'application/json',
       Authorization: `Bearer ${apiKey}`,
     } as const;
+
+    // Normalize inputs to data URLs to ensure FASHN can fetch/process
+    const [modelDataUrl, garmentDataUrl] = await Promise.all([
+      toBase64DataUrl(characterImageUrl),
+      toBase64DataUrl(clothingImageUrl),
+    ]);
 
     const runData = await withRetry(
       () =>
@@ -30,8 +77,8 @@ async function runSingleTryOn(characterImageUrl: string, clothingImageUrl: strin
             body: JSON.stringify({
               model_name: 'tryon-v1.6',
               inputs: {
-                model_image: characterImageUrl,
-                garment_image: clothingImageUrl,
+                model_image: modelDataUrl,
+                garment_image: garmentDataUrl,
                 mode: 'performance',
               },
             }),

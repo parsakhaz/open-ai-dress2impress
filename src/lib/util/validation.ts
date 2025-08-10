@@ -24,6 +24,19 @@ export function assertUrl(name: string, v: unknown): asserts v is string {
   }
 }
 
+// Accepts: data URLs, http(s) URLs, or app-relative paths beginning with '/'
+export function assertImageInput(name: string, v: unknown): asserts v is string {
+  assertString(name, v);
+  if (v.startsWith('data:')) return;
+  if (v.startsWith('/')) return; // relative public asset path; server will normalize
+  try {
+    new URL(v);
+    return;
+  } catch {
+    throw createValidationError(name, v, 'must be a data URL, http(s) URL, or app-relative path starting with \'/\'');
+  }
+}
+
 // Shared API request types (runtime guards only). Actual TS types live in src/lib/api/types.ts
 export const guards = {
   avatar(body: unknown) {
@@ -39,8 +52,8 @@ export const guards = {
   },
   tryon(body: unknown) {
     const b = body as { characterImageUrl?: unknown; clothingImageUrl?: unknown };
-    assertUrl('characterImageUrl', b.characterImageUrl);
-    assertUrl('clothingImageUrl', b.clothingImageUrl);
+    assertImageInput('characterImageUrl', b.characterImageUrl);
+    assertImageInput('clothingImageUrl', b.clothingImageUrl);
     return { characterImageUrl: b.characterImageUrl, clothingImageUrl: b.clothingImageUrl } as {
       characterImageUrl: string;
       clothingImageUrl: string;
