@@ -5,6 +5,7 @@ import type { WardrobeItem } from '@/types';
 import { useGameStore } from '@/lib/state/gameStore';
 import { GlassPanel } from '@/components/GlassPanel';
 import { GlassButton } from '@/components/GlassButton';
+import { tryOnQueue } from '@/lib/services/tryOnQueue';
 
 interface AmazonPanelProps {
   onClose?: () => void;
@@ -29,7 +30,7 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
     return () => document.removeEventListener('keydown', onEsc);
   }, [onClose]);
 
-  const toggleWardrobe = (item: WardrobeItem) => {
+  const toggleWardrobe = async (item: WardrobeItem) => {
     const inWardrobe = wardrobe.some((w) => w.id === item.id);
     if (inWardrobe) {
       removeFromWardrobe(item.id);
@@ -37,6 +38,21 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
     } else {
       addToWardrobe(item);
       showToast?.(`Added "${item.name}" to wardrobe! 👗`, 'success');
+      // Auto-enqueue try-on with latest edit image if available, else fall back to current/character
+      try {
+        const s = useGameStore.getState();
+        const history = s.history;
+        const latestEdit = [...history].reverse().find((h) => h.type === 'edit' || h.type === 'tryOn');
+        const baseUrl = latestEdit?.imageUrl || s.currentImageUrl || s.character?.avatarUrl;
+        const baseId = latestEdit?.imageId || null;
+        if (baseUrl) {
+          await tryOnQueue.enqueue({ baseImageId: baseId, baseImageUrl: baseUrl, item });
+          showToast?.('Queued try-on with latest image', 'info');
+        }
+      } catch (e) {
+        // Non-blocking; swallow errors but notify
+        showToast?.('Failed to auto-queue try-on', 'error');
+      }
     }
   };
 
@@ -135,13 +151,11 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
                     role="button"
                     tabIndex={0}
                     title="Click to add or remove"
-                    onClick={() => {
-                      toggleWardrobe(r);
-                    }}
+                    onClick={() => { void toggleWardrobe(r); }}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' || e.key === ' ') {
                         e.preventDefault();
-                        toggleWardrobe(r);
+                        void toggleWardrobe(r);
                       }
                     }}
                   >

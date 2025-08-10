@@ -62,4 +62,20 @@ export interface AvatarGenerationRecord {
   createdAt: number;
 }
 
+export type TryOnStatus = 'queued' | 'running' | 'succeeded' | 'failed';
+
+export interface TryOnJob {
+  id: string;
+  baseImageKey: string; // imageId if available; otherwise hash of URL
+  baseImageUrl: string;
+  baseImageId?: string;
+  itemId: string;
+  itemImageUrl: string;
+  status: TryOnStatus;
+  images?: string[];
+  error?: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 

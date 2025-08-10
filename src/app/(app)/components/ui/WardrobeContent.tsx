@@ -1,10 +1,10 @@
 "use client";
 import { useState } from 'react';
 import { useGameStore } from '@/lib/state/gameStore';
-import { performTryOn } from '@/lib/adapters/fashn';
 import { GlassButton } from '@/components/GlassButton';
-import { TryOnResultsModal } from '@/components/TryOnResultsModal';
 import { selectImage } from '@/lib/services/stateActions';
+import { BaseImagePickerModal } from '@/app/(app)/components/modals/BaseImagePickerModal';
+import { tryOnQueue } from '@/lib/services/tryOnQueue';
 
 interface WardrobeContentProps {
   onClose?: () => void;
@@ -12,35 +12,11 @@ interface WardrobeContentProps {
 
 export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) {
   const wardrobe = useGameStore((s) => s.wardrobe);
-  const character = useGameStore((s) => s.character);
-  const currentImageUrl = useGameStore((s) => s.currentImageUrl);
-  const history = useGameStore((s) => s.history);
-  const setCurrentImage = useGameStore((s) => s.setCurrentImage);
-  const addToHistory = useGameStore((s) => s.addToHistory);
-  const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [variants, setVariants] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [showTryOnModal, setShowTryOnModal] = useState(false);
+  const [showBasePicker, setShowBasePicker] = useState<string | null>(null); // itemId when picking
 
-  async function tryOn(itemImageUrl: string) {
-    const mostRecentImage = currentImageUrl || history[history.length - 1]?.imageUrl || character?.avatarUrl;
-    if (!mostRecentImage) {
-      setError('No base image found. Select an avatar or choose a recent image first.');
-      return;
-    }
-    setError(null);
-    setLoadingId(itemImageUrl);
-    try {
-      const urls = await performTryOn(mostRecentImage, itemImageUrl);
-      setVariants(urls);
-      if (urls.length > 0) {
-        setShowTryOnModal(true);
-      }
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Try-on failed');
-    } finally {
-      setLoadingId(null);
-    }
+  async function onPickBaseAndEnqueue(itemId: string, itemImageUrl: string) {
+    setShowBasePicker(itemId);
   }
 
   if (wardrobe.length === 0) {
@@ -79,10 +55,9 @@ export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) 
                   size="sm"
                   variant="secondary"
                   className="flex-1"
-                  onClick={() => tryOn(item.imageUrl)}
-                  disabled={loadingId === item.imageUrl}
+                  onClick={() => onPickBaseAndEnqueue(item.id, item.imageUrl)}
                 >
-                  {loadingId === item.imageUrl ? 'Trying…' : 'Try On'}
+                  Try On
                 </GlassButton>
                 <GlassButton
                   size="sm"
@@ -100,14 +75,20 @@ export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) 
         ))}
       </div>
 
-      {/* Try-On Results Modal */}
-      <TryOnResultsModal
-        isOpen={showTryOnModal}
-        onClose={() => setShowTryOnModal(false)}
-        results={variants}
-        onSelect={async (imageUrl) => {
-          await selectImage(imageUrl, { type: 'tryOn', description: 'Try-on result', addToHistory: true });
-          onClose?.();
+      {/* Base Image Picker for enqueueing background try-on */}
+      <BaseImagePickerModal
+        isOpen={!!showBasePicker}
+        onClose={() => setShowBasePicker(null)}
+        onSelect={async (base) => {
+          const item = wardrobe.find((w) => w.id === showBasePicker!);
+          if (!item) return;
+          try {
+            await tryOnQueue.enqueue({ baseImageId: base.imageId ?? null, baseImageUrl: base.imageUrl, item });
+          } catch (e) {
+            setError(e instanceof Error ? e.message : 'Failed to queue try-on');
+          } finally {
+            setShowBasePicker(null);
+          }
         }}
       />
     </div>

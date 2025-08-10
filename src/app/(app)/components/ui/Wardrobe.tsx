@@ -2,37 +2,20 @@
 import { useState } from 'react';
 import { useGameStore } from '@/lib/state/gameStore';
 import WardrobeModal from '@/app/(app)/components/ui/WardrobeModal';
-import { performTryOn } from '@/lib/adapters/fashn';
 import { GlassPanel } from '@/components/GlassPanel';
 import { GlassButton } from '@/components/GlassButton';
+import { BaseImagePickerModal } from '@/app/(app)/components/modals/BaseImagePickerModal';
+import { tryOnQueue } from '@/lib/services/tryOnQueue';
 
 export default function Wardrobe() {
   const wardrobe = useGameStore((s) => s.wardrobe);
-  const character = useGameStore((s) => s.character);
-  const currentImageUrl = useGameStore((s) => s.currentImageUrl);
-  const history = useGameStore((s) => s.history);
   const setCurrentImage = useGameStore((s) => s.setCurrentImage);
   const [open, setOpen] = useState(false);
-  const [loadingId, setLoadingId] = useState<string | null>(null);
-  const [variants, setVariants] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [pickerForItemId, setPickerForItemId] = useState<string | null>(null);
 
-  async function tryOn(itemImageUrl: string) {
-    const mostRecentImage = currentImageUrl || history[history.length - 1]?.imageUrl || character?.avatarUrl;
-    if (!mostRecentImage) {
-      setError('No base image found. Select an avatar or choose a recent image first.');
-      return;
-    }
-    setError(null);
-    setLoadingId(itemImageUrl);
-    try {
-      const urls = await performTryOn(mostRecentImage, itemImageUrl);
-      setVariants(urls);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Try-on failed');
-    } finally {
-      setLoadingId(null);
-    }
+  function openPicker(itemId: string) {
+    setPickerForItemId(itemId);
   }
 
   return (
@@ -71,10 +54,9 @@ export default function Wardrobe() {
                       size="sm"
                       variant="secondary"
                       className="flex-1 text-xs"
-                      onClick={() => tryOn(w.imageUrl)}
-                      disabled={loadingId === w.imageUrl}
+                      onClick={() => openPicker(w.id)}
                     >
-                      {loadingId === w.imageUrl ? 'Trying…' : 'Try On'}
+                      Try On
                     </GlassButton>
                   </div>
                 </div>
@@ -103,10 +85,9 @@ export default function Wardrobe() {
                       size="sm"
                       variant="secondary"
                       className="flex-1"
-                      onClick={() => tryOn(w.imageUrl)}
-                      disabled={loadingId === w.imageUrl}
+                      onClick={() => openPicker(w.id)}
                     >
-                      {loadingId === w.imageUrl ? 'Trying…' : 'Try On'}
+                      Try On
                     </GlassButton>
                     <GlassButton
                       size="sm"
@@ -121,30 +102,25 @@ export default function Wardrobe() {
             ))}
           </div>
 
-          {variants.length > 0 && (
-            <div className="space-y-3">
-              <h4 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Try-On Results</h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                {variants.map((u, i) => (
-                  <div key={i} className="group relative rounded-lg overflow-hidden bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 hover:border-accent/50 transition-colors">
-                    <img src={u} alt={`Variant ${i + 1}`} className="w-full aspect-square object-cover" />
-                    <div className="p-3">
-                      <GlassButton 
-                        size="sm" 
-                        variant="primary"
-                        className="w-full"
-                        onClick={() => setCurrentImage(u)}
-                      >
-                        Use This
-                      </GlassButton>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Results display removed in favor of background queue + modal */}
         </div>
       </WardrobeModal>
+
+      <BaseImagePickerModal
+        isOpen={!!pickerForItemId}
+        onClose={() => setPickerForItemId(null)}
+        onSelect={async (base) => {
+          const item = wardrobe.find((w) => w.id === pickerForItemId!);
+          if (!item) return;
+          try {
+            await tryOnQueue.enqueue({ baseImageId: base.imageId ?? null, baseImageUrl: base.imageUrl, item });
+          } catch (e) {
+            setError(e instanceof Error ? e.message : 'Failed to queue try-on');
+          } finally {
+            setPickerForItemId(null);
+          }
+        }}
+      />
     </GlassPanel>
   );
 }

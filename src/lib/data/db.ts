@@ -8,6 +8,7 @@ export class AppDatabase extends Dexie {
   images!: Table<ImageRecord>;
   faces!: Table<FaceRecord>;
   avatarGenerations!: Table<AvatarGenerationRecord>;
+  tryOnJobs!: Table<import('@/types').TryOnJob>;
 
   constructor() {
     super('DressToImpressDB');
@@ -28,6 +29,9 @@ export class AppDatabase extends Dexie {
     // Add compound index for fast lookups by (faceImageId, paramsHash)
     this.version(5).stores({
       avatarGenerations: 'id, [faceImageId+paramsHash], faceImageId, paramsHash, createdAt',
+    });
+    this.version(6).stores({
+      tryOnJobs: 'id, [baseImageKey+itemId], status, createdAt',
     });
   }
 }
