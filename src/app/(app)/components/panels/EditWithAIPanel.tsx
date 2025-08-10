@@ -391,6 +391,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
               </div>
             </div>
 
+            {/* Navigation buttons commented out - click outside to close is enough
             <div className="flex justify-between items-center p-4 md:p-6">
               <button
                 onClick={() => setPreviewEditIndex(previewEditIndex > 0 ? previewEditIndex - 1 : variants.length - 1)}
@@ -406,6 +407,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
                 Next →
               </button>
             </div>
+            */}
 
             <div className="flex justify-center gap-2 md:gap-4 p-4 md:p-6">
               {variants.map((url, index) => (

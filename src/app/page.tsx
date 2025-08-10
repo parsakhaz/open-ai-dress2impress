@@ -314,11 +314,15 @@ export default function GamePage() {
       
       {/* Fixed positioned overlay elements */}
       {phase !== 'CharacterSelect' && phase !== 'ThemeSelect' && <TopBar />}
-      <HistoryStrip />
+      {phase !== 'WalkoutAndEval' && phase !== 'Results' && <HistoryStrip />}
       
       {/* Board layout (single screen) during gameplay phases */}
       {phase !== 'CharacterSelect' && phase !== 'ThemeSelect' && (
-        phase === 'StylingRound' ? <StylingBoard /> : <GameBoard />
+        phase === 'StylingRound'
+          ? <StylingBoard />
+          : (phase === 'ShoppingSpree' || phase === 'Accessorize')
+            ? <GameBoard />
+            : null
       )}
 
       {/* Conditional rendering based on phase */}
