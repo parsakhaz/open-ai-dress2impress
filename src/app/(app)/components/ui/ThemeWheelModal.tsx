@@ -85,26 +85,37 @@ export default function ThemeWheelModal({ open, onClose }: ThemeWheelModalProps)
         </div>
 
         {/* Wheel - make surface opaque to avoid transparency artifacts */}
-        <div className="mx-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 md:p-6 shadow-2xl overflow-visible select-none">
+        <div className="mx-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2 shadow-2xl overflow-visible select-none">
           <div
-            className="relative mx-auto w-[min(96vw,48rem)] h-[min(96vw,48rem)] flex items-center justify-center cursor-pointer"
+            className="relative mx-auto w-[min(90vw,50rem)] h-[min(90vw,50rem)] flex items-center justify-center cursor-pointer"
             onClick={() => {
               if (!spinning && !themeLoading && !items.includes('...')) onSpin();
             }}
             aria-label="Click to spin the theme wheel"
             role="button"
+            style={{ transform: 'scale(1.3)' }}
           >
           <Wheel
             mustStartSpinning={spinning}
             prizeNumber={selectedIndex ?? 0}
             data={items.map((text) => ({ option: text }))}
             outerBorderColor="#e5e7eb" // slate-200
+            outerBorderWidth={4}
             innerBorderColor="#cbd5e1" // slate-300
+            innerBorderWidth={2}
             radiusLineColor="#ffffff"
             radiusLineWidth={1}
             backgroundColors={["#ec4899","#8b5cf6","#6366f1","#f472b6"]}
             textColors={["#f8fafc"]}
             fontSize={16}
+            spinDuration={0.8}
+            pointerProps={{
+              style: {
+                fill: '#ef4444',
+                transform: 'scale(1.5)'
+              }
+            }}
+            textDistance={80}
             onStopSpinning={() => {
               const idx = selectedIndex ?? 0;
               const theme = items[idx];
