@@ -56,17 +56,38 @@ export default function GamePage() {
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      // Avoid shortcuts while typing
+      const active = document.activeElement as HTMLElement | null;
+      const isTyping = !!active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable);
+      if (isTyping) return;
+
+      const key = e.key.toLowerCase();
+
+      if (key === 'escape') {
         setAmazonPanelVisible(false);
         setEditPanelVisible(false);
         setWardrobeOpen(false);
         setAIConsoleVisible(false);
+        return;
+      }
+
+      // Only enable tool shortcuts outside of CharacterSelect
+      if (phase === 'CharacterSelect') return;
+
+      if (key === 's') {
+        setAmazonPanelVisible(true);
+      } else if (key === 'e') {
+        setEditPanelVisible(true);
+      } else if (key === 'w') {
+        setWardrobeOpen(true);
+      } else if (key === 'a') {
+        setAIConsoleVisible((v) => !v);
       }
     };
     
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
+  }, [phase]);
   
   return (
     <main className="relative w-screen h-screen overflow-hidden">

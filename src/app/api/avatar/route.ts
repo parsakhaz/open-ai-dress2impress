@@ -19,16 +19,18 @@ Composition requirements (critical):
 - Isolated on plain white seamless studio background with a soft shadow
 
 Style requirements:
-- Amazing outfit; colorful; low‑poly look with clean, sharp edges and bright textures
+- Start with a blank outfit: plain white t‑shirt and plain white pants (no logos, no patterns)
+- Low‑poly look with clean, sharp edges and bright, clean textures
 - Highly detailed and well-defined facial features faithful to Sims 4 models
-- Smiling facial expression, eyes looking slightly upward or directly forward
+- Smiling facial expression
 - Clean render suitable for Photoshop cutout and composition`;
 
+// Vary pose and gaze subtly rather than clothing; clothing remains white/blank
 const styleVariations = [
-  'with trendy casual clothing',
-  'with stylish streetwear outfit',
-  'with colorful fashionable attire',
-  'with modern chic clothing',
+  'pose: neutral, gaze straight ahead',
+  'pose: neutral, gaze slightly upward',
+  'pose: neutral, gaze slightly to the left',
+  'pose: neutral, gaze slightly to the right',
 ] as const;
 
 export const POST = createHandler<{ imageDataUrl: string }, { images: string[]}>({
