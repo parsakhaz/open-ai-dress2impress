@@ -14,6 +14,7 @@ import WardrobeContent from '@/app/(app)/components/ui/WardrobeContent';
 import { DebugPanel } from '@/components/DebugPanel';
 import { useToast } from '@/hooks/useToast';
 import ThemeWheelModal from '@/app/(app)/components/ui/ThemeWheelModal';
+import UrgencyVignette from '@/app/(app)/components/game/UrgencyVignette';
 
 export default function GamePage() {
   const phase = useGameStore((s) => s.phase);
@@ -164,6 +165,8 @@ export default function GamePage() {
     <main className="relative w-screen h-screen overflow-hidden">
       {/* Canvas Background - CenterStage takes full viewport */}
       <CenterStage />
+      {/* Urgency vignette overlay during last seconds */}
+      <UrgencyVignette />
       
       {/* Fixed positioned overlay elements */}
       {phase !== 'CharacterSelect' && phase !== 'ThemeSelect' && <TopBar />}

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { searchAmazon } from '@/lib/adapters/amazon';
 import type { WardrobeItem } from '@/types';
 import { useGameStore } from '@/lib/state/gameStore';
@@ -19,10 +19,22 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [results, setResults] = useState<WardrobeItem[]>([]);
+  const [currentPage, setCurrentPage] = useState(0);
   const addToWardrobe = useGameStore((s) => s.addToWardrobe);
   const removeFromWardrobe = useGameStore((s) => s.removeFromWardrobe);
   const wardrobe = useGameStore((s) => s.wardrobe);
-  const phase = useGameStore((s) => s.phase);
+
+  // Calculate items per page based on screen size
+  const itemsPerPage = 8; // Reduced for testing, shows pagination buttons sooner
+  
+  // Calculate paginated results
+  const paginatedResults = useMemo(() => {
+    const start = currentPage * itemsPerPage;
+    const end = start + itemsPerPage;
+    return results.slice(start, end);
+  }, [results, currentPage, itemsPerPage]);
+  
+  const totalPages = Math.ceil(results.length / itemsPerPage);
 
   // Handle Escape key to close modal
   useEffect(() => {
@@ -32,13 +44,6 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
     document.addEventListener('keydown', onEsc);
     return () => document.removeEventListener('keydown', onEsc);
   }, [onClose]);
-
-  // Defensive close if phase changes to a disallowed state
-  useEffect(() => {
-    if (phase !== 'ShoppingSpree' && onClose) {
-      onClose();
-    }
-  }, [phase, onClose]);
 
   const toggleWardrobe = async (item: WardrobeItem) => {
     const inWardrobe = wardrobe.some((w) => w.id === item.id);
@@ -74,6 +79,7 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setCurrentPage(0); // Reset to first page on new search
     try {
       const items = await searchAmazon(query);
       setResults(items);
@@ -87,9 +93,9 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
   return (
     <GlassPanel 
       variant="modal" 
-      className="relative w-full h-full"
+      className="relative w-full h-full overflow-hidden"
     >
-      <div className="h-full min-h-0 flex flex-col space-y-6">
+      <div className="h-full flex flex-col space-y-4">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Amazon Shopping</h2>
@@ -149,19 +155,19 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
           </div>
         )}
 
-        <div className="flex-1 min-h-0 overflow-auto overscroll-contain">
+        <div className="flex-1 flex flex-col">
           {results.length > 0 && (
-            <div className="space-y-4">
+            <div className="flex-1 flex flex-col space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                   Found {results.length} {results.length === 1 ? 'item' : 'items'}
                 </h4>
                 <div className="text-sm text-slate-600 dark:text-slate-400">
-                  Click an item to add/remove from your wardrobe
+                  Page {currentPage + 1} of {totalPages}
                 </div>
               </div>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-                {results.map((r) => (
+                {paginatedResults.map((r) => (
                   <div
                     key={r.id}
                     className="group relative rounded-xl overflow-hidden bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 hover:border-accent/50 hover:scale-105 transition-all duration-200 cursor-pointer"
@@ -197,19 +203,47 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
                           </div>
                         </div>
                       </div>
-                      {/* Hover preview 1.5x above card */}
-                      <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-2 -translate-y-full z-40 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                        <div className="w-[360px] max-w-[80vw] rounded-2xl overflow-hidden shadow-2xl border border-white/20 dark:border-white/10 bg-gradient-to-br from-slate-100/90 to-slate-200/90 dark:from-black/50 dark:to-slate-900/40 backdrop-blur-md">
-                          <div className="relative w-full h-[360px]">
-                            <img src={r.imageUrl} alt="" className="absolute inset-0 w-full h-full object-contain p-3" />
-                          </div>
-                        </div>
-                      </div>
+
                     </div>
                     {/* No below-card metadata; image fills card. Name/price available via info icon hover. */}
                   </div>
                 ))}
               </div>
+              
+              {/* Pagination controls */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center gap-4 pt-4">
+                  <GlassButton
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setCurrentPage(Math.max(0, currentPage - 1))}
+                    disabled={currentPage === 0}
+                    className="flex items-center justify-center w-12 h-10"
+                    title="Previous page"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </GlassButton>
+                  
+                  <span className="text-sm text-slate-600 dark:text-slate-400 px-6 font-medium">
+                    {currentPage + 1} / {totalPages}
+                  </span>
+                  
+                  <GlassButton
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setCurrentPage(Math.min(totalPages - 1, currentPage + 1))}
+                    disabled={currentPage === totalPages - 1}
+                    className="flex items-center justify-center w-12 h-10"
+                    title="Next page"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                  </GlassButton>
+                </div>
+              )}
             </div>
           )}
           
