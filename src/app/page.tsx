@@ -131,7 +131,7 @@ export default function GamePage() {
       <CenterStage />
       
       {/* Fixed positioned overlay elements */}
-      <TopBar />
+      {phase !== 'CharacterSelect' && phase !== 'ThemeSelect' && <TopBar />}
       <HistoryStrip />
       
       {/* Conditional rendering based on phase */}
