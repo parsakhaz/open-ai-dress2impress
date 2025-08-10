@@ -42,4 +42,24 @@ export interface ImageRecord {
   createdAt: number;
 }
 
+// New: Face record for saved faces (bookmarked/selfies)
+export interface FaceRecord {
+  id: string;
+  imageId: string; // references images.id
+  createdAt: number;
+  pinned: boolean;
+  label?: string;
+}
+
+// Cached avatar generation results keyed by face image and params
+export interface AvatarGenerationRecord {
+  id: string;
+  faceImageId: string;
+  variantImageIds: string[]; // image ids for each generated variant
+  paramsHash: string; // describes generator parameters/model
+  provider?: string;
+  modelVersion?: string;
+  createdAt: number;
+}
+
 

@@ -21,6 +21,8 @@ export default function ThemeWheelModal({ open, onClose }: ThemeWheelModalProps)
 
   const [spinning, setSpinning] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [showResult, setShowResult] = useState(false);
+  const [resultTheme, setResultTheme] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -66,23 +68,32 @@ export default function ThemeWheelModal({ open, onClose }: ThemeWheelModalProps)
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md p-6 md:p-8">
       <div className="absolute inset-0" onClick={() => (spinning ? null : onClose())} />
       <div className="relative w-full max-w-2xl mx-auto">
-        <div className="mb-6 text-center">
+        <div className="mb-4 md:mb-6 text-center space-y-2">
           <h2 className="text-3xl font-extrabold text-white">Spin for Today&apos;s Theme</h2>
           <p className="text-slate-300 text-sm">Randomly pick one of 15 game categories</p>
+          {showResult && resultTheme && (
+            <div
+              className="mx-auto w-fit mt-2 px-4 py-2 rounded-full bg-pink-600/30 border border-pink-400/40 text-white font-semibold shadow-[0_0_0_0_rgba(236,72,153,0.6)] animate-[pulseRing_1.2s_ease-out_1] transition-transform duration-500 scale-110"
+              aria-live="polite"
+            >
+              {resultTheme}
+            </div>
+          )}
         </div>
 
-        {/* Wheel - rely on library visuals (no extra pointer) */}
-        <div className="relative mx-auto w-[min(90vw,22rem)] h-[min(90vw,22rem)] flex items-center justify-center">
+        {/* Wheel - rely on library visuals (no extra pointer). Wrapped for better padding */}
+        <div className="mx-auto rounded-2xl border border-white/10 bg-white/5 p-4 md:p-6 shadow-2xl">
+          <div className="relative mx-auto w-[min(80vw,22rem)] h-[min(80vw,22rem)] flex items-center justify-center">
           <Wheel
             mustStartSpinning={spinning}
             prizeNumber={selectedIndex ?? 0}
             data={items.map((text) => ({ option: text }))}
-            outerBorderColor={["#ffffff33"]}
-            innerBorderColor={["#ffffff44"]}
-            radiusLineColor={["#ffffff22"]}
+            outerBorderColor="#ffffff33"
+            innerBorderColor="#ffffff44"
+            radiusLineColor="#ffffff22"
             radiusLineWidth={1}
             backgroundColors={["#ec489966","#8b5cf666","#6366f166","#f472b666"]}
             textColors={["#f8fafc"]}
@@ -90,12 +101,19 @@ export default function ThemeWheelModal({ open, onClose }: ThemeWheelModalProps)
             onStopSpinning={() => {
               const idx = selectedIndex ?? 0;
               const theme = items[idx];
-              setTheme(theme);
-              setPhase('ShoppingSpree');
+              setResultTheme(theme);
+              setShowResult(true);
               setSpinning(false);
-              onClose();
+              setTheme(theme);
+              // Briefly show result banner to draw attention before transitioning
+              setTimeout(() => {
+                setShowResult(false);
+                setPhase('ShoppingSpree');
+                onClose();
+              }, 1400);
             }}
           />
+          </div>
         </div>
 
         <div className="mt-6 flex items-center justify-center">

@@ -10,6 +10,9 @@ import { Confetti } from '@/components/Confetti';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
 import type { Character } from '@/types';
 import { selectImage } from '@/lib/services/stateActions';
+import FaceHistory from './FaceHistory';
+import { saveFaceImage } from '@/lib/services/faceActions';
+import { getOrGenerateForFace } from '@/lib/services/avatarCache';
 
 // Use any typing to avoid complex react-webcam TypeScript issues
 // @ts-ignore TypeScript issues with react-webcam dynamic import
@@ -96,6 +99,27 @@ export default function AvatarPanel() {
     }
   }, []);
 
+  const processFace = useCallback(async (args: { imageId: string; dataUrl: string }) => {
+    console.log('🧠 AVATAR PANEL: processFace start');
+    setLoading(true);
+    setError(null);
+    try {
+      const { urls, fromCache } = await getOrGenerateForFace(args.imageId, args.dataUrl);
+      setVariants(urls);
+      setSelectedAvatarIndex(null);
+      setShowAvatarSelector(true);
+      if (fromCache) {
+        console.log('✅ AVATAR PANEL: Loaded variants from cache');
+      }
+    } catch (e) {
+      const error = e instanceof Error ? e : new Error('Unknown error');
+      setError(error.message);
+      console.error('💥 AVATAR PANEL: processFace error', error.message);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const capture = useCallback(async () => {
     console.log('📷 AVATAR PANEL: Capture button clicked');
     if (webcamError) {
@@ -133,18 +157,35 @@ export default function AvatarPanel() {
     };
     img.src = imageSrc;
     
-    // Visual feedback: flash and freeze on the captured frame
+    // Save face for reuse, then visual feedback: flash and freeze on the captured frame
+    let imageId: string | null = null;
+    try {
+      const res = await saveFaceImage(imageSrc);
+      imageId = res.imageId;
+    } catch (e) {
+      console.warn('⚠️ AVATAR PANEL: Failed to save face image', e);
+    }
     setCapturedFrame(imageSrc);
     setShowFlash(true);
     setTimeout(() => setShowFlash(false), 150);
 
-    await processImage(imageSrc);
+    if (imageId) {
+      await processFace({ imageId, dataUrl: imageSrc });
+    } else {
+      await processImage(imageSrc);
+    }
   }, [webcamError, isWebcamActive, webcamReady, processImage]);
 
   const handleUpload = useCallback(async (dataUrl: string) => {
     console.log('📤 AVATAR PANEL: Processing uploaded image');
-    await processImage(dataUrl);
-  }, [processImage]);
+    try {
+      const res = await saveFaceImage(dataUrl);
+      await processFace({ imageId: res.imageId, dataUrl });
+    } catch (e) {
+      console.warn('⚠️ AVATAR PANEL: Failed to save uploaded face image', e);
+      await processImage(dataUrl);
+    }
+  }, [processFace, processImage]);
 
   function choose(url: string) {
     console.log('✅ AVATAR PANEL: User chose avatar for confirmation', { avatarUrl: url.substring(0, 50) + '...' });
@@ -204,9 +245,10 @@ export default function AvatarPanel() {
 
   return (
     <>
-    <div className="w-full max-w-lg">
+    <div className="w-full max-w-6xl">
       <GlassPanel variant="modal" className="overflow-hidden">
-        <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-4">
+          <div className="space-y-6">
           <div className="text-center">
             <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">
               Create Your Avatar
@@ -232,13 +274,34 @@ export default function AvatarPanel() {
         
           <div className="relative">
             <div className="relative rounded-2xl overflow-hidden bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10">
-              {webcamError ? (
+              {(webcamError && !capturedFrame) ? (
                 <div className="p-6">
                   <CameraPermissionHelper onUpload={handleUpload} />
                 </div>
-            ) : (
-              <>
-                  {!isWebcamActive ? (
+              ) : (
+                <>
+                  {capturedFrame ? (
+                    <div className="relative">
+                      <div className="relative w-full aspect-video bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
+                        <img
+                          src={capturedFrame}
+                          alt="Captured frame"
+                          className="w-full h-full object-contain"
+                        />
+                        <div className="absolute inset-0 -z-10">
+                          <img
+                            src={capturedFrame}
+                            alt=""
+                            className="w-full h-full object-cover blur-2xl opacity-50"
+                          />
+                        </div>
+                      </div>
+                      <div className="absolute top-2 left-2 px-2 py-1 text-xs rounded bg-black/60 text-white">Using this photo</div>
+                      {showFlash && (
+                        <div className="pointer-events-none absolute inset-0 bg-white animate-pulse opacity-80" />
+                      )}
+                    </div>
+                  ) : !isWebcamActive ? (
                     <div className="w-full aspect-[4/3] bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 flex items-center justify-center">
                       <div className="text-center p-6">
                         <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center">
@@ -253,49 +316,27 @@ export default function AvatarPanel() {
                     </div>
                   ) : (
                     <div className="relative">
-                      {capturedFrame ? (
-                        <>
-                          <div className="relative w-full aspect-video bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900">
-                            <img
-                              src={capturedFrame}
-                              alt="Captured frame"
-                              className="w-full h-full object-contain"
-                            />
-                            {/* Blur edges for elegant background */}
-                            <div className="absolute inset-0 -z-10">
-                              <img
-                                src={capturedFrame}
-                                alt=""
-                                className="w-full h-full object-cover blur-2xl opacity-50"
-                              />
-                            </div>
-                          </div>
-                          <div className="absolute top-2 left-2 px-2 py-1 text-xs rounded bg-black/60 text-white">Using this photo</div>
-                        </>
-                      ) : (
-                        <Webcam 
-                          // @ts-ignore
-                          audio={false} 
-                          // @ts-ignore
-                          ref={webcamRef} 
-                          // @ts-ignore
-                          screenshotFormat="image/png" 
-                          // @ts-ignore
-                          screenshotQuality={1.0}
-                          className="w-full aspect-video object-cover" 
-                          // @ts-ignore
-                          onUserMedia={handleWebcamReady}
-                          // @ts-ignore
-                          onUserMediaError={handleWebcamError}
-                          // @ts-ignore
-                          mirrored={true}
-                          // @ts-ignore
-                          videoConstraints={videoConstraints}
-                          // @ts-ignore
-                          playsInline
-                        />
-                      )}
-                      {/* Flash overlay */}
+                      <Webcam 
+                        // @ts-ignore
+                        audio={false} 
+                        // @ts-ignore
+                        ref={webcamRef} 
+                        // @ts-ignore
+                        screenshotFormat="image/png" 
+                        // @ts-ignore
+                        screenshotQuality={1.0}
+                        className="w-full aspect-video object-cover" 
+                        // @ts-ignore
+                        onUserMedia={handleWebcamReady}
+                        // @ts-ignore
+                        onUserMediaError={handleWebcamError}
+                        // @ts-ignore
+                        mirrored={true}
+                        // @ts-ignore
+                        videoConstraints={videoConstraints}
+                        // @ts-ignore
+                        playsInline
+                      />
                       {showFlash && (
                         <div className="pointer-events-none absolute inset-0 bg-white animate-pulse opacity-80" />
                       )}
@@ -307,12 +348,18 @@ export default function AvatarPanel() {
           </div>
           
           <div className="flex gap-3">
-            {isWebcamActive && webcamReady && !webcamError && (
+            {(capturedFrame || (isWebcamActive && webcamReady && !webcamError)) && (
               <>
                 <GlassButton 
                   variant="primary" 
                   className="flex-1"
-                  onClick={capture} 
+                  onClick={() => {
+                    if (capturedFrame) {
+                      void processImage(capturedFrame);
+                    } else {
+                      void capture();
+                    }
+                  }} 
                   disabled={loading}
                 >
                   {loading ? (
@@ -365,6 +412,17 @@ export default function AvatarPanel() {
               </GlassButton>
             </div>
           )}
+          </div>
+          <div className="hidden md:block">
+            <FaceHistory
+              onSelect={(sel) => {
+                setCapturedFrame(sel.dataUrl);
+                setShowFlash(true);
+                setTimeout(() => setShowFlash(false), 150);
+                void processFace({ imageId: sel.imageId, dataUrl: sel.dataUrl });
+              }}
+            />
+          </div>
         </div>
       </GlassPanel>
     </div>
