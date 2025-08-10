@@ -25,6 +25,8 @@ export default function GamePage() {
   const currentImageUrl = useGameStore((s) => s.currentImageUrl);
   const setPhase = useGameStore((s) => s.setPhase);
   const resetGame = useGameStore((s) => s.resetGame);
+  const persistedRunwayUrl = useGameStore((s) => s.runwayUrl);
+  const setPersistedRunwayUrl = useGameStore((s) => s.setRunwayUrl);
   const { showToast, ToastContainer } = useToast();
   
   // Panel visibility states
@@ -124,6 +126,9 @@ export default function GamePage() {
       showToast('No final look selected to generate a runway video.', 'error');
       return;
     }
+    // Clear any persisted/local runway from a previous session/run before starting
+    setRunwayUrl(null);
+    setPersistedRunwayUrl(null);
     setRunwayStarted(true);
     setRunwayError(null);
     setRunwayLoading(true);
@@ -134,6 +139,7 @@ export default function GamePage() {
       try {
         const url = await generateWalkoutVideo(baseUrl);
         setRunwayUrl(url);
+        setPersistedRunwayUrl(url);
         setPhase('Results');
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Failed to generate runway video';
@@ -144,6 +150,14 @@ export default function GamePage() {
       }
     })();
   }, [phase, runwayStarted, currentImageUrl, character, setPhase, showToast]);
+
+  // Also clear any persisted runway URL when returning to StylingRound
+  useEffect(() => {
+    if (phase === 'StylingRound') {
+      setRunwayUrl(null);
+      setPersistedRunwayUrl(null);
+    }
+  }, [phase, setPersistedRunwayUrl]);
 
   // Progress ticker during Walkout phase
   useEffect(() => {
@@ -396,9 +410,9 @@ export default function GamePage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-lg">
           <div className="w-full max-w-6xl mx-6 py-8">
             <div className="w-full aspect-video max-h-[80vh] mx-auto rounded-2xl overflow-hidden shadow-2xl bg-black/90 flex items-center justify-center">
-              {runwayUrl ? (
+              {(runwayUrl || persistedRunwayUrl) ? (
                 <video
-                  src={runwayUrl}
+                  src={runwayUrl || persistedRunwayUrl || ''}
                   autoPlay
                   loop
                   muted
@@ -417,13 +431,13 @@ export default function GamePage() {
             <div className="mt-6 flex items-center justify-center gap-3">
               <button
                 className="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20"
-                onClick={() => resetGame()}
+                onClick={() => { setPersistedRunwayUrl(null); resetGame(); }}
               >
                 Restart
               </button>
               <button
                 className="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20"
-                onClick={() => setPhase('StylingRound')}
+                onClick={() => { setPersistedRunwayUrl(null); setPhase('StylingRound'); }}
               >
                 Back to styling
               </button>

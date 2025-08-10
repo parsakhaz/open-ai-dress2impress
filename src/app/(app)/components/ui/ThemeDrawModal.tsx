@@ -26,6 +26,7 @@ export default function ThemeDrawModal({ open, onClose }: ThemeDrawModalProps) {
   const [resultTheme, setResultTheme] = useState<string | null>(null);
 
   const timersRef = useRef<number[]>([]);
+  const currentIndexRef = useRef<number>(-1);
   const cleanupTimers = () => {
     timersRef.current.forEach((t) => window.clearTimeout(t));
     timersRef.current = [];
@@ -101,19 +102,24 @@ export default function ThemeDrawModal({ open, onClose }: ThemeDrawModalProps) {
     const totalSteps = baseCycles * n + target + 1; // +1 to land exactly
 
     // Generate an increasing delay schedule to simulate deceleration
-    const startDelay = 50; // ms between steps at start
-    const endDelay = 220; // ms between steps at end
+    // 30% faster overall → scale delays by 0.7
+    const startDelay = 35; // ms between steps at start
+    const endDelay = 154; // ms between steps at end
     let accumulated = 0;
+    // Ensure we start from the last highlight position
+    currentIndexRef.current = highlightIndex;
     for (let i = 0; i < totalSteps; i++) {
       const progress = i / (totalSteps - 1);
       const delay = startDelay + (endDelay - startDelay) * easeOutCubic(progress);
       accumulated += delay;
       const t = window.setTimeout(() => {
-        setHighlightIndex((prev) => ((prev + 1) % n + n) % n);
+        // Deterministic stepping independent of React state batching
+        currentIndexRef.current = ((currentIndexRef.current + 1) % n + n) % n;
+        setHighlightIndex(currentIndexRef.current);
         if (i === totalSteps - 1) {
-          const idx = ((highlightIndex + 1) % n + n) % n; // next position
-          const theme = items[idx];
-          setSelectedIndex(idx);
+          const idxFinal = currentIndexRef.current;
+          const theme = items[idxFinal];
+          setSelectedIndex(idxFinal);
           setResultTheme(theme);
           setSpinning(false);
           setTheme(theme);
@@ -167,12 +173,19 @@ export default function ThemeDrawModal({ open, onClose }: ThemeDrawModalProps) {
             <div className="grid grid-cols-3 sm:grid-cols-5 gap-3 sm:gap-4 place-items-center">
               {items.map((text, i) => {
                 const isHighlighted = i === highlightIndex || i === selectedIndex;
+                const TRAIL = 3;
+                const isTrail = !isHighlighted &&
+                  (
+                    i === ((highlightIndex - 1 + 15) % 15) ||
+                    i === ((highlightIndex - 2 + 15) % 15) ||
+                    i === ((highlightIndex - 3 + 15) % 15)
+                  );
                 return (
                   <div
                     key={i}
                     className={`relative w-[min(26vw,7.6rem)] h-[min(26vw,7.6rem)] sm:w-[min(18vw,8.4rem)] sm:h-[min(18vw,8.4rem)] rounded-xl flex items-center justify-center text-center px-2
                       bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900
-                      border ${isHighlighted ? 'border-accent ring-4 ring-accent/40' : 'border-slate-200 dark:border-slate-700'}
+                      border ${isHighlighted ? 'border-accent ring-4 ring-accent/40' : isTrail ? 'border-accent/40 ring-2 ring-accent/20' : 'border-slate-200 dark:border-slate-700'}
                       text-slate-800 dark:text-slate-100 shadow-lg transition-all duration-150
                       ${isHighlighted ? 'scale-105' : 'hover:scale-[1.02]'}
                     `}
