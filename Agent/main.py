@@ -91,6 +91,14 @@ try:
 except Exception:
     HAS_DOTENV = False
 
+# Optional requests library
+try:
+    import requests  # type: ignore
+
+    HAS_REQUESTS = True
+except Exception:
+    HAS_REQUESTS = False
+
 
 # ------------------------------------------------------------
 # Paths and constants
@@ -331,6 +339,44 @@ def _http_url_to_data_uri(url: str, target_max_bytes: int = 2_000_000) -> Option
             return f"data:{content_type};base64,{b64}"
     except Exception:
         return None
+
+
+def _image_to_jpeg_b64_from_path(path: Path, max_dim_px: int = 1024, quality: int = 80) -> Optional[str]:
+    if not HAS_PIL:
+        return None
+    try:
+        from io import BytesIO
+        img = Image.open(path).convert("RGB")
+        w, h = img.size
+        s = min(1.0, max_dim_px / max(w, h))
+        if s < 1.0:
+            img = img.resize((int(w * s), int(h * s)))
+        buf = BytesIO()
+        img.save(buf, format="JPEG", quality=quality, optimize=True)
+        return base64.b64encode(buf.getvalue()).decode("ascii")
+    except Exception:
+        return None
+
+
+def _bytes_to_jpeg_b64(data: bytes, max_dim_px: int = 1024, quality: int = 80) -> Optional[str]:
+    if not HAS_PIL:
+        return base64.b64encode(data).decode("ascii")
+    try:
+        from io import BytesIO
+        img = Image.open(BytesIO(data)).convert("RGB")
+        w, h = img.size
+        s = min(1.0, max_dim_px / max(w, h))
+        if s < 1.0:
+            img = img.resize((int(w * s), int(h * s)))
+        buf = BytesIO()
+        img.save(buf, format="JPEG", quality=quality, optimize=True)
+        return base64.b64encode(buf.getvalue()).decode("ascii")
+    except Exception:
+        # Fallback raw
+        try:
+            return base64.b64encode(data).decode("ascii")
+        except Exception:
+            return None
 
 
 # ------------------------------------------------------------
@@ -1066,8 +1112,39 @@ def build_player_system_prompt() -> str:
     )
 
 
+def _image_to_base64_data_uri(image_path, max_size=1024, quality=80):
+    """Convert image to base64 data URI (matching fashn_base64_test.py)"""
+    if not HAS_PIL:
+        return None
+    try:
+        with Image.open(image_path) as img:
+            # Convert to RGB if needed
+            if img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            # Resize if too large
+            w, h = img.size
+            scale = min(1.0, max_size / max(w, h))
+            if scale < 1.0:
+                new_w, new_h = int(w * scale), int(h * scale)
+                img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+            
+            # Convert to JPEG bytes
+            from io import BytesIO
+            buffer = BytesIO()
+            img.save(buffer, format='JPEG', quality=quality, optimize=True)
+            
+            # Encode to base64 with data URI prefix
+            b64_string = base64.b64encode(buffer.getvalue()).decode('ascii')
+            return f"data:image/jpeg;base64,{b64_string}"
+    except Exception:
+        return None
+
+
 async def fashn_run_and_poll(config: Config, avatar_url: str, garment_url: str) -> str:
-    """Start a FASHN try-on job and poll for result; return resulting image URL."""
+    """Start a FASHN try-on job and poll for result; return resulting image URL.
+    Uses the same approach as fashn_base64_test.py with data URIs and requests library.
+    """
     api_key = os.environ.get("FASHN_AI_API_KEY")
     # Support alternate env var name from docs
     if not api_key:
@@ -1080,71 +1157,78 @@ async def fashn_run_and_poll(config: Config, avatar_url: str, garment_url: str) 
         "Authorization": f"Bearer {api_key}",
     }
 
-    # Always submit base64 (data URI) to FASHN for both avatar and garment.
-    # Prefer local file conversion for localhost-served URLs; otherwise fetch and inline.
-    def _to_data_uri(url: str, max_dim_px: int = 1024) -> str:
+    # Convert both avatar and garment to base64 data URIs
+    def _to_data_uri(url: str, max_size: int = 1024) -> str:
+        # If already data URI, return as-is
         if isinstance(url, str) and url.startswith("data:image/"):
             return url
-        data_uri: Optional[str] = None
+        
+        # Try local file mapping first
+        local = _resolve_local_path_from_url(config, url)
+        if local and local.exists():
+            data_uri = _image_to_base64_data_uri(local, max_size=max_size)
+            if data_uri:
+                return data_uri
+        
+        # Else fetch from HTTP(S) and convert
         try:
-            parsed = urlparse(url)
-            if parsed.scheme in {"http", "https"}:
-                base = urlparse(config.base_url)
-                if parsed.netloc == base.netloc:
-                    data_uri = _local_url_to_data_uri(config, url, max_dim_px=max_dim_px)
-                else:
-                    data_uri = _http_url_to_data_uri(url)
-            else:
-                data_uri = None
+            with urllib.request.urlopen(url) as resp:  # nosec B310
+                data = resp.read()
+            if HAS_PIL:
+                from io import BytesIO
+                with Image.open(BytesIO(data)) as img:
+                    if img.mode != 'RGB':
+                        img = img.convert('RGB')
+                    w, h = img.size
+                    scale = min(1.0, max_size / max(w, h))
+                    if scale < 1.0:
+                        img = img.resize((int(w * scale), int(h * scale)), Image.Resampling.LANCZOS)
+                    buffer = BytesIO()
+                    img.save(buffer, format='JPEG', quality=80, optimize=True)
+                    b64_string = base64.b64encode(buffer.getvalue()).decode('ascii')
+                    return f"data:image/jpeg;base64,{b64_string}"
         except Exception:
-            data_uri = None
-        if not data_uri:
-            # Last-resort: try to resolve as local path and convert
-            local = _resolve_local_path_from_url(config, url)
-            if local and local.exists():
-                data_uri = _image_to_jpeg_data_uri(local, max_dim_px=max_dim_px)
-        if not data_uri:
-            raise RuntimeError("Failed to inline image for FASHN")
-        return data_uri
+            pass
+        
+        raise RuntimeError(f"Failed to convert {url} to data URI for FASHN")
+
+    avatar_data_uri = _to_data_uri(avatar_url)
+    garment_data_uri = _to_data_uri(garment_url)
 
     payload = {
         "model_name": config.fashn_model_name,
-        "inputs": {"model_image": _to_data_uri(avatar_url), "garment_image": _to_data_uri(garment_url)},
+        "inputs": {
+            "model_image": avatar_data_uri,
+            "garment_image": garment_data_uri
+        },
     }
 
-    # Use stdlib for HTTP in a worker thread
+    # Use requests library (matching fashn_base64_test.py)
     def _post_run() -> Dict:
-        req = urllib.request.Request(
-            url=f"{config.fashn_base_url}/run",
-            data=json.dumps(payload).encode("utf-8"),
-            headers=headers,
-            method="POST",
-        )
-        with urllib.request.urlopen(req) as resp:  # nosec B310
-            return json_lib.loads(resp.read().decode("utf-8"))
+        import requests
+        response = requests.post(f"{config.fashn_base_url}/run", json=payload, headers=headers)
+        _log_event(f"FASHN /run status={response.status_code} body={response.text[:800]}")
+        response.raise_for_status()
+        return response.json()
+
+    def _get_status() -> Dict:
+        import requests
+        response = requests.get(f"{config.fashn_base_url}/status/{prediction_id}", headers=headers)
+        _log_event(f"FASHN /status status={response.status_code} body={response.text[:800]}")
+        response.raise_for_status()
+        return response.json()
 
     _log_event(f"FASHN /run: model={config.fashn_model_name}")
     run_data = await asyncio.to_thread(_post_run)
-    _log_event(f"FASHN /run response: {json.dumps(run_data)[:500]}")
     prediction_id = run_data.get("id")
     if not prediction_id:
         raise RuntimeError("FASHN: missing prediction id")
 
-    async def _get_status() -> Dict:
-        url = f"{config.fashn_base_url}/status/{prediction_id}"
-
-        def _do_get() -> Dict:
-            req = urllib.request.Request(url=url, headers=headers, method="GET")
-            with urllib.request.urlopen(req) as resp:  # nosec B310
-                return json_lib.loads(resp.read().decode("utf-8"))
-
-        return await asyncio.to_thread(_do_get)
-
     # Poll up to 90s (30 * 3s)
     for i in range(30):
-        status = await _get_status()
+        status = await asyncio.to_thread(_get_status)
         s = status.get("status")
-        _log_event(f"FASHN /status: {s} (poll {i+1}/30) body={json.dumps(status)[:500]}")
+        _log_event(f"FASHN /status: {s} (poll {i+1}/30)")
         if s == "completed" and status.get("output"):
             _log_event("FASHN completed")
             return status["output"][0]
@@ -1282,7 +1366,9 @@ async def tool_evaluate_real(theme: str, items: List[Dict], tryOnImages: List[st
 
 async def run_gpt_round(theme: str, avatar_arg: str, port: int, round_duration_ms: int) -> None:
     if not HAS_OPENAI:
-        raise RuntimeError("OpenAI SDK not installed. Please `pip install openai`." )
+        raise RuntimeError("OpenAI SDK not installed. Please `pip install openai`.")
+    if not HAS_REQUESTS:
+        raise RuntimeError("Requests library not installed. Please `pip install requests`.")
 
     base_url = start_static_server(port)
     config = Config(base_url=base_url, round_duration_ms=round_duration_ms)
