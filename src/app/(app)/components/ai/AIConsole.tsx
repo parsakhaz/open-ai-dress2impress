@@ -5,6 +5,7 @@ import { GlassPanel } from '@/components/GlassPanel';
 import { GlassButton } from '@/components/GlassButton';
 import type { AIStreamEvent } from '@/lib/ai-player/types';
 import { useMemo } from 'react';
+import type { AIEvent } from '@/types';
 
 interface AIConsoleProps {
   onClose?: () => void;
@@ -22,6 +23,8 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
   const [tryOnImages, setTryOnImages] = useState<string[]>([]);
   const [filters, setFilters] = useState<{ thought: boolean; action: boolean }>({ thought: true, action: true });
   const [density, setDensity] = useState<'compact' | 'comfortable'>('compact');
+  const [autoScrollPinned, setAutoScrollPinned] = useState(true);
+  const [activeActions, setActiveActions] = useState<Record<string, { label: string; tool?: string; phase?: string }>>({});
   // Local inline error badge with optional countdown will manage its own state
 
   // Minimal inline lucide-style icons (no external deps)
@@ -187,16 +190,17 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
             }
             // Emit richer UI event so the console can show thumbnails inline
             const images = Array.isArray((evt as any).context?.images) ? ((evt as any).context?.images as string[]) : undefined;
+            const groupId = typeof (evt as any)?.context?.callId === 'string' ? String((evt as any).context.callId) : undefined;
             const errorDetail = typeof (evt as any)?.context?.originalError === 'string'
               ? String((evt as any).context.originalError)
               : typeof (evt as any)?.error?.message === 'string'
               ? String((evt as any).error.message)
               : undefined;
             const retryInMs = typeof (evt as any)?.context?.retryInMs === 'number' ? Number((evt as any).context.retryInMs) : undefined;
-            logAIEvent({ 
-              type: isTool ? 'tool_call' : 'thought', 
-              content, 
-              timestamp: Date.now(), 
+            const aiEvent: AIEvent = {
+              type: isTool ? 'tool_call' : 'thought',
+              content,
+              timestamp: Date.now(),
               tool: evt.tool?.name,
               kind: ((): any => {
                 if (evt.eventType === 'tool:start') return 'start';
@@ -209,7 +213,17 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
               images,
               retryInMs,
               errorDetail,
-            });
+              runId: (evt as any).runId,
+              groupId,
+            };
+            logAIEvent(aiEvent);
+            if (aiEvent.type === 'tool_call' && aiEvent.kind === 'start') {
+              const gid = aiEvent.groupId || `${aiEvent.phase}-${aiEvent.tool}-${Date.now()}`;
+              setActiveActions((prev) => ({ ...prev, [gid]: { label: aiEvent.content, tool: aiEvent.tool, phase: aiEvent.phase } }));
+            } else if (aiEvent.type === 'tool_call' && (aiEvent.kind === 'result' || aiEvent.kind === 'error')) {
+              const gid = aiEvent.groupId;
+              if (gid) setActiveActions((prev) => { const { [gid]: _omit, ...rest } = prev; return rest; });
+            }
           } catch (e) {
             logAIEvent({ type: 'thought', content: `Malformed stream line`, timestamp: Date.now() });
           }
@@ -224,24 +238,13 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
     }
   };
 
-  // autoscroll (gentle) when inline
+  // autoscroll (sticky with pin)
   const [logContainerRef, setLogContainerRef] = useState<HTMLDivElement | null>(null);
   useEffect(() => {
-    if (!inline || !logContainerRef) return;
+    if (!inline || !logContainerRef || !autoScrollPinned) return;
     const el = logContainerRef;
-    const isNearBottom = () => el.scrollHeight - el.scrollTop - el.clientHeight < 80;
-    if (!isNearBottom()) return; // don't yank scroll if user is reading
-    const to = el.scrollHeight - el.clientHeight;
-    let raf: number | null = null;
-    const start = performance.now();
-    const animate = (t: number) => {
-      const p = Math.min(1, (t - start) / 600); // ~0.6s gentle scroll
-      el.scrollTop = el.scrollTop + (to - el.scrollTop) * p;
-      if (p < 1) raf = requestAnimationFrame(animate);
-    };
-    raf = requestAnimationFrame(animate);
-    return () => { if (raf) cancelAnimationFrame(raf); };
-  }, [aiLog.length, inline, logContainerRef]);
+    el.scrollTop = el.scrollHeight;
+  }, [aiLog.length, inline, logContainerRef, autoScrollPinned]);
 
   // Prepare filtered events and insert phase separators (UI only)
   const filteredEvents = useMemo(() => {
@@ -266,7 +269,7 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
       variant={inline ? 'card' : 'modal'} 
       className={inline ? 'relative w-full h-full overflow-hidden' : 'relative w-full max-h-[90vh] overflow-hidden'}
     >
-      <div className="space-y-4">
+      <div className="flex flex-col h-full gap-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-green-400 animate-pulse' : 'bg-slate-400'}`}></div>
@@ -322,7 +325,7 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
           </div>
         )}
 
-        <div ref={setLogContainerRef} className={`rounded-lg bg-black/95 dark:bg-black/70 backdrop-blur-sm p-4 font-mono text-sm border border-green-500/20 ${inline ? 'h-[52vh] md:h-[60vh] overflow-y-auto' : 'h-96 md:h-[60vh] overflow-auto'}`}>
+        <div ref={setLogContainerRef} className={`rounded-lg bg-black/95 dark:bg-black/70 backdrop-blur-sm p-4 font-mono text-sm border border-green-500/20 flex-1 min-h-0 overflow-y-auto`}>
           {aiLog.length === 0 ? (
             <div className="text-green-400/70 flex items-center gap-2">
               <Icon.Spinner className="w-4 h-4" />
@@ -355,7 +358,7 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
                       {e.kind === 'error' && <ErrorBadge retryInMs={e.retryInMs} errorDetail={e.errorDetail} />}
                       <span className="ml-auto text-green-300/40 text-[10px] whitespace-nowrap relative -top-[1px]">[{new Date(e.timestamp).toLocaleTimeString()}]</span>
                     </div>
-                    <p className={`text-green-100 break-words ${density === 'compact' ? 'text-xs' : 'text-sm'}`}>{e.content}</p>
+                    <p className={`text-green-100 break-words overflow-wrap-anywhere ${density === 'compact' ? 'text-xs' : 'text-sm'}`}>{e.content}</p>
                     {Array.isArray(e.images) && e.images.length > 0 && (
                       <div className="mt-2 flex items-center gap-2 overflow-x-auto">
                         {e.images.slice(0, 6).map((u: string, idx: number) => (
@@ -371,6 +374,21 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
                 )
             ))
           )}
+          {/* Sticky bottom controls: active actions tray + pin toggle */}
+          <div className="sticky bottom-0 -mx-4 -mb-4 px-4 py-2 bg-black/60 backdrop-blur border-t border-white/10 flex items-center gap-2">
+            <button onClick={() => setAutoScrollPinned((v) => !v)} className={`text-xs px-2 py-0.5 rounded border ${autoScrollPinned ? 'border-green-400/40 text-green-300' : 'border-white/20 text-slate-300'}`}>{autoScrollPinned ? '📌 Pinned' : '📍 Pin scroll'}</button>
+            <div className="ml-auto flex items-center gap-2 overflow-x-auto">
+              {Object.keys(activeActions).length > 3 ? (
+                <span className="text-[10px] text-amber-200 bg-amber-400/10 border border-amber-400/30 px-2 py-0.5 rounded">{Object.keys(activeActions).length} actions running…</span>
+              ) : (
+                Object.entries(activeActions).map(([id, a]) => (
+                  <span key={id} className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded border border-amber-400/30 bg-amber-400/10 text-amber-200 whitespace-nowrap">
+                    <Icon.Spinner className="w-3 h-3" /> {a.tool || 'action'}
+                  </span>
+                ))
+              )}
+            </div>
+          </div>
         </div>
 
         {!inline && (

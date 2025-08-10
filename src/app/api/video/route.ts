@@ -43,7 +43,7 @@ export const POST = createHandler<{ imageUrl: string }, { url: string }>({
     // Kling expects base64 payload for image; convert any URL or data URL to raw base64 string
     const image_base64 = await toBase64(imageUrl);
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 60_000);
+    const timeout = setTimeout(() => controller.abort(), 120_000);
     const createResponse = await fetch(`${API_HOST}/v1/videos/image2video`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, Accept: 'application/json' },

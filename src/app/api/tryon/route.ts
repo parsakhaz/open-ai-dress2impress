@@ -49,7 +49,7 @@ async function runSingleTryOn(characterImageUrl: string, clothingImageUrl: strin
         ),
       isDone: (r) => r.status === 'completed' && Array.isArray(r.output) && r.output.length > 0,
       intervalMs: 3000,
-      timeoutMs: 90_000,
+      timeoutMs: 120_000,
     });
 
     if (result.status === 'completed' && result.output && result.output[0]) return result.output[0];

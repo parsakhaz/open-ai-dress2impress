@@ -143,7 +143,7 @@ export class AIPlayerAgent {
     const rapidPromises: Promise<Product[]>[] = [];
     if (plan.queries[0]) {
       const q0 = plan.queries[0];
-      await this.emit({ phase: 'GATHER', eventType: 'tool:start', tool: { name: 'searchRapid' }, message: `Searching Amazon for ${q0.category}`, context: { q: q0.query } });
+      await this.emit({ phase: 'GATHER', eventType: 'tool:start', tool: { name: 'searchRapid' }, message: `Searching Amazon for ${q0.category}`, context: { q: q0.query, callId: 'search-0' } });
       rapidPromises.push(
         remote.searchRapid(q0.query, q0.category)
           .then(async (r) => {
@@ -152,16 +152,16 @@ export class AIPlayerAgent {
               eventType: 'tool:result',
               tool: { name: 'searchRapid' },
               message: `Found ${r.length}`,
-              context: { images: r.slice(0, 6).map((p) => p.image) },
+              context: { images: r.slice(0, 6).map((p) => p.image), callId: 'search-0' },
             });
             return r;
           })
-          .catch(async (e) => { await this.emit({ phase: 'GATHER', eventType: 'tool:error', tool: { name: 'searchRapid' }, message: String(e) }); return [] as Product[]; })
+          .catch(async (e) => { await this.emit({ phase: 'GATHER', eventType: 'tool:error', tool: { name: 'searchRapid' }, message: String(e), context: { callId: 'search-0' } }); return [] as Product[]; })
       );
     }
     if (plan.queries[1]) {
       const q1 = plan.queries[1];
-      await this.emit({ phase: 'GATHER', eventType: 'tool:start', tool: { name: 'searchRapid' }, message: `Searching Amazon for ${q1.category}`, context: { q: q1.query } });
+      await this.emit({ phase: 'GATHER', eventType: 'tool:start', tool: { name: 'searchRapid' }, message: `Searching Amazon for ${q1.category}`, context: { q: q1.query, callId: 'search-1' } });
       rapidPromises.push(
         remote.searchRapid(q1.query, q1.category)
           .then(async (r) => {
@@ -170,11 +170,11 @@ export class AIPlayerAgent {
               eventType: 'tool:result',
               tool: { name: 'searchRapid' },
               message: `Found ${r.length}`,
-              context: { images: r.slice(0, 6).map((p) => p.image) },
+              context: { images: r.slice(0, 6).map((p) => p.image), callId: 'search-1' },
             });
             return r;
           })
-          .catch(async (e) => { await this.emit({ phase: 'GATHER', eventType: 'tool:error', tool: { name: 'searchRapid' }, message: String(e) }); return [] as Product[]; })
+          .catch(async (e) => { await this.emit({ phase: 'GATHER', eventType: 'tool:error', tool: { name: 'searchRapid' }, message: String(e), context: { callId: 'search-1' } }); return [] as Product[]; })
       );
     }
     const [closet, ...rapidLists] = await Promise.all([closetPromise, ...rapidPromises]);
@@ -199,9 +199,10 @@ export class AIPlayerAgent {
     const tryonPromises = resolved.map(async (o) => {
       const garment = o.items[0];
       if (!garment) return { id: o.id, images: [] as string[] };
+      await this.emit({ phase: 'TRYON', eventType: 'tool:start', tool: { name: 'fashn.tryon' }, message: `Outfit ${o.id} try-on`, context: { callId: o.id } });
       const garmentDataUri = await this.toDataUri(garment.image);
       const images = await remote.tryOnFashnData(modelDataUri, garmentDataUri);
-      await this.emit({ phase: 'TRYON', eventType: 'tool:result', tool: { name: 'fashn.tryon' }, message: `Outfit ${o.id} images ${images.length}`, context: { images } });
+      await this.emit({ phase: 'TRYON', eventType: 'tool:result', tool: { name: 'fashn.tryon' }, message: `Outfit ${o.id} images ${images.length}`, context: { images, callId: o.id } });
       return { id: o.id, images };
     });
     return Promise.all(tryonPromises);

@@ -41,6 +41,9 @@ export interface AIEvent {
   images?: string[]; // inline preview thumbnails related to this event
   retryInMs?: number; // optional suggested retry delay for countdown UI
   errorDetail?: string; // optional compact technical detail for disclosure
+  // Correlation identifiers for grouping parallel actions in the UI
+  runId?: string; // originating run id
+  groupId?: string; // stable id per parallel call (e.g., 'search-0', 'A')
 }
 
 // New: Image record for Dexie images table

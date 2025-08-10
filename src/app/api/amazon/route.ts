@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { createHandler } from '@/lib/util/apiRoute';
 import { guards } from '@/lib/util/validation';
 import { getServerEnv } from '@/lib/util/env';
-import { typedFetch } from '@/lib/util/http';
+import { typedFetch, withTimeout } from '@/lib/util/http';
 import type { AmazonSearchRequest } from '@/lib/api/types';
 
 interface RapidProduct {
@@ -46,7 +46,15 @@ export const POST = createHandler<AmazonSearchRequest, { products: RapidProduct[
     }
 
     const url = `https://${RAPIDAPI_HOST}/${endpoint}`;
-    const data = await typedFetch<{ data?: { products?: RapidProduct[] } }>(url, { headers: { 'x-rapidapi-key': RAPIDAPI_KEY, 'x-rapidapi-host': RAPIDAPI_HOST } }, { apiName: 'RapidAPI' });
+    const data = await withTimeout(
+      typedFetch<{ data?: { products?: RapidProduct[] } }>(
+        url,
+        { headers: { 'x-rapidapi-key': RAPIDAPI_KEY, 'x-rapidapi-host': RAPIDAPI_HOST } },
+        { apiName: 'RapidAPI' }
+      ),
+      15_000,
+      'RapidAPI search timed out'
+    );
     const products = data.data?.products ?? [];
     return { products };
   },
