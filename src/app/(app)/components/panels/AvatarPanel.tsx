@@ -341,11 +341,11 @@ export default function AvatarPanel() {
                           )}
                         </GlassButton>
                         {capturedFrame && !loading && (
-                          <GlassButton variant="secondary" onClick={() => setCapturedFrame(null)}>
+                        <GlassButton variant="primary" onClick={() => setCapturedFrame(null)}>
                             Retake
                           </GlassButton>
                         )}
-                        <GlassButton variant="secondary" onClick={() => fileInputRef.current?.click()}>
+                        <GlassButton variant="primary" onClick={() => fileInputRef.current?.click()}>
                           Upload a photo
                         </GlassButton>
                       </div>
@@ -364,14 +364,12 @@ export default function AvatarPanel() {
                     </>
                   ) : (
                     <div className="text-center">
-                      <div className="w-20 h-20 mx-auto mb-5 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center">
-                        <svg className="w-9 h-9 text-slate-600 dark:text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l4-4h10l4 4v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
-                        </svg>
+                      <div className="mx-auto mb-5 flex items-center justify-center">
+                        <img src="/FASHN%20ASSETS/Icons/camera.svg" alt="Camera" className="w-16 h-16 opacity-90" />
                       </div>
                       <div className="flex flex-col items-center gap-3">
-                        <GlassButton onClick={() => setIsWebcamActive(true)}>Take a photo</GlassButton>
-                        <GlassButton variant="secondary" onClick={() => fileInputRef.current?.click()}>Upload a photo</GlassButton>
+                        <GlassButton variant="primary" onClick={() => setIsWebcamActive(true)}>Take a photo</GlassButton>
+                        <GlassButton variant="primary" onClick={() => fileInputRef.current?.click()}>Upload a photo</GlassButton>
                       </div>
                     </div>
                   )}
