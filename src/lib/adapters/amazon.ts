@@ -1,21 +1,8 @@
 import type { WardrobeItem } from '@/types';
+import { api } from '@/lib/api/client';
 
 export async function searchAmazon(query: string): Promise<WardrobeItem[]> {
-  const res = await fetch('/api/amazon', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query }),
-  });
-  if (!res.ok) throw new Error('Amazon API failed');
-  const data = (await res.json()) as {
-    products: {
-      asin: string;
-      product_title: string;
-      product_photo: string;
-      product_url: string;
-      product_price: string | null;
-    }[];
-  };
+  const data = await api.amazon({ query });
   return (data.products || [])
     .map((product): WardrobeItem | null => {
       if (!product.asin || !product.product_title || !product.product_photo) {

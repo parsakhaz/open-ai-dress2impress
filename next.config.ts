@@ -6,12 +6,12 @@ const nextConfig: NextConfig = {
     webpackBuildWorker: true,
   },
   eslint: {
-    // Temporarily ignore ESLint errors during builds for debugging
+    // Temporarily ignore ESLint errors during builds; enforce later in Phase 5
     ignoreDuringBuilds: true,
   },
   typescript: {
-    // Temporarily ignore TypeScript errors during builds for debugging
-    ignoreBuildErrors: true,
+    // Enforce TypeScript type safety during builds
+    ignoreBuildErrors: false,
   },
 };
 

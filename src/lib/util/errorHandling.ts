@@ -188,7 +188,7 @@ export class ErrorHandler {
     operationName: string,
     maxRetries: number = this.maxRetries
   ): Promise<T> {
-    let lastError: Error;
+    let lastError: Error = new Error(`Operation failed: ${operationName}`);
     let attempt = 0;
 
     for (attempt = 1; attempt <= maxRetries; attempt++) {

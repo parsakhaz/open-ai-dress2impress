@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server';
-
-const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY;
-const RAPIDAPI_HOST = process.env.RAPIDAPI_HOST;
+import { createHandler } from '@/lib/util/apiRoute';
+import { guards } from '@/lib/util/validation';
+import { getServerEnv } from '@/lib/util/env';
+import { typedFetch } from '@/lib/util/http';
 
 interface RapidProduct {
   asin: string;
@@ -11,32 +12,17 @@ interface RapidProduct {
   product_price: string | null;
 }
 
-export async function POST(req: NextRequest) {
-  try {
-    if (!RAPIDAPI_KEY || !RAPIDAPI_HOST) {
-      return new Response('RapidAPI credentials not set', { status: 500 });
-    }
-    const { query } = (await req.json()) as { query: string };
-    if (!query) return new Response('Missing query', { status: 400 });
-
+export const POST = createHandler<{ query: string }, { products: RapidProduct[] }>({
+  parse: async (req: NextRequest) => guards.amazon(await req.json()),
+  handle: async ({ query }) => {
+    const { RAPIDAPI_KEY, RAPIDAPI_HOST } = getServerEnv();
     const url = `https://${RAPIDAPI_HOST}/search?query=${encodeURIComponent(query)}&page=1&country=US&sort_by=RELEVANCE&category_id=fashion`;
-    const res = await fetch(url, {
-      headers: {
-        'x-rapidapi-key': RAPIDAPI_KEY,
-        'x-rapidapi-host': RAPIDAPI_HOST,
-      },
-    });
-    if (!res.ok) {
-      const text = await res.text();
-      return new Response(`RapidAPI error: ${res.status} ${text}`, { status: 500 });
-    }
-    const data = (await res.json()) as { data?: { products?: RapidProduct[] } };
-    const products = data.data?.products ?? [];
-    return Response.json({ products });
-  } catch (e) {
-    const message = e instanceof Error ? e.message : 'Unknown error';
-    return new Response(message, { status: 500 });
-  }
-}
-
+    const data = await typedFetch<{ data?: { products?: RapidProduct[] } }>(
+      url,
+      { headers: { 'x-rapidapi-key': RAPIDAPI_KEY, 'x-rapidapi-host': RAPIDAPI_HOST } },
+      { apiName: 'RapidAPI' }
+    );
+    return { products: data.data?.products ?? [] };
+  },
+});
 

@@ -1,9 +1,12 @@
 import { NextRequest } from 'next/server';
+import { createHandler } from '@/lib/util/apiRoute';
+import { guards } from '@/lib/util/validation';
+import { fetchBlob } from '@/lib/util/http';
+import { parallel } from '@/lib/util/promise';
+import { editImageWithBlob } from '@/lib/server/openai';
+
 export const runtime = 'nodejs';
 export const maxDuration = 600;
-
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
-const OPENAI_BASE_URL = process.env.OPENAI_BASE_URL || 'https://api.openai.com';
 
 const EDIT_PROMPT_BASE = `ROLE
 Expert AI photo editor. Subtly edit an existing image based on user text. Do not change the person, pose, or existing clothes unless specifically asked.
@@ -14,61 +17,13 @@ REQUIREMENTS
 3) Match the lighting, shadows, and perspective of the original image.
 4) Keep the plain white background unchanged.`;
 
-async function inputToBlob(imageInput: string): Promise<Blob> {
-  if (imageInput.startsWith('data:')) {
-    const match = imageInput.match(/^data:(.*?);base64,(.*)$/);
-    if (!match) throw new Error('Invalid data URL');
-    const mime = match[1];
-    const b64 = match[2];
-    const buffer = Buffer.from(b64, 'base64');
-    return new Blob([buffer], { type: mime });
-  }
-  const res = await fetch(imageInput);
-  const ab = await res.arrayBuffer();
-  return new Blob([ab], { type: res.headers.get('content-type') || 'image/jpeg' });
-}
-
-async function callOpenAIWithBlob(baseBlob: Blob, instruction: string): Promise<string> {
-  if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not set');
-  const fd = new FormData();
-  fd.append('model', 'gpt-image-1');
-  fd.append('prompt', `${EDIT_PROMPT_BASE}\n\nUSER REQUEST\n${instruction}`);
-  fd.append('size', '1024x1024');
-  fd.append('n', '1');
-  fd.append('image', baseBlob, 'base.jpg');
-  const res = await fetch(`${OPENAI_BASE_URL}/v1/images/edits`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${OPENAI_API_KEY}` },
-    body: fd,
-  });
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`OpenAI error: ${res.status} ${text}`);
-  }
-  const data = (await res.json()) as { data?: { b64_json?: string; url?: string }[] };
-  const first = data?.data?.[0];
-  const image = first?.b64_json ? `data:image/png;base64,${first.b64_json}` : first?.url;
-  if (!image) throw new Error('No image data returned');
-  return image;
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    const { baseImageUrl, instruction } = (await req.json()) as { baseImageUrl: string; instruction: string };
-    if (!baseImageUrl || !instruction) return new Response('Missing params', { status: 400 });
-    const blob = await inputToBlob(baseImageUrl);
-    const calls = [
-      callOpenAIWithBlob(blob, instruction),
-      callOpenAIWithBlob(blob, instruction),
-      callOpenAIWithBlob(blob, instruction),
-      callOpenAIWithBlob(blob, instruction),
-    ];
-    const images = await Promise.all(calls);
-    return Response.json({ images });
-  } catch (e) {
-    const message = e instanceof Error ? e.message : 'Unknown error';
-    return new Response(message, { status: 500 });
-  }
-}
-
+export const POST = createHandler<{ baseImageUrl: string; instruction: string }, { images: string[] }>({
+  parse: async (req: NextRequest) => guards.edit(await req.json()),
+  handle: async ({ baseImageUrl, instruction }) => {
+    const blob = await fetchBlob(baseImageUrl);
+    const prompt = `${EDIT_PROMPT_BASE}\n\nUSER REQUEST\n${instruction}`;
+    const images = await parallel(4, () => editImageWithBlob(blob, prompt));
+    return { images };
+  },
+});
 
