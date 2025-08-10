@@ -77,13 +77,13 @@ export default function TopBar() {
     }
     const prev = prevWardrobeLenRef.current;
     const curr = wardrobe.length;
-    if (!clampedThisPhaseRef.current && prev === 7 && curr === 8 && timer > 15) {
+    if (!clampedThisPhaseRef.current && prev === 7 && curr === 8 && timer > 20) {
       // Restart countdown from 15s to avoid the old interval overwriting the state on next tick
       stopRef.current?.();
-      setTimer(15);
-      stopRef.current = createCountdown(15, (s) => setTimer(s), () => setPhase('StylingRound'));
+      setTimer(20);
+      stopRef.current = createCountdown(20, (s) => setTimer(s), () => setPhase('StylingRound'));
       clampedThisPhaseRef.current = true;
-      showToast('Great picks! 15 seconds left to finalize.', 'info', 2200);
+      showToast('Great picks! 20 seconds left to finalize.', 'info', 2200);
     }
     prevWardrobeLenRef.current = curr;
   }, [phase, wardrobe.length, timer, setTimer, showToast]);
