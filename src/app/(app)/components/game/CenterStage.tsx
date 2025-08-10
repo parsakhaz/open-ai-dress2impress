@@ -3,14 +3,24 @@ import { useGameStore } from '@/lib/state/gameStore';
 
 export default function CenterStage() {
   const currentImageUrl = useGameStore((s) => s.currentImageUrl);
+  const phase = useGameStore((s) => s.phase);
+  
+  // Adjust avatar size and position for StylingRound to avoid toolbar overlap
+  const avatarClasses = phase === 'StylingRound' 
+    ? "max-h-[50vh] max-w-[50vw] object-contain rounded-2xl" 
+    : "max-h-[50vh] max-w-[50vw] object-contain rounded-2xl";
+  
+  const containerClasses = phase === 'StylingRound'
+    ? "absolute inset-0 w-full h-full flex items-center justify-center bg-background z-0 pt-24"
+    : "absolute inset-0 w-full h-full flex items-center justify-center bg-background z-0";
   
   return (
-    <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-background z-0">
+    <div className={containerClasses}>
       {currentImageUrl ? (
         <img 
           src={currentImageUrl} 
           alt="Current styling" 
-          className="max-h-[80vh] max-w-[80vw] object-contain rounded-2xl shadow-2xl" 
+          className={avatarClasses} 
         />
       ) : (
         <div className="text-center space-y-4 z-10">

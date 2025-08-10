@@ -34,6 +34,7 @@ export function DebugPanel() {
   const setCurrentImage = useGameStore((s) => s.setCurrentImage);
   const setAccessorizeUsed = useGameStore((s) => s.setAccessorizeUsed);
   const setRunwayBaseImageUrl = useGameStore((s) => s.setRunwayBaseImageUrl);
+  const resetGame = useGameStore((s) => s.resetGame);
   const muteToasts = useDebugStore((s) => s.muteToasts);
   const setMuteToasts = useDebugStore((s) => s.setMuteToasts);
   const disableAutoTimers = useDebugStore((s) => s.disableAutoTimers);
@@ -227,6 +228,18 @@ export function DebugPanel() {
               </GlassButton>
               <GlassButton size="sm" onClick={runEnvironmentTest}>
                 🧪 Test
+              </GlassButton>
+              <GlassButton
+                size="sm"
+                onClick={() => {
+                  if (confirm('Reset game and reload?')) {
+                    try { resetGame(); } catch {}
+                    window.location.reload();
+                  }
+                }}
+                title="Reset game"
+              >
+                🧹 Reset
               </GlassButton>
               <GlassButton size="sm" variant="ghost" onClick={() => setIsOpen(false)}>
                 ✕

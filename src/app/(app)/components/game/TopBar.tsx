@@ -3,9 +3,6 @@ import { useGameStore } from '@/lib/state/gameStore';
 import { createCountdown } from '@/lib/util/timers';
 import { useEffect, useRef } from 'react';
 import { GlassPanel } from '@/components/GlassPanel';
-import { Chip } from '@/components/Chip';
-import { ProgressIndicator } from '@/components/ProgressIndicator';
-import { Tooltip } from '@/components/Tooltip';
 import { useToast } from '@/hooks/useToast';
 import { GAME_PHASES } from '@/lib/constants/gamePhases';
 import { useDebugStore } from '@/lib/state/debugStore';
@@ -16,7 +13,7 @@ export default function TopBar() {
   const timer = useGameStore((s) => s.timer);
   const setTimer = useGameStore((s) => s.setTimer);
   const setPhase = useGameStore((s) => s.setPhase);
-  const wardrobe = useGameStore((s) => s.wardrobe);
+  // Access to wardrobe not needed for new header layout
   const resetGame = useGameStore((s) => s.resetGame);
   const stopRef = useRef<null | (() => void)>(null);
   const { showToast } = useToast();
@@ -88,19 +85,13 @@ export default function TopBar() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Calculate progress for timed phases
-  const getProgress = () => {
-    switch (phase) {
-      case 'ShoppingSpree':
-        return { current: 120 - timer, total: 120, label: 'Shopping Time' };
-      case 'StylingRound':
-        return { current: 90 - timer, total: 90, label: 'Styling Time' };
-      default:
-        return null;
-    }
-  };
-
-  const progress = getProgress();
+  // Round label mapping for visual header only (UI change only)
+  const roundInfo = (() => {
+    if (phase === 'ShoppingSpree') return { num: 1, title: 'Pick Your Clothes' } as const;
+    if (phase === 'StylingRound') return { num: 2, title: 'Style Your Outfit' } as const;
+    if (phase === 'Accessorize') return { num: 3, title: 'Accessorize' } as const;
+    return null;
+  })();
 
   // Threshold toasts for time remaining
   useEffect(() => {
@@ -125,87 +116,26 @@ export default function TopBar() {
   }, [timer, phase, showToast, muteToasts]);
 
   return (
-    <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[70] w-full max-w-2xl px-4 ${phase === 'ThemeSelect' ? 'pointer-events-none' : ''}`}>
-      <GlassPanel className="px-4 pt-2 pb-3 space-y-3">
-        {/* Top row with phase and theme */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            {/* Phase chip */}
-            <Tooltip content="Current game phase" position="bottom">
-              <Chip 
-                label={phase.replace(/([A-Z])/g, ' $1').trim()}
-                variant={phase === 'ShoppingSpree' ? 'primary' : 'default'}
-                icon={
-                  <div className="w-2 h-2 bg-current rounded-full animate-pulse" />
-                }
-              />
-            </Tooltip>
-            
-            {/* Theme chip */}
-            <Tooltip content="Today's theme" position="bottom">
-              <Chip 
-                label={theme}
-                variant="success"
-                icon={
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                  </svg>
-                }
-              />
-            </Tooltip>
+    <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-[70] w-full max-w-3xl px-4 ${phase === 'ThemeSelect' ? 'pointer-events-none' : ''}`}>
+      <GlassPanel className="px-6 pt-6 pb-6 space-y-4 text-center border-0">
+        {/* Theme (top): colored label then theme name */}
+        <h2 className="text-[32px] font-extrabold text-foreground">
+          <span className="text-[#7D8FE2]">Theme:</span> {theme}
+        </h2>
 
-            {/* Items collected */}
-            {phase === 'ShoppingSpree' && (
-              <Tooltip content="Items in wardrobe" position="bottom">
-                <Chip 
-                  label={`${wardrobe.length} items`}
-                  variant="warning"
-                  size="sm"
-                />
-              </Tooltip>
-            )}
+        {/* Round (middle): bordered pill */}
+        {roundInfo && (
+          <div className="mx-auto inline-flex items-center rounded-[8px] border-2 border-[#7D8FE2] p-[10px]">
+            <span className="font-extrabold text-[#7D8FE2] mr-2 text-[16px]">ROUND {roundInfo.num}:</span>
+            <span className="font-semibold text-foreground text-[16px]">{roundInfo.title}</span>
           </div>
+        )}
 
-          {/* Reset button */}
-          <Tooltip content="Reset game and start over" position="bottom">
-            <button
-              onClick={() => {
-                if (confirm('Are you sure you want to reset the game? All progress will be lost.')) {
-                  resetGame();
-                  window.location.reload(); // Reload to clear any UI state
-                }
-              }}
-              className="ml-auto p-2 rounded-lg bg-foreground/10 hover:bg-foreground/20 text-foreground transition-colors"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
-          </Tooltip>
-
-          {/* Timer */}
-          {timer > 0 && (
-            <div className="flex items-center gap-2">
-              <svg className={`w-4 h-4 ${timer <= 30 ? 'text-foreground' : 'text-foreground/60'} animate-pulse`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <span className={`font-mono font-bold text-lg ${
-                timer <= 30 ? 'text-foreground animate-pulse' : 'text-foreground'
-              }`}>
-                {formatTime(timer)}
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* Progress bar */}
-        {progress && (
-          <ProgressIndicator 
-            current={progress.current}
-            total={progress.total}
-            label={progress.label}
-            color={'bg-foreground'}
-          />
+        {/* Timer (bottom): large centered */}
+        {timer > 0 && (
+          <div className="text-[24px] font-extrabold text-foreground font-mono">
+            {formatTime(timer)}
+          </div>
         )}
 
         {/* Time warnings */}

@@ -390,7 +390,7 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className={`w-3 h-3 rounded-full ${isRunning ? 'bg-foreground animate-pulse' : 'bg-foreground/40'}`}></div>
-            <h2 className="text-lg md:text-xl font-bold text-foreground">Game AI Console</h2>
+            <h2 className="text-lg md:text-xl font-bold text-foreground">Rival: ChatGPT</h2>
             <span className={`text-xs px-2 py-0.5 rounded-full font-mono ${isRunning ? 'bg-foreground/10 text-foreground' : 'bg-foreground/10 text-foreground/70'}`}>{isRunning ? 'RUNNING' : 'IDLE'}</span>
           </div>
           {!inline && onClose && (
