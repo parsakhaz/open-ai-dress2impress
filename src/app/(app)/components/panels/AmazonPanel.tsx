@@ -81,7 +81,7 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
       variant="modal" 
       className="relative w-full h-full overflow-hidden"
     >
-      <div className="h-full flex flex-col space-y-6">
+      <div className="h-full min-h-0 flex flex-col space-y-6">
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Amazon Shopping</h2>
@@ -141,7 +141,7 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
           </div>
         )}
 
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 min-h-0 overflow-auto overscroll-contain">
           {results.length > 0 && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
