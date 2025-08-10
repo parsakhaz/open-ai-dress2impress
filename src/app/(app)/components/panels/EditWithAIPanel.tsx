@@ -89,7 +89,8 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
           )}
         </div>
         <p className="text-sm text-slate-600 dark:text-slate-400">
-          Note: Editing is blocking and typically takes about 20–30 seconds. Closing is disabled while an edit is running. Tip: For best flow, do edits after choosing your top + bottom combo as a final step.
+          Note: Editing is blocking and typically takes about 30–40 seconds. Closing is disabled while an edit is running.
+          Tip: For best flow, make one request with multiple changes as a final styling step (e.g., add jewelry, a hat, sunglasses, a wrist watch, and shoes).
         </p>
         
         <div className="space-y-3">
@@ -128,12 +129,12 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
             </label>
             <input
               className="w-full px-4 py-3 bg-white/50 dark:bg-black/20 backdrop-blur-sm border border-white/60 dark:border-white/20 rounded-xl text-slate-900 dark:text-slate-100 placeholder:text-slate-500 dark:placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-transparent transition-all"
-              placeholder="e.g., add sunglasses, a silver chain, and a fancy belt (you can combine multiple edits in one ask)"
+              placeholder="e.g., add jewelry, a hat, sunglasses, a wrist watch, and shoes (combine multiple changes in one ask)"
               value={instruction}
               onChange={(e) => setInstruction(e.target.value)}
               suppressHydrationWarning
             />
-            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">You can combine multiple edits in one ask, separated by commas.</div>
+            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">You can combine multiple changes in one request, separated by commas. Example: add jewelry, a hat, sunglasses, a wrist watch, and shoes.</div>
           </div>
 
           <GlassButton 
