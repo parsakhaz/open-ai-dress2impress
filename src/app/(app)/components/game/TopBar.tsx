@@ -60,7 +60,7 @@ export default function TopBar() {
         showToast('Styling started. You have 1:30.', 'info', 2500);
       }
       if (phase === 'Accessorize') {
-        showToast('Accessorize: one AI edit for finishing touches. Combine instructions; you’ll get 4 options.', 'info', 3400);
+        showToast('Accessorize: one AI edit for finishing touches (30–100s). Combine instructions; you’ll get 4 options.', 'info', 3600);
       }
       lastPhaseRef.current = phase;
     }

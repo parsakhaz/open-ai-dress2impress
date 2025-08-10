@@ -134,7 +134,7 @@ export default function GamePage() {
     setRunwayLoading(true);
     setRunwayElapsed(0);
     progressToastKeysRef.current.clear();
-    showToast('Runway generation started. This can take ~5 minutes.', 'info', 3200);
+    showToast('Runway generation started. This can take ~2 minutes.', 'info', 3200);
     (async () => {
       try {
         const url = await generateWalkoutVideo(baseUrl);
@@ -166,7 +166,7 @@ export default function GamePage() {
     return () => clearInterval(id);
   }, [phase, runwayLoading]);
 
-  // Staged toasts to keep users engaged during long generation
+  // Staged toasts to keep users engaged during generation
   useEffect(() => {
     if (!(phase === 'WalkoutAndEval' && runwayLoading)) return;
     const notifyOnce = (key: string, message: string, type: Parameters<typeof showToast>[1] = 'info', duration = 2600) => {
@@ -174,14 +174,13 @@ export default function GamePage() {
       progressToastKeysRef.current.add(key);
       showToast(message, type, duration);
     };
-    if (runwayElapsed >= 20) notifyOnce('t20', 'Studio is setting the lights and camera…');
-    if (runwayElapsed >= 60) notifyOnce('t60', 'Generating your runway motion…');
-    if (runwayElapsed >= 120) notifyOnce('t120', 'Halfway there—rendering frames…');
-    if (runwayElapsed >= 180) notifyOnce('t180', 'Polishing details for that perfect walk…');
-    if (runwayElapsed >= 240) notifyOnce('t240', 'Encoding video—almost ready…');
+    if (runwayElapsed >= 10) notifyOnce('t10', 'Studio is setting the lights and camera…');
+    if (runwayElapsed >= 45) notifyOnce('t45', 'Generating your runway motion…');
+    if (runwayElapsed >= 90) notifyOnce('t90', 'Color grading and refining details…');
+    if (runwayElapsed >= 110) notifyOnce('t110', 'Final touches—preparing your premiere…');
   }, [phase, runwayLoading, runwayElapsed, showToast]);
 
-  const RUNWAY_ETA_SECONDS = 300; // 5 minutes nominal ETA
+  const RUNWAY_ETA_SECONDS = 120; // ~2 minutes nominal ETA
   const runwayProgressPct = Math.min(95, Math.round((runwayElapsed / RUNWAY_ETA_SECONDS) * 100));
   const remainingSeconds = Math.max(0, RUNWAY_ETA_SECONDS - runwayElapsed);
   const formatTime = (seconds: number) => {
@@ -190,11 +189,10 @@ export default function GamePage() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
   const statusMessage = (() => {
-    if (runwayElapsed < 20) return 'Booking the runway…';
-    if (runwayElapsed < 60) return 'Warming up the studio lights…';
-    if (runwayElapsed < 120) return 'Directing your walk sequence…';
-    if (runwayElapsed < 180) return 'Rendering frames in high fidelity…';
-    if (runwayElapsed < 240) return 'Color grading and refining details…';
+    if (runwayElapsed < 10) return 'Booking the runway…';
+    if (runwayElapsed < 45) return 'Warming up the studio lights…';
+    if (runwayElapsed < 90) return 'Directing your walk sequence…';
+    if (runwayElapsed < 110) return 'Color grading and refining details…';
     return 'Final touches—preparing your premiere…';
   })();
 

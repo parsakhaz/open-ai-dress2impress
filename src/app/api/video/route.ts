@@ -33,6 +33,10 @@ export const POST = createHandler<{ imageUrl: string }, { url: string }>({
         model_name: 'kling-v1-6',
         mode: 'std',
         duration: 5,
+        // Request 720p output when supported
+        resolution: '720p',
+        width: 1280,
+        height: 720,
         image: imageUrl,
         prompt:
           'Full-body wide shot of a fashion model walking straight toward the camera on a runway from a distance quickly; zoomed out; the entire figure (head to toe) visible and centered; professional studio lighting; clean white seamless background; steady camera.',

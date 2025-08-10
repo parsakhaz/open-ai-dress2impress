@@ -62,7 +62,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
     }
     setLoading(true);
     setError(null);
-    showToast('Generating 4 options…', 'info', 2400);
+    showToast('Generating 4 options (30–100s)…', 'info', 2600);
     try {
       const urls = await editImage(imageUrl, instruction);
       setVariants(urls);
@@ -103,8 +103,8 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
         </div>
         <p className="text-sm text-slate-600 dark:text-slate-400">
           {phase === 'Accessorize'
-            ? 'One AI edit for finishing touches. Combine multiple instructions (e.g., silver necklace, hoop earrings, black belt, sunglasses). You’ll receive 4 options.'
-            : 'Editing typically takes ~30–40s. Tip: combine multiple changes in one request (e.g., add jewelry, a hat, sunglasses, a watch, and shoes).'}
+            ? 'One AI edit for finishing touches (30–100s). Combine multiple instructions (e.g., silver necklace, hoop earrings, black belt, sunglasses). You’ll receive 4 options.'
+            : 'Editing typically takes ~30–100s. Tip: combine multiple changes in one request (e.g., add jewelry, a hat, sunglasses, a watch, and shoes).'}
         </p>
         
         <div className="space-y-3">
@@ -166,7 +166,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
                 Editing with AI…
               </span>
             ) : (
-              phase === 'Accessorize' ? (accessorizeUsed ? 'Edit used' : 'Generate 4 options') : 'Edit with AI'
+              phase === 'Accessorize' ? (accessorizeUsed ? 'Edit used' : 'Generate 4 options (30–100s)') : 'Edit with AI'
             )}
           </GlassButton>
         </div>
@@ -254,9 +254,9 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
                         <GlassButton 
                           variant="primary" 
                           className="w-full text-white bg-blue-500 hover:bg-blue-600 backdrop-blur-sm border-blue-400"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            void selectImage(url, { type: 'edit', description: instruction || 'AI edit', addToHistory: true });
+                            await selectImage(url, { type: 'edit', description: instruction || 'AI edit', addToHistory: true });
                             if (phase === 'Accessorize') {
                               showToast('Accessories locked in—heading to runway.', 'success', 2200);
                               setPhase('WalkoutAndEval');
@@ -379,8 +379,8 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
               <GlassButton
                 variant="primary"
                 className="px-6 py-3 md:px-8 md:py-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold"
-                onClick={() => {
-                  void selectImage(variants[previewEditIndex], { type: 'edit', description: instruction || 'AI edit', addToHistory: true });
+                onClick={async () => {
+                  await selectImage(variants[previewEditIndex], { type: 'edit', description: instruction || 'AI edit', addToHistory: true });
                   if (phase === 'Accessorize') {
                     showToast('Accessories locked in—heading to runway.', 'success', 2200);
                     setPhase('WalkoutAndEval');
