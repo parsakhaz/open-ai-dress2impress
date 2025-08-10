@@ -1,8 +1,9 @@
 import type { WardrobeItem } from '@/types';
 import { api } from '@/lib/api/client';
+import type { AmazonSearchRequest } from '@/lib/api/types';
 
-export async function searchAmazon(query: string): Promise<WardrobeItem[]> {
-  const data = await api.amazon({ query });
+export async function searchAmazon(query: string, options?: Partial<AmazonSearchRequest>): Promise<WardrobeItem[]> {
+  const data = await api.amazon({ query, ...options });
   return (data.products || [])
     .map((product): WardrobeItem | null => {
       if (!product.asin || !product.product_title || !product.product_photo) {
