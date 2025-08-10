@@ -51,13 +51,34 @@ export class AIPlayerAgent {
       const fs = require('fs/promises') as typeof import('fs/promises');
       const sharp: typeof import('sharp') = require('sharp');
       const absFile = path.join(process.cwd(), 'public', url.replace(/^\//, ''));
-      let buf = await fs.readFile(absFile);
-      // Downscale to keep payload small for GPT vision
       try {
-        buf = await sharp(buf).resize({ width: 512, height: 512, fit: 'inside' }).webp({ quality: 60 }).toBuffer();
-      } catch {}
-      const mime = 'image/webp';
-      return `data:${mime};base64,${Buffer.from(buf).toString('base64')}`;
+        let buf = await fs.readFile(absFile);
+        // Downscale to keep payload small for GPT vision
+        try {
+          buf = await sharp(buf).resize({ width: 512, height: 512, fit: 'inside' }).webp({ quality: 60 }).toBuffer();
+        } catch {}
+        const mime = 'image/webp';
+        return `data:${mime};base64,${Buffer.from(buf).toString('base64')}`;
+      } catch {
+        // Fallback: try reading a known good avatar asset; if that fails, try fetching via HTTP
+        try {
+          const fallback = path.join(process.cwd(), 'public', 'character', 'image.webp');
+          let buf = await fs.readFile(fallback);
+          try {
+            buf = await sharp(buf).resize({ width: 512, height: 512, fit: 'inside' }).webp({ quality: 60 }).toBuffer();
+          } catch {}
+          return `data:image/webp;base64,${Buffer.from(buf).toString('base64')}`;
+        } catch {}
+        // Last resort: fetch from server origin
+        const full = `${this.baseUrl()}${url}`;
+        const res = await fetch(full);
+        if (!res.ok) throw new Error(`Failed to fetch local image: ${res.status}`);
+        let buf = Buffer.from(await res.arrayBuffer());
+        try {
+          buf = await sharp(buf).resize({ width: 512, height: 512, fit: 'inside' }).webp({ quality: 60 }).toBuffer();
+        } catch {}
+        return `data:image/webp;base64,${buf.toString('base64')}`;
+      }
     }
     // Remote URL
     const res = await fetch(url);
@@ -116,12 +137,48 @@ export class AIPlayerAgent {
   }
 
   private async executePlanAndTryOn(plan: { queries: { category: Category; query: string }[]; outfits: { id: string; items: { category: Category; source: 'closet'|'rapid' }[] }[]; palette: string[] }) {
-    await this.emit({ phase: 'GATHER', eventType: 'phase:start', message: 'Gathering closet + rapid' });
-    const [closet, rapidA, rapidB] = await Promise.all([
-      localTools.getCurrentClothes(['top','bottom','dress']),
-      plan.queries[0] ? remote.searchRapid(plan.queries[0].query, plan.queries[0].category) : Promise.resolve([] as Product[]),
-      plan.queries[1] ? remote.searchRapid(plan.queries[1].query, plan.queries[1].category) : Promise.resolve([] as Product[]),
-    ]);
+    await this.emit({ phase: 'GATHER', eventType: 'phase:start', message: 'Gathering closet + searching' });
+    // Emit narrative tool messages around RapidAPI calls for better UI visibility
+    const closetPromise = localTools.getCurrentClothes(['top','bottom','dress']);
+    const rapidPromises: Promise<Product[]>[] = [];
+    if (plan.queries[0]) {
+      const q0 = plan.queries[0];
+      await this.emit({ phase: 'GATHER', eventType: 'tool:start', tool: { name: 'searchRapid' }, message: `Searching Amazon for ${q0.category}`, context: { q: q0.query } });
+      rapidPromises.push(
+        remote.searchRapid(q0.query, q0.category)
+          .then(async (r) => {
+            await this.emit({
+              phase: 'GATHER',
+              eventType: 'tool:result',
+              tool: { name: 'searchRapid' },
+              message: `Found ${r.length}`,
+              context: { images: r.slice(0, 6).map((p) => p.image) },
+            });
+            return r;
+          })
+          .catch(async (e) => { await this.emit({ phase: 'GATHER', eventType: 'tool:error', tool: { name: 'searchRapid' }, message: String(e) }); return [] as Product[]; })
+      );
+    }
+    if (plan.queries[1]) {
+      const q1 = plan.queries[1];
+      await this.emit({ phase: 'GATHER', eventType: 'tool:start', tool: { name: 'searchRapid' }, message: `Searching Amazon for ${q1.category}`, context: { q: q1.query } });
+      rapidPromises.push(
+        remote.searchRapid(q1.query, q1.category)
+          .then(async (r) => {
+            await this.emit({
+              phase: 'GATHER',
+              eventType: 'tool:result',
+              tool: { name: 'searchRapid' },
+              message: `Found ${r.length}`,
+              context: { images: r.slice(0, 6).map((p) => p.image) },
+            });
+            return r;
+          })
+          .catch(async (e) => { await this.emit({ phase: 'GATHER', eventType: 'tool:error', tool: { name: 'searchRapid' }, message: String(e) }); return [] as Product[]; })
+      );
+    }
+    const [closet, ...rapidLists] = await Promise.all([closetPromise, ...rapidPromises]);
+    const [rapidA = [], rapidB = []] = rapidLists;
     const rapidMap: Record<Category, Product[]> = { top: [], bottom: [], dress: [] };
     for (const p of [...rapidA, ...rapidB]) (rapidMap[p.category] ||= []).push(p);
     const closetMap: Record<Category, Product[]> = { top: [], bottom: [], dress: [] };
@@ -137,7 +194,7 @@ export class AIPlayerAgent {
       return { id: o.id, items: chosen };
     });
 
-    await this.emit({ phase: 'TRYON', eventType: 'phase:start', message: 'Running try-ons' });
+    await this.emit({ phase: 'TRYON', eventType: 'phase:start', message: 'Trying outfits on the avatar' });
     const modelDataUri = await this.toDataUri(this.avatarUrl);
     const tryonPromises = resolved.map(async (o) => {
       const garment = o.items[0];

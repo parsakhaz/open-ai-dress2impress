@@ -34,6 +34,11 @@ export interface AIEvent {
   type: 'thought' | 'tool_call';
   content: string;
   timestamp: number;
+  // Optional UI metadata for richer rendering
+  tool?: string; // e.g., 'searchRapid', 'fashn.tryon'
+  kind?: 'start' | 'result' | 'error' | 'system' | 'thought';
+  phase?: 'PLAN' | 'GATHER' | 'TRYON' | 'PICK' | 'DONE' | 'INIT';
+  images?: string[]; // inline preview thumbnails related to this event
 }
 
 // New: Image record for Dexie images table

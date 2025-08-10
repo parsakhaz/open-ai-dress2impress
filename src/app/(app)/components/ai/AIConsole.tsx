@@ -21,6 +21,50 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
   const startedRef = useRef(false);
   const [tryOnImages, setTryOnImages] = useState<string[]>([]);
 
+  // Minimal inline lucide-style icons (no external deps)
+  const Icon = {
+    Spinner: (props: { className?: string }) => (
+      <svg className={`animate-spin ${props.className || ''}`} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+      </svg>
+    ),
+    Check: (props: { className?: string }) => (
+      <svg className={props.className} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M20 6L9 17l-5-5" />
+      </svg>
+    ),
+    Alert: (props: { className?: string }) => (
+      <svg className={props.className} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+        <line x1="12" y1="9" x2="12" y2="13" />
+        <line x1="12" y1="17" x2="12.01" y2="17" />
+      </svg>
+    ),
+    Message: (props: { className?: string }) => (
+      <svg className={props.className} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z" />
+      </svg>
+    ),
+    Play: (props: { className?: string }) => (
+      <svg className={props.className} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <polygon points="5 3 19 12 5 21 5 3" />
+      </svg>
+    ),
+    Search: (props: { className?: string }) => (
+      <svg className={props.className} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <circle cx="11" cy="11" r="8" />
+        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      </svg>
+    ),
+    Image: (props: { className?: string }) => (
+      <svg className={props.className} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+        <circle cx="8.5" cy="8.5" r="1.5"></circle>
+        <path d="M21 15l-5-5L5 21"></path>
+      </svg>
+    ),
+  } as const;
+
   // Simple demo log so the panel isn't empty
   useEffect(() => {
     if (seededRef.current) return;
@@ -77,13 +121,17 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
           if (!line.trim()) continue;
           try {
             const evt = JSON.parse(line) as AIStreamEvent;
-            const label = `${evt.phase} ${evt.eventType}`;
-            let content = `${label}: ${evt.message}`;
-            if (evt.tool?.name) content += ` [${evt.tool.name}]`;
-            if (typeof evt.durationMs === 'number') content += ` (${evt.durationMs}ms)`;
+            // Minimal, narrative-style formatting
+            const phaseLabel = evt.phase === 'INIT' ? 'setup' : evt.phase.toLowerCase();
+            const isTool = evt.eventType.startsWith('tool');
+            let content = isTool
+              ? `${evt.tool?.name ?? 'tool'}: ${evt.message}`
+              : `${phaseLabel}: ${evt.message}`;
+            if (typeof evt.durationMs === 'number') content += ` · ${evt.durationMs}ms`;
             if (evt.context) {
+              // Only surface a tiny hint of context keys to keep it clean
               const keys = Object.keys(evt.context);
-              if (keys.length > 0) content += ` {${keys.slice(0, 3).join(', ')}${keys.length > 3 ? ', …' : ''}}`;
+              if (keys.length > 0) content += ` · {${keys.slice(0, 2).join(', ')}${keys.length > 2 ? ', …' : ''}}`;
               // Capture try-on images when present
               if (showTryOnThumbs && Array.isArray((evt as any).context?.images)) {
                 const imgs = ((evt as any).context.images as string[]).filter(Boolean);
@@ -97,7 +145,27 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
                 }
               }
             }
-            logAIEvent({ type: evt.eventType.startsWith('tool') ? 'tool_call' : 'thought', content, timestamp: Date.now() });
+            // Normalize rate-limit or 429s to a friendly line
+            if (/RATE_LIMIT|429/.test(content)) {
+              content = content.replace(/.*(RATE_LIMIT|429).*?/i, 'search: hit rate limit, slowing down');
+            }
+            // Emit richer UI event so the console can show thumbnails inline
+            const images = Array.isArray((evt as any).context?.images) ? ((evt as any).context?.images as string[]) : undefined;
+            logAIEvent({ 
+              type: isTool ? 'tool_call' : 'thought', 
+              content, 
+              timestamp: Date.now(), 
+              tool: evt.tool?.name,
+              kind: ((): any => {
+                if (evt.eventType === 'tool:start') return 'start';
+                if (evt.eventType === 'tool:result') return 'result';
+                if (evt.eventType === 'tool:error') return 'error';
+                if (evt.eventType === 'system') return 'system';
+                return 'thought';
+              })(),
+              phase: evt.phase as any,
+              images,
+            });
           } catch (e) {
             logAIEvent({ type: 'thought', content: `Malformed stream line`, timestamp: Date.now() });
           }
@@ -175,11 +243,9 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
 
         <div ref={setLogContainerRef} className={`rounded-lg bg-black/95 dark:bg-black/70 backdrop-blur-sm p-4 font-mono text-sm border border-green-500/20 ${inline ? 'h-[52vh] md:h-[60vh] overflow-y-auto' : 'h-96 md:h-[60vh] overflow-auto'}`}>
           {aiLog.length === 0 ? (
-            <div className="text-green-400/60 flex items-center gap-2">
-              <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              Game AI awaiting fashion instructions...
+            <div className="text-green-400/70 flex items-center gap-2">
+              <Icon.Spinner className="w-4 h-4" />
+              <span>Waiting for instructions…</span>
             </div>
           ) : (
             aiLog.map((e, i) => (
@@ -190,15 +256,28 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
                   </span>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className={`inline-block px-2 py-0.5 text-[10px] md:text-xs rounded font-semibold ${
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] md:text-xs rounded border ${
                         e.type === 'thought' 
-                          ? 'bg-blue-400/20 text-blue-300 border border-blue-400/30' 
-                          : 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
+                          ? 'text-blue-300 border-blue-400/30 bg-blue-400/10' 
+                          : 'text-amber-300 border-amber-400/30 bg-amber-400/10'
                       }`}>
-                        {e.type === 'thought' ? '🧠 ANALYZING' : '⚡ ACTION'}
+                        {e.type === 'thought' ? <Icon.Message className="w-3 h-3" /> : <Icon.Play className="w-3 h-3" />}
+                        <span>{e.type === 'thought' ? 'Analyzing…' : 'Action'}</span>
                       </span>
+                      {e.kind === 'start' && <Icon.Spinner className="w-3 h-3 text-green-300/80" />}
+                      {e.kind === 'result' && <span className="inline-flex items-center gap-1 text-[10px] text-green-300/80"><Icon.Check className="w-3 h-3" /> response received</span>}
+                      {e.kind === 'error' && <span className="inline-flex items-center gap-1 text-[10px] text-rose-400/90"><Icon.Alert className="w-3 h-3" /> error</span>}
                     </div>
                     <p className="text-green-100 text-xs md:text-sm break-words">{e.content}</p>
+                    {Array.isArray(e.images) && e.images.length > 0 && (
+                      <div className="mt-2 flex items-center gap-2 overflow-x-auto">
+                        {e.images.slice(0, 6).map((u, idx) => (
+                          <div key={`${i}-${idx}`} className="relative">
+                            <img src={u} className="w-14 h-14 object-cover rounded border border-white/10" alt="preview" />
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>

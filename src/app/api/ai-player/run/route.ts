@@ -13,7 +13,8 @@ export async function POST(req: NextRequest) {
     body = await req.json();
   } catch {}
   const theme = typeof body?.theme === 'string' && body.theme.trim() ? body.theme : 'Summer Rooftop Party';
-  const avatarUrl = typeof body?.avatarUrl === 'string' && body.avatarUrl.trim() ? body.avatarUrl : '/character/Woman.webp';
+  // Fallback to an existing public asset to avoid ENOENT when no avatar is provided
+  const avatarUrl = typeof body?.avatarUrl === 'string' && body.avatarUrl.trim() ? body.avatarUrl : '/character/image.webp';
   const durationMs = typeof body?.durationMs === 'number' && Number.isFinite(body.durationMs) ? body.durationMs : 120000;
 
   try {
