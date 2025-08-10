@@ -502,7 +502,7 @@ export default function AvatarPanel() {
                       className="absolute inset-0 cursor-pointer"
                       onClick={() => {
                         setSelectedAvatarIndex(index);
-                        choose(url);
+                        setSelectedAvatarUrl(url);
                       }}
                     />
                   </div>
