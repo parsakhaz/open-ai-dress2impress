@@ -26,7 +26,7 @@ export function useToast() {
   const ToastContainer = useCallback(
     () => (
       <Toaster
-        position="top-right"
+        position="bottom-left"
         richColors
         closeButton
         theme="system"

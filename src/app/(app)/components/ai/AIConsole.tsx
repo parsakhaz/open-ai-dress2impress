@@ -20,6 +20,9 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
   const seededRef = useRef(false);
   const startedRef = useRef(false);
   const [tryOnImages, setTryOnImages] = useState<string[]>([]);
+  const [filters, setFilters] = useState<{ thought: boolean; action: boolean }>({ thought: true, action: true });
+  const [density, setDensity] = useState<'compact' | 'comfortable'>('compact');
+  // Local inline error badge with optional countdown will manage its own state
 
   // Minimal inline lucide-style icons (no external deps)
   const Icon = {
@@ -64,6 +67,39 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
       </svg>
     ),
   } as const;
+
+  function ErrorBadge({ retryInMs, errorDetail }: { retryInMs?: number; errorDetail?: string }) {
+    const [expanded, setExpanded] = useState(false);
+    const [msLeft, setMsLeft] = useState<number | undefined>(retryInMs);
+    useEffect(() => {
+      if (typeof retryInMs !== 'number' || retryInMs <= 0) return;
+      let mounted = true;
+      const start = Date.now();
+      const tick = () => {
+        const elapsed = Date.now() - start;
+        const left = Math.max(0, retryInMs - elapsed);
+        if (mounted) setMsLeft(left);
+        if (left > 0) raf = window.setTimeout(tick, 200);
+      };
+      let raf = window.setTimeout(tick, 200);
+      return () => { mounted = false; window.clearTimeout(raf); };
+    }, [retryInMs]);
+    const seconds = msLeft !== undefined ? Math.ceil(msLeft / 1000) : undefined;
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] text-rose-400/90">
+        <Icon.Alert className="w-3 h-3" />
+        <button className="underline decoration-dotted underline-offset-2" onClick={() => setExpanded((v) => !v)}>
+          error
+        </button>
+        {typeof seconds === 'number' && seconds > 0 && <span className="text-rose-300/80">· retrying in {seconds}s</span>}
+        {expanded && errorDetail && (
+          <span className="ml-2 px-2 py-1 rounded border border-rose-400/30 text-rose-200 bg-rose-400/10 max-w-[60ch] truncate">
+            {errorDetail}
+          </span>
+        )}
+      </span>
+    );
+  }
 
   // Simple demo log so the panel isn't empty
   useEffect(() => {
@@ -151,6 +187,12 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
             }
             // Emit richer UI event so the console can show thumbnails inline
             const images = Array.isArray((evt as any).context?.images) ? ((evt as any).context?.images as string[]) : undefined;
+            const errorDetail = typeof (evt as any)?.context?.originalError === 'string'
+              ? String((evt as any).context.originalError)
+              : typeof (evt as any)?.error?.message === 'string'
+              ? String((evt as any).error.message)
+              : undefined;
+            const retryInMs = typeof (evt as any)?.context?.retryInMs === 'number' ? Number((evt as any).context.retryInMs) : undefined;
             logAIEvent({ 
               type: isTool ? 'tool_call' : 'thought', 
               content, 
@@ -165,6 +207,8 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
               })(),
               phase: evt.phase as any,
               images,
+              retryInMs,
+              errorDetail,
             });
           } catch (e) {
             logAIEvent({ type: 'thought', content: `Malformed stream line`, timestamp: Date.now() });
@@ -199,6 +243,24 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
     return () => { if (raf) cancelAnimationFrame(raf); };
   }, [aiLog.length, inline, logContainerRef]);
 
+  // Prepare filtered events and insert phase separators (UI only)
+  const filteredEvents = useMemo(() => {
+    return aiLog.filter((e) => (filters.thought && e.type === 'thought') || (filters.action && e.type === 'tool_call')) as any[];
+  }, [aiLog, filters]);
+  const withSeparators = useMemo(() => {
+    const out: any[] = [];
+    let lastPhase: string | undefined;
+    filteredEvents.forEach((e, idx) => {
+      const phase = (e as any).phase as string | undefined;
+      if (phase && phase !== lastPhase) {
+        out.push({ __sep: true, phase, key: `sep-${phase}-${idx}` });
+        lastPhase = phase;
+      }
+      out.push(e);
+    });
+    return out;
+  }, [filteredEvents]);
+
   return (
     <GlassPanel 
       variant={inline ? 'card' : 'modal'} 
@@ -225,6 +287,25 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
             </GlassButton>
           )}
         </div>
+
+        {/* Controls: filters + density */}
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-300/80">
+          <div className="flex flex-wrap items-center gap-2">
+            <label className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border ${filters.thought ? 'border-blue-400/30 bg-blue-400/10 text-blue-200' : 'border-white/10 text-slate-300/70' }`}>
+              <input type="checkbox" className="accent-blue-400" checked={filters.thought} onChange={(e) => setFilters((f) => ({ ...f, thought: e.target.checked }))} />
+              <Icon.Message className="w-3 h-3" aria-hidden /> Thought
+            </label>
+            <label className={`inline-flex items-center gap-1 px-2 py-0.5 rounded border ${filters.action ? 'border-amber-400/30 bg-amber-400/10 text-amber-200' : 'border-white/10 text-slate-300/70' }`}>
+              <input type="checkbox" className="accent-amber-400" checked={filters.action} onChange={(e) => setFilters((f) => ({ ...f, action: e.target.checked }))} />
+              <Icon.Play className="w-3 h-3" aria-hidden /> Action
+            </label>
+          </div>
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <span className="text-slate-400">Density</span>
+            <button onClick={() => setDensity('compact')} className={`px-2 py-0.5 rounded border ${density === 'compact' ? 'border-white/20 bg-white/5 text-white' : 'border-white/10 text-slate-300'}`}>Compact</button>
+            <button onClick={() => setDensity('comfortable')} className={`px-2 py-0.5 rounded border ${density === 'comfortable' ? 'border-white/20 bg-white/5 text-white' : 'border-white/10 text-slate-300'}`}>Comfortable</button>
+          </div>
+        </div>
         
         {/* Try-on image preview */}
         {inline && showTryOnThumbs && tryOnImages.length > 0 && (
@@ -248,14 +329,19 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
               <span>Waiting for instructions…</span>
             </div>
           ) : (
-            aiLog.map((e, i) => (
+            withSeparators
+              .map((e: any, i: number) => (
+                '.__sep' in e ? (
+                  <div key={e.key} className="my-2 border-t border-white/10">
+                    <div className="-mt-3">
+                      <span className="px-2 text-[10px] uppercase tracking-wide text-slate-400 bg-black/80">{(e.phase || '').toLowerCase()}</span>
+                    </div>
+                  </div>
+                ) : (
               <div key={i} className="mb-2 last:mb-0">
                 <div className="flex items-start gap-2">
-                  <span className="text-green-300/60 text-[10px] md:text-xs mt-0.5 whitespace-nowrap">
-                    [{new Date(e.timestamp).toLocaleTimeString()}]
-                  </span>
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className={`flex items-center gap-2 ${density === 'compact' ? 'mb-1' : 'mb-2'}`}>
                       <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] md:text-xs rounded border ${
                         e.type === 'thought' 
                           ? 'text-blue-300 border-blue-400/30 bg-blue-400/10' 
@@ -266,12 +352,13 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
                       </span>
                       {e.kind === 'start' && <Icon.Spinner className="w-3 h-3 text-green-300/80" />}
                       {e.kind === 'result' && <span className="inline-flex items-center gap-1 text-[10px] text-green-300/80"><Icon.Check className="w-3 h-3" /> response received</span>}
-                      {e.kind === 'error' && <span className="inline-flex items-center gap-1 text-[10px] text-rose-400/90"><Icon.Alert className="w-3 h-3" /> error</span>}
+                      {e.kind === 'error' && <ErrorBadge retryInMs={e.retryInMs} errorDetail={e.errorDetail} />}
+                      <span className="ml-auto text-green-300/40 text-[10px] whitespace-nowrap relative -top-[1px]">[{new Date(e.timestamp).toLocaleTimeString()}]</span>
                     </div>
-                    <p className="text-green-100 text-xs md:text-sm break-words">{e.content}</p>
+                    <p className={`text-green-100 break-words ${density === 'compact' ? 'text-xs' : 'text-sm'}`}>{e.content}</p>
                     {Array.isArray(e.images) && e.images.length > 0 && (
                       <div className="mt-2 flex items-center gap-2 overflow-x-auto">
-                        {e.images.slice(0, 6).map((u, idx) => (
+                        {e.images.slice(0, 6).map((u: string, idx: number) => (
                           <div key={`${i}-${idx}`} className="relative">
                             <img src={u} className="w-14 h-14 object-cover rounded border border-white/10" alt="preview" />
                           </div>
@@ -281,6 +368,7 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
                   </div>
                 </div>
               </div>
+                )
             ))
           )}
         </div>

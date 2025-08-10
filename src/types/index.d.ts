@@ -39,6 +39,8 @@ export interface AIEvent {
   kind?: 'start' | 'result' | 'error' | 'system' | 'thought';
   phase?: 'PLAN' | 'GATHER' | 'TRYON' | 'PICK' | 'DONE' | 'INIT';
   images?: string[]; // inline preview thumbnails related to this event
+  retryInMs?: number; // optional suggested retry delay for countdown UI
+  errorDetail?: string; // optional compact technical detail for disclosure
 }
 
 // New: Image record for Dexie images table
