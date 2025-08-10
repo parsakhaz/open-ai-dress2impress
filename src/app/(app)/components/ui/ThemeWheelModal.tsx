@@ -87,7 +87,7 @@ export default function ThemeWheelModal({ open, onClose }: ThemeWheelModalProps)
         {/* Wheel - make surface opaque to avoid transparency artifacts */}
         <div className="mx-auto rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 md:p-6 shadow-2xl overflow-visible select-none">
           <div
-            className="relative mx-auto w-[min(92vw,36rem)] h-[min(92vw,36rem)] flex items-center justify-center cursor-pointer"
+            className="relative mx-auto w-[min(96vw,48rem)] h-[min(96vw,48rem)] flex items-center justify-center cursor-pointer"
             onClick={() => {
               if (!spinning && !themeLoading && !items.includes('...')) onSpin();
             }}

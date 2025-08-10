@@ -61,7 +61,7 @@ export default function TopBar() {
   const progress = getProgress();
 
   return (
-    <div className="fixed top-4 left-1/2 -translate-x-1/2 z-30 w-full max-w-2xl px-4">
+    <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-[70] w-full max-w-2xl px-4 ${phase === 'ThemeSelect' ? 'pointer-events-none' : ''}`}>
       <GlassPanel className="p-4 space-y-3">
         {/* Top row with phase and theme */}
         <div className="flex items-center justify-between gap-4">
