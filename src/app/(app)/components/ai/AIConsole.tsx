@@ -201,6 +201,15 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
                   });
                 }
               }
+              // Capture AI player's try-on result during TRYON phase for Accessorize phase
+              if (evt.phase === 'TRYON' && evt.eventType === 'tool:result' && evt.tool?.name === 'callFashnAPI' && Array.isArray((evt as any).context?.images)) {
+                const tryOnImages = ((evt as any).context.images as string[]).filter(Boolean);
+                if (tryOnImages.length > 0) {
+                  // Save the first try-on result to game store for Accessorize phase
+                  const { setAiPlayerResultUrl } = useGameStore.getState();
+                  setAiPlayerResultUrl(tryOnImages[0]);
+                }
+              }
               // Capture AI player's final result image for evaluation phase
               if (evt.phase === 'PICK' && evt.eventType === 'phase:result' && (evt as any).context?.tryOnImage) {
                 const finalImage = (evt as any).context.tryOnImage as string;
