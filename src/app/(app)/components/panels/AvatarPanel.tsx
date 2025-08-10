@@ -48,9 +48,9 @@ export default function AvatarPanel() {
   
   // Preset characters from public assets (can be expanded by adding files under /public/character)
   const presetCharacters: Array<{ id: string; name: string; url: string }> = [
-    { id: 'marvin', name: 'Marvin', url: '/character/image.webp' },
-    { id: 'lily', name: 'Lily', url: encodeURI('/character/image (1).webp') },
-    { id: 'dave', name: 'Dave', url: '/character/image.webp' },
+    { id: 'trevor', name: 'Trevor', url: '/character/trevor.webp' },
+    { id: 'tina', name: 'Tina', url: '/character/tina.webp' },
+    { id: 'tim', name: 'Tim', url: '/character/tim.webp' },
   ];
   
   // Removed debug logging for cleaner production experience
