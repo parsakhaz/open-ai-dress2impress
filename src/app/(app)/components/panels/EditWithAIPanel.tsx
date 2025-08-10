@@ -4,6 +4,7 @@ import { editImage } from '@/lib/adapters/edit';
 import { GlassPanel } from '@/components/GlassPanel';
 import { GlassButton } from '@/components/GlassButton';
 import { useGameStore } from '@/lib/state/gameStore';
+import { useToast } from '@/hooks/useToast';
 import { selectImage } from '@/lib/services/stateActions';
 import { BaseImagePickerModal } from '@/app/(app)/components/modals/BaseImagePickerModal';
 
@@ -13,8 +14,12 @@ interface EditWithAIPanelProps {
 
 export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) {
   const phase = useGameStore((s) => s.phase);
+  const accessorizeUsed = useGameStore((s) => s.accessorizeUsed);
+  const setAccessorizeUsed = useGameStore((s) => s.setAccessorizeUsed);
   const currentImageUrl = useGameStore((s) => s.currentImageUrl);
   const character = useGameStore((s) => s.character);
+  const setPhase = useGameStore((s) => s.setPhase);
+  const { showToast } = useToast();
 
   const [imageUrl, setImageUrl] = useState(currentImageUrl || '');
   const [instruction, setInstruction] = useState('add a silver necklace');
@@ -38,8 +43,8 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
 
   // Defensive close if phase changes to a disallowed state
   useEffect(() => {
-    if (phase !== 'StylingRound' && onClose) {
-      onClose();
+    if (phase !== 'Accessorize') {
+      onClose?.();
     }
   }, [phase, onClose]);
 
@@ -51,13 +56,21 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
   }, [currentImageUrl, character?.avatarUrl]);
 
   async function onEdit() {
+    if (phase === 'Accessorize' && accessorizeUsed) {
+      showToast('Only one edit in Accessorize. Pick from your 4 results.', 'warning', 2200);
+      return;
+    }
     setLoading(true);
     setError(null);
+    showToast('Generating 4 options…', 'info', 2400);
     try {
       const urls = await editImage(imageUrl, instruction);
       setVariants(urls);
       setSelectedEditIndex(null);
       setShowEditSelector(true);
+      if (phase === 'Accessorize') {
+        setAccessorizeUsed(true);
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Edit failed');
     } finally {
@@ -73,7 +86,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
     >
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Edit with AI</h2>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100">{phase === 'Accessorize' ? 'Accessorize' : 'Edit with AI'}</h2>
           {onClose && !loading && (
             <GlassButton
               size="sm"
@@ -89,8 +102,9 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
           )}
         </div>
         <p className="text-sm text-slate-600 dark:text-slate-400">
-          Note: Editing is blocking and typically takes about 30–40 seconds. Closing is disabled while an edit is running.
-          Tip: For best flow, make one request with multiple changes as a final styling step (e.g., add jewelry, a hat, sunglasses, a wrist watch, and shoes).
+          {phase === 'Accessorize'
+            ? 'One AI edit for finishing touches. Combine multiple instructions (e.g., silver necklace, hoop earrings, black belt, sunglasses). You’ll receive 4 options.'
+            : 'Editing typically takes ~30–40s. Tip: combine multiple changes in one request (e.g., add jewelry, a hat, sunglasses, a watch, and shoes).'}
         </p>
         
         <div className="space-y-3">
@@ -141,7 +155,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
             variant="primary" 
             className="w-full" 
             onClick={onEdit} 
-            disabled={loading || !imageUrl || !instruction.trim()}
+            disabled={loading || !imageUrl || !instruction.trim() || (phase === 'Accessorize' && accessorizeUsed)}
           >
             {loading ? (
               <span className="flex items-center gap-2">
@@ -152,7 +166,7 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
                 Editing with AI…
               </span>
             ) : (
-              'Edit with AI'
+              phase === 'Accessorize' ? (accessorizeUsed ? 'Edit used' : 'Generate 4 options') : 'Edit with AI'
             )}
           </GlassButton>
         </div>
@@ -243,6 +257,11 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
                           onClick={(e) => {
                             e.stopPropagation();
                             void selectImage(url, { type: 'edit', description: instruction || 'AI edit', addToHistory: true });
+                            if (phase === 'Accessorize') {
+                              showToast('Accessories locked in—heading to runway.', 'success', 2200);
+                              setPhase('WalkoutAndEval');
+                              onClose?.();
+                            }
                           }}
                         >
                           ✓ Use This Edit
@@ -293,17 +312,19 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
                   Clear Selection
                 </GlassButton>
               )}
-              <GlassButton 
-                variant="secondary" 
-                className="px-6 py-3 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm border-white/30"
-                onClick={() => {
-                  setShowEditSelector(false);
-                  setSelectedEditIndex(null);
-                  setVariants([]);
-                }}
-              >
-                🔄 Run New Edit
-              </GlassButton>
+              {!(phase === 'Accessorize' && accessorizeUsed) && (
+                <GlassButton 
+                  variant="secondary" 
+                  className="px-6 py-3 text-white bg-white/10 hover:bg-white/20 backdrop-blur-sm border-white/30"
+                  onClick={() => {
+                    setShowEditSelector(false);
+                    setSelectedEditIndex(null);
+                    setVariants([]);
+                  }}
+                >
+                  🔄 Run New Edit
+                </GlassButton>
+              )}
             </div>
           </div>
         </div>
@@ -360,6 +381,11 @@ export default function EditWithAIPanel({ onClose }: EditWithAIPanelProps = {}) 
                 className="px-6 py-3 md:px-8 md:py-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold"
                 onClick={() => {
                   void selectImage(variants[previewEditIndex], { type: 'edit', description: instruction || 'AI edit', addToHistory: true });
+                  if (phase === 'Accessorize') {
+                    showToast('Accessories locked in—heading to runway.', 'success', 2200);
+                    setPhase('WalkoutAndEval');
+                    onClose?.();
+                  }
                 }}
               >
                 ✓ Use This Edit

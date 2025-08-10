@@ -22,7 +22,7 @@ export default function TopBar() {
   const lastPhaseRef = useRef<string | null>(null);
   // Removed clamp refs
   
-  const phases = ['CharacterSelect', 'ThemeSelect', 'ShoppingSpree', 'StylingRound', 'WalkoutAndEval', 'Results'] as const;
+  const phases = ['CharacterSelect', 'ThemeSelect', 'ShoppingSpree', 'StylingRound', 'Accessorize', 'WalkoutAndEval', 'Results'] as const;
   type GamePhase = typeof phases[number];
   
   const nextPhase = () => {
@@ -37,7 +37,7 @@ export default function TopBar() {
       stopRef.current = createCountdown(120, (s) => setTimer(s), () => setPhase('StylingRound'));
     } else if (phase === 'StylingRound') {
       stopRef.current?.();
-      stopRef.current = createCountdown(90, (s) => setTimer(s), () => setPhase('WalkoutAndEval'));
+      stopRef.current = createCountdown(90, (s) => setTimer(s), () => setPhase('Accessorize'));
     } else {
       stopRef.current?.();
       stopRef.current = null;
@@ -49,8 +49,8 @@ export default function TopBar() {
       if (lastPhaseRef.current === 'ShoppingSpree' && phase === 'StylingRound') {
         showToast("Time's up! Moving to Styling.", 'success', 2000);
       }
-      if (lastPhaseRef.current === 'StylingRound' && phase === 'WalkoutAndEval') {
-        showToast("Time's up! Moving to Walkout.", 'success', 2000);
+      if (lastPhaseRef.current === 'StylingRound' && phase === 'Accessorize') {
+        showToast("Time's up! Moving to Accessorize.", 'success', 2200);
       }
       // Phase start toasts (current)
       if (phase === 'ShoppingSpree') {
@@ -58,6 +58,9 @@ export default function TopBar() {
       }
       if (phase === 'StylingRound') {
         showToast('Styling started. You have 1:30.', 'info', 2500);
+      }
+      if (phase === 'Accessorize') {
+        showToast('Accessorize: one AI edit for finishing touches. Combine instructions; you’ll get 4 options.', 'info', 3400);
       }
       lastPhaseRef.current = phase;
     }

@@ -57,11 +57,11 @@ export default function GamePage() {
 
   // Phase-based gating
   const canOpenShopping = phase === 'ShoppingSpree';
-  const canOpenEdit = phase === 'StylingRound';
+  const canOpenEdit = phase === 'Accessorize';
   const canOpenWardrobe = phase === 'StylingRound';
-  const shoppingTooltip = canOpenShopping ? 'Search real clothes (S)' : (phase === 'StylingRound' ? 'Shopping is disabled during Styling' : 'Shopping becomes available during Shopping');
-  const editTooltip = canOpenEdit ? 'Edit with AI (E)' : 'Editing is available during Styling';
-  const wardrobeTooltip = canOpenWardrobe ? 'Your wardrobe (W)' : 'Wardrobe opens during Styling';
+  const shoppingTooltip = canOpenShopping ? 'Search real clothes (S)' : (phase === 'StylingRound' ? 'Shopping is disabled during Styling' : 'Shopping is unavailable now');
+  const editTooltip = canOpenEdit ? 'Accessorize: Edit with AI (E)' : (phase === 'StylingRound' ? 'Editing moves to Accessorize' : 'Editing is unavailable now');
+  const wardrobeTooltip = canOpenWardrobe ? 'Your wardrobe (W)' : (phase === 'Accessorize' ? 'Wardrobe is disabled during Accessorize' : 'Wardrobe opens during Styling');
   
   useEffect(() => {
     console.log('🚀 DRESS TO IMPRESS: Application started');
@@ -203,13 +203,24 @@ export default function GamePage() {
     if (phase === 'ShoppingSpree') {
       setEditPanelVisible(false);
       setWardrobeOpen(false);
+      setAIConsoleVisible(false);
     } else if (phase === 'StylingRound') {
       setAmazonPanelVisible(false);
+      setEditPanelVisible(false);
+      setAIConsoleVisible(false);
+    } else if (phase === 'Accessorize') {
+      // Auto-open Edit; close others
+      setAmazonPanelVisible(false);
+      setWardrobeOpen(false);
+      setAIConsoleVisible(false);
+      setEditPanelVisible(true);
+      try { useGameStore.getState().setAccessorizeUsed(false); } catch {}
     } else {
       // In other phases, close all tool panels
       setAmazonPanelVisible(false);
       setEditPanelVisible(false);
       setWardrobeOpen(false);
+      setAIConsoleVisible(false);
     }
   }, [phase]);
   
@@ -265,6 +276,11 @@ export default function GamePage() {
         setAIConsoleVisible(false);
         setWardrobeOpen(true);
       } else if (key === 'a') {
+        // In Accessorize, AI console is disabled
+        if (phase === 'Accessorize') {
+          showToast('AI Console is disabled in Accessorize.', 'info', 1800);
+          return;
+        }
         // Toggle AI console; close other panels first
         setAmazonPanelVisible(false);
         setEditPanelVisible(false);
@@ -443,6 +459,18 @@ export default function GamePage() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Skip Accessorize CTA */}
+      {phase === 'Accessorize' && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+          <button
+            className="px-4 py-2 rounded-lg bg-white/10 text-white hover:bg-white/20 backdrop-blur-md border border-white/20"
+            onClick={() => { showToast('Skipping accessories—preparing the runway.', 'info', 2000); setEditPanelVisible(false); setPhase('WalkoutAndEval'); }}
+          >
+            Skip Accessorize
+          </button>
         </div>
       )}
 
