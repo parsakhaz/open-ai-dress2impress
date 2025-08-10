@@ -1,8 +1,12 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useGameStore } from '@/lib/state/gameStore';
 import { GlassPanel } from './GlassPanel';
 import { GlassButton } from './GlassButton';
+import { GAME_PHASES, isTimedPhase, defaultTimeForPhase } from '@/lib/constants/gamePhases';
+import type { GamePhase } from '@/types';
+import { useDebugStore } from '@/lib/state/debugStore';
+import { useToast } from '@/hooks/useToast';
 
 interface DebugInfo {
   environment: Record<string, string | undefined>;
@@ -15,9 +19,28 @@ interface DebugInfo {
 export function DebugPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [debugInfo, setDebugInfo] = useState<DebugInfo | null>(null);
-  const [activeTab, setActiveTab] = useState<'state' | 'env' | 'performance' | 'logs' | 'api'>('state');
+  const [activeTab, setActiveTab] = useState<'state' | 'env' | 'performance' | 'logs' | 'flow'>('state');
+  const [selectedPhase, setSelectedPhase] = useState<GamePhase>('CharacterSelect');
+  const [resetTimerOnJump, setResetTimerOnJump] = useState(true);
+  const [seedPrereqsOnJump, setSeedPrereqsOnJump] = useState(false);
   
   const gameStore = useGameStore();
+  const currentPhase = useGameStore((s) => s.phase);
+  const setPhase = useGameStore((s) => s.setPhase);
+  const setTimer = useGameStore((s) => s.setTimer);
+  const setTheme = useGameStore((s) => s.setTheme);
+  const setThemeOptions = useGameStore((s) => s.setThemeOptions);
+  const setCharacter = useGameStore((s) => s.setCharacter);
+  const setCurrentImage = useGameStore((s) => s.setCurrentImage);
+  const setAccessorizeUsed = useGameStore((s) => s.setAccessorizeUsed);
+  const setRunwayBaseImageUrl = useGameStore((s) => s.setRunwayBaseImageUrl);
+  const muteToasts = useDebugStore((s) => s.muteToasts);
+  const setMuteToasts = useDebugStore((s) => s.setMuteToasts);
+  const disableAutoTimers = useDebugStore((s) => s.disableAutoTimers);
+  const setDisableAutoTimers = useDebugStore((s) => s.setDisableAutoTimers);
+  const disableAutoRunway = useDebugStore((s) => s.disableAutoRunway);
+  const setDisableAutoRunway = useDebugStore((s) => s.setDisableAutoRunway);
+  const { showToast } = useToast();
 
   // Only show in development
   useEffect(() => {
@@ -59,6 +82,65 @@ export function DebugPanel() {
       errors: recentErrors,
       apiCalls: apiCalls,
     });
+  };
+
+  useEffect(() => {
+    setSelectedPhase(currentPhase as GamePhase);
+  }, [currentPhase]);
+
+  const readinessWarning = useMemo(() => {
+    const gs: any = gameStore as any;
+    switch (selectedPhase) {
+      case 'ThemeSelect':
+        if (!gs.character) return 'No character selected; theme selection may be blocked.';
+        return null;
+      case 'ShoppingSpree':
+        if (!gs.theme) return 'No theme set; consider seeding a theme before shopping.';
+        return null;
+      case 'StylingRound':
+        if (!gs.currentImageUrl) return 'No base image; styling may have nothing to display.';
+        return null;
+      case 'Accessorize':
+        return null;
+      case 'WalkoutAndEval':
+      case 'Results':
+        if (!gs.runwayUrl) return 'No runway video/url yet; results/eval may appear empty.';
+        return null;
+      default:
+        return null;
+    }
+  }, [selectedPhase, gameStore]);
+
+  const jumpToPhase = (phase: GamePhase) => {
+    if (resetTimerOnJump && isTimedPhase(phase)) {
+      try { setTimer(defaultTimeForPhase(phase)); } catch {}
+    }
+    if (seedPrereqsOnJump) {
+      const gs: any = gameStore as any;
+      if (phase === 'ThemeSelect') {
+        if (!gs.character) {
+          setCharacter({ id: 'debug', avatarUrl: gs.currentImageUrl || 'https://via.placeholder.com/512x768?text=Avatar' });
+        }
+      } else if (phase === 'ShoppingSpree') {
+        if (!gs.theme) {
+          setTheme('Streetwear Staples');
+          setThemeOptions(['Streetwear Staples', 'Summer Rooftop Party', 'Cozy Minimalist']);
+        }
+      } else if (phase === 'StylingRound') {
+        if (!gs.currentImageUrl) {
+          const url = gs.character?.avatarUrl || 'https://via.placeholder.com/512x768?text=Base+Image';
+          setCurrentImage(url);
+        }
+      } else if (phase === 'Accessorize') {
+        setAccessorizeUsed(false);
+        setRunwayBaseImageUrl(null);
+      }
+    }
+    setPhase(phase);
+    if (!muteToasts && isTimedPhase(phase) && resetTimerOnJump) {
+      const t = defaultTimeForPhase(phase);
+      showToast(`Jumped to ${phase} — timer set to ${t === 120 ? '2:00' : '1:30'}.`, 'info', 2000);
+    }
   };
 
   useEffect(() => {
@@ -128,7 +210,7 @@ export function DebugPanel() {
 
   return (
     <div className="fixed top-4 right-4 z-[9999] max-w-md">
-      <GlassPanel className="max-h-[80vh] overflow-hidden">
+      <GlassPanel className="max-h-[80vh] overflow-visible">
         <div className="space-y-4">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -147,12 +229,12 @@ export function DebugPanel() {
           </div>
 
           {/* Tabs */}
-          <div className="flex gap-1 p-1 bg-white/20 dark:bg-black/20 rounded-lg">
-            {(['state', 'env', 'performance', 'logs'] as const).map(tab => (
+          <div className="flex gap-1 p-1 bg-white/20 dark:bg-black/20 rounded-lg relative z-[9999]">
+            {(['state', 'env', 'performance', 'logs', 'flow'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-3 py-1 text-xs rounded transition-colors ${
+                className={`px-3 py-1 text-xs rounded transition-colors relative z-[9999] ${
                   activeTab === tab 
                     ? 'bg-accent text-white' 
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100'
@@ -220,6 +302,74 @@ export function DebugPanel() {
                     <p>💥 = Errors</p>
                     <p>✅ = Success</p>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'flow' && (
+              <div className="space-y-3">
+                <h4 className="font-semibold text-slate-900 dark:text-slate-100">Flow Control</h4>
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-600 dark:text-slate-300">Current:</span>
+                  <span className="font-mono">{currentPhase}</span>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-slate-600 dark:text-slate-300">Jump to</div>
+                  <div className="flex flex-wrap gap-2">
+                    {GAME_PHASES.map((p) => (
+                      <GlassButton
+                        key={p}
+                        size="sm"
+                        variant={p === currentPhase ? 'primary' : 'secondary'}
+                        onClick={() => { setSelectedPhase(p); jumpToPhase(p); }}
+                        title={p}
+                      >
+                        {p}
+                      </GlassButton>
+                    ))}
+                  </div>
+                </div>
+                {readinessWarning && (
+                  <div className="text-amber-600 dark:text-amber-400 text-xs">⚠️ {readinessWarning}</div>
+                )}
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 text-xs">
+                    <input type="checkbox" checked={resetTimerOnJump} onChange={(e) => setResetTimerOnJump(e.target.checked)} />
+                    Reset timer on jump
+                  </label>
+                  <label className="flex items-center gap-2 text-xs">
+                    <input type="checkbox" checked={seedPrereqsOnJump} onChange={(e) => setSeedPrereqsOnJump(e.target.checked)} />
+                    Seed prerequisites
+                  </label>
+                  <GlassButton size="sm" onClick={() => {
+                    const idx = GAME_PHASES.indexOf(currentPhase as GamePhase);
+                    const next = GAME_PHASES[(idx + 1) % GAME_PHASES.length];
+                    jumpToPhase(next);
+                    setSelectedPhase(next);
+                  }}>Next ▶</GlassButton>
+                  <GlassButton size="sm" onClick={() => {
+                    const idx = GAME_PHASES.indexOf(currentPhase as GamePhase);
+                    const prev = GAME_PHASES[(idx - 1 + GAME_PHASES.length) % GAME_PHASES.length];
+                    jumpToPhase(prev);
+                    setSelectedPhase(prev);
+                  }}>◀ Prev</GlassButton>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                  <label className="flex items-center gap-2 text-xs">
+                    <input type="checkbox" checked={disableAutoTimers} onChange={(e) => setDisableAutoTimers(e.target.checked)} />
+                    Disable auto-timers
+                  </label>
+                  <label className="flex items-center gap-2 text-xs">
+                    <input type="checkbox" checked={disableAutoRunway} onChange={(e) => setDisableAutoRunway(e.target.checked)} />
+                    Disable auto-runway
+                  </label>
+                  <label className="flex items-center gap-2 text-xs">
+                    <input type="checkbox" checked={muteToasts} onChange={(e) => setMuteToasts(e.target.checked)} />
+                    Mute toasts
+                  </label>
+                </div>
+                <div className="text-xs text-slate-500">
+                  Tip: Ctrl+Shift+D to toggle this panel.
                 </div>
               </div>
             )}
