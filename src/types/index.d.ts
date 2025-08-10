@@ -1,4 +1,5 @@
 export type GamePhase =
+  | 'ThemeSelect'
   | 'CharacterSelect'
   | 'ShoppingSpree'
   | 'StylingRound'

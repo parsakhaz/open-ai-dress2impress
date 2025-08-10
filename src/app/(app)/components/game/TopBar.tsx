@@ -17,7 +17,7 @@ export default function TopBar() {
   const resetGame = useGameStore((s) => s.resetGame);
   const stopRef = useRef<null | (() => void)>(null);
   
-  const phases = ['CharacterSelect', 'ShoppingSpree', 'StylingRound', 'WalkoutAndEval', 'Results'] as const;
+  const phases = ['CharacterSelect', 'ThemeSelect', 'ShoppingSpree', 'StylingRound', 'WalkoutAndEval', 'Results'] as const;
   type GamePhase = typeof phases[number];
   
   const nextPhase = () => {

@@ -9,6 +9,8 @@ import { GlassButton } from '@/components/GlassButton';
 export default function Wardrobe() {
   const wardrobe = useGameStore((s) => s.wardrobe);
   const character = useGameStore((s) => s.character);
+  const currentImageUrl = useGameStore((s) => s.currentImageUrl);
+  const history = useGameStore((s) => s.history);
   const setCurrentImage = useGameStore((s) => s.setCurrentImage);
   const [open, setOpen] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -16,14 +18,15 @@ export default function Wardrobe() {
   const [error, setError] = useState<string | null>(null);
 
   async function tryOn(itemImageUrl: string) {
-    if (!character?.avatarUrl) {
-      setError('Select an avatar first.');
+    const mostRecentImage = currentImageUrl || history[history.length - 1]?.imageUrl || character?.avatarUrl;
+    if (!mostRecentImage) {
+      setError('No base image found. Select an avatar or choose a recent image first.');
       return;
     }
     setError(null);
     setLoadingId(itemImageUrl);
     try {
-      const urls = await performTryOn(character.avatarUrl, itemImageUrl);
+      const urls = await performTryOn(mostRecentImage, itemImageUrl);
       setVariants(urls);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Try-on failed');

@@ -51,6 +51,13 @@ export const guards = {
     assertMinLength('query', b.query, 2);
     return { query: b.query } as { query: string };
   },
+  theme(body: unknown) {
+    const b = body as { context?: unknown };
+    if (b.context !== undefined && typeof b.context !== 'string') {
+      throw createValidationError('context', b.context, 'must be a string when provided');
+    }
+    return { context: b.context as string | undefined };
+  },
   video(body: unknown) {
     const b = body as { imageUrl?: unknown };
     assertUrl('imageUrl', b.imageUrl);

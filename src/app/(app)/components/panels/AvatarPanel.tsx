@@ -172,9 +172,9 @@ export default function AvatarPanel() {
     setTimeout(() => {
       setShowShoppingConfirmation(false);
       setShowConfetti(false);
-      console.log('🔄 AVATAR PANEL: Transitioning to Shopping phase');
-      setPhase('ShoppingSpree');
-      console.log('🎯 PHASE TRANSITION: CharacterSelect → ShoppingSpree');
+      console.log('🔄 AVATAR PANEL: Transitioning to Theme select');
+      setPhase('ThemeSelect');
+      console.log('🎯 PHASE TRANSITION: CharacterSelect → ThemeSelect');
     }, 1500);
   }
 

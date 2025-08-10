@@ -13,9 +13,13 @@ import WardrobeModal from '@/app/(app)/components/ui/WardrobeModal';
 import WardrobeContent from '@/app/(app)/components/ui/WardrobeContent';
 import { DebugPanel } from '@/components/DebugPanel';
 import { useToast } from '@/hooks/useToast';
+import ThemeWheelModal from '@/app/(app)/components/ui/ThemeWheelModal';
 
 export default function GamePage() {
   const phase = useGameStore((s) => s.phase);
+  const theme = useGameStore((s) => s.theme);
+  const character = useGameStore((s) => s.character);
+  const setPhase = useGameStore((s) => s.setPhase);
   const { showToast, ToastContainer } = useToast();
   
   // Panel visibility states
@@ -105,6 +109,22 @@ export default function GamePage() {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [phase]);
   
+  // Guard: if persisted state left us in ThemeSelect without a character, bounce back to CharacterSelect
+  useEffect(() => {
+    if (phase === 'ThemeSelect' && !character) {
+      setPhase('CharacterSelect');
+    }
+  }, [phase, character, setPhase]);
+
+  // Guard: if persisted state left us in ThemeSelect without a character, bounce back to CharacterSelect
+  useEffect(() => {
+    if (phase === 'ThemeSelect' && !character) {
+      setPhase('CharacterSelect');
+    }
+  }, [phase, character, setPhase]);
+
+  // Wheel is shown after avatar confirmation (phase is set inside AvatarPanel)
+
   return (
     <main className="relative w-screen h-screen overflow-hidden">
       {/* Canvas Background - CenterStage takes full viewport */}
@@ -119,7 +139,9 @@ export default function GamePage() {
         console.log('🎮 GAME PAGE: Current phase is', phase, '| Should show AvatarPanel:', phase === 'CharacterSelect');
         return null;
       })()}
-      {phase === 'CharacterSelect' ? (
+      {phase === 'ThemeSelect' && character ? (
+        <ThemeWheelModal open={true} onClose={() => { /* handled by spin */ }} />
+      ) : phase === 'CharacterSelect' ? (
         <div className="fixed inset-0 flex items-center justify-center z-30 p-4 bg-black/30 backdrop-blur-sm">
           <AvatarPanel />
         </div>

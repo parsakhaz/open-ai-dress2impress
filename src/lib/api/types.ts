@@ -40,4 +40,8 @@ export interface AmazonSearchResponse { products: AmazonProduct[] }
 export interface VideoRequest { imageUrl: string }
 export interface VideoResponse { url: string }
 
+// Theme generation
+export interface ThemeRequest { context?: string }
+export interface ThemeResponse { themes: string[] }
+
 

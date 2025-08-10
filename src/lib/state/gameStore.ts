@@ -15,6 +15,8 @@ interface HistoryItem {
 interface GameState {
   phase: GamePhase;
   theme: string;
+  themeOptions: string[];
+  themeLoading: boolean;
   timer: number;
   aiLog: AIEvent[];
   character: Character | null;
@@ -24,6 +26,8 @@ interface GameState {
   history: HistoryItem[];
   setPhase: (phase: GamePhase) => void;
   setTheme: (theme: string) => void;
+  setThemeOptions: (themes: string[]) => void;
+  setThemeLoading: (loading: boolean) => void;
   setTimer: (time: number) => void;
   decrementTimer: () => void;
   logAIEvent: (event: AIEvent) => void;
@@ -40,7 +44,9 @@ export const useGameStore = create<GameState>()(
   persist(
     (set) => ({
       phase: 'CharacterSelect',
-      theme: 'Streetwear Night Out',
+      theme: '',
+      themeOptions: [],
+      themeLoading: false,
       timer: 0,
       aiLog: [],
       character: null,
@@ -50,6 +56,8 @@ export const useGameStore = create<GameState>()(
       history: [],
       setPhase: (phase) => set({ phase }),
       setTheme: (theme) => set({ theme }),
+      setThemeOptions: (themes) => set({ themeOptions: themes }),
+      setThemeLoading: (loading) => set({ themeLoading: loading }),
       setTimer: (time) => set({ timer: time }),
       decrementTimer: () => set((state) => ({ timer: Math.max(0, state.timer - 1) })),
       logAIEvent: (event) => set((state) => ({ aiLog: [...state.aiLog, event] })),
@@ -73,7 +81,10 @@ export const useGameStore = create<GameState>()(
         character: null,
         wardrobe: [],
         currentImageUrl: null,
-        currentImageId: null
+        currentImageId: null,
+        theme: '',
+        themeOptions: [],
+        themeLoading: false,
       }),
     }),
     {
@@ -83,6 +94,7 @@ export const useGameStore = create<GameState>()(
         // Persist lightweight fields in IDB to reduce write size; heavy fields excluded
         phase: state.phase,
         theme: state.theme,
+        themeOptions: state.themeOptions,
         wardrobe: state.wardrobe,
         currentImageId: state.currentImageId,
       }),

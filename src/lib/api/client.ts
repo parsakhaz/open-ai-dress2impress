@@ -10,6 +10,8 @@ import type {
   AmazonSearchResponse,
   VideoRequest,
   VideoResponse,
+  ThemeRequest,
+  ThemeResponse,
 } from './types';
 
 export const api = {
@@ -18,6 +20,7 @@ export const api = {
   tryon: (body: TryOnRequest) => postJson<TryOnRequest, TryOnResponse>('/api/tryon', body),
   amazon: (body: AmazonSearchRequest) => postJson<AmazonSearchRequest, AmazonSearchResponse>('/api/amazon', body),
   video: (body: VideoRequest) => postJson<VideoRequest, VideoResponse>('/api/video', body),
+  theme: (body: ThemeRequest) => postJson<ThemeRequest, ThemeResponse>('/api/theme', body),
 };
 
 
