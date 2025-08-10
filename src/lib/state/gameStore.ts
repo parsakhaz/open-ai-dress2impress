@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { createIndexedDBStorage } from '@/lib/util/zustandIndexedDB';
 import type { GamePhase, AIEvent, Character, WardrobeItem } from '@/types';
 
 interface HistoryItem {
@@ -8,6 +9,7 @@ interface HistoryItem {
   timestamp: number;
   type: 'avatar' | 'tryOn' | 'edit';
   description?: string;
+  imageId?: string; // optional Dexie image id
 }
 
 interface GameState {
@@ -18,6 +20,7 @@ interface GameState {
   character: Character | null;
   wardrobe: WardrobeItem[];
   currentImageUrl: string | null;
+  currentImageId: string | null;
   history: HistoryItem[];
   setPhase: (phase: GamePhase) => void;
   setTheme: (theme: string) => void;
@@ -27,6 +30,7 @@ interface GameState {
   setCharacter: (c: Character | null) => void;
   addToWardrobe: (item: WardrobeItem) => void;
   setCurrentImage: (url: string | null) => void;
+  setCurrentImageId: (id: string | null) => void;
   addToHistory: (item: Omit<HistoryItem, 'id' | 'timestamp'>) => void;
   resetGame: () => void;
 }
@@ -41,6 +45,7 @@ export const useGameStore = create<GameState>()(
       character: null,
       wardrobe: [],
       currentImageUrl: null,
+      currentImageId: null,
       history: [],
       setPhase: (phase) => set({ phase }),
       setTheme: (theme) => set({ theme }),
@@ -50,6 +55,7 @@ export const useGameStore = create<GameState>()(
       setCharacter: (c) => set({ character: c }),
       addToWardrobe: (item) => set((s) => ({ wardrobe: [...s.wardrobe, item] })),
       setCurrentImage: (url) => set({ currentImageUrl: url }),
+      setCurrentImageId: (id) => set({ currentImageId: id }),
       addToHistory: (item) => set((state) => ({
         history: [...state.history, {
           ...item,
@@ -64,20 +70,19 @@ export const useGameStore = create<GameState>()(
         history: [],
         character: null,
         wardrobe: [],
-        currentImageUrl: null
+        currentImageUrl: null,
+        currentImageId: null
       }),
     }),
     {
-      name: 'dress-to-impress-storage', // unique name for localStorage key
-      storage: createJSONStorage(() => localStorage), // can also use sessionStorage
+      name: 'dress-to-impress-storage',
+      storage: createJSONStorage(() => createIndexedDBStorage()),
       partialize: (state) => ({
-        // Only persist these fields
+        // Persist lightweight fields in IDB to reduce write size; heavy fields excluded
         phase: state.phase,
         theme: state.theme,
-        character: state.character,
         wardrobe: state.wardrobe,
-        currentImageUrl: state.currentImageUrl,
-        history: state.history,
+        currentImageId: state.currentImageId,
       }),
     }
   )

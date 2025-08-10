@@ -34,4 +34,11 @@ export interface AIEvent {
   timestamp: number;
 }
 
+// New: Image record for Dexie images table
+export interface ImageRecord {
+  id: string;
+  data: string; // base64 data URL or remote URL
+  createdAt: number;
+}
+
 

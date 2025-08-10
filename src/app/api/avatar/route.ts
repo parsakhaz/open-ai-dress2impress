@@ -21,7 +21,7 @@ Composition requirements (critical):
 Style requirements:
 - Amazing outfit; colorful; low‑poly look with clean, sharp edges and bright textures
 - Highly detailed and well-defined facial features faithful to Sims 4 models
-- Smiling facial expression, eyes looking slightly upward
+- Smiling facial expression, eyes looking slightly upward or directly forward
 - Clean render suitable for Photoshop cutout and composition`;
 
 const styleVariations = [
@@ -38,7 +38,8 @@ export const POST = createHandler<{ imageDataUrl: string }, { images: string[]}>
     const blob = await fetchBlob(imageDataUrl);
     const images = await parallel(4, async (i) => {
       const prompt = `${AVATAR_PROMPT}, ${styleVariations[i % styleVariations.length]}`;
-      return editImageWithBlob(blob, prompt);
+      // Prefer a taller aspect to reduce chance of head/feet cropping
+      return editImageWithBlob(blob, prompt, { size: '1024x1536' });
     });
     const duration = performance.now() - start;
     logger.success('AVATAR', 'Generated avatar images', { count: images.length, duration });

@@ -9,6 +9,7 @@ import { CameraPermissionHelper } from '../CameraPermissionHelper';
 import { Confetti } from '@/components/Confetti';
 import { OnboardingTutorial } from '@/components/OnboardingTutorial';
 import type { Character } from '@/types';
+import { selectImage } from '@/lib/services/stateActions';
 
 // Use any typing to avoid complex react-webcam TypeScript issues
 // @ts-ignore TypeScript issues with react-webcam dynamic import
@@ -165,12 +166,7 @@ export default function AvatarPanel() {
     
     const c: Character = { id: `char-${Date.now()}`, avatarUrl: selectedAvatarUrl };
     setCharacter(c);
-    setCurrentImage(selectedAvatarUrl);
-    addToHistory({
-      imageUrl: selectedAvatarUrl,
-      type: 'avatar',
-      description: 'Selected avatar'
-    });
+    void selectImage(selectedAvatarUrl, { type: 'avatar', description: 'Selected avatar', addToHistory: true });
     
     // Delay phase transition for confetti effect
     setTimeout(() => {

@@ -136,8 +136,11 @@ export default function AmazonPanel({ onClose, showToast }: AmazonPanelProps = {
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
                 {results.map((r) => (
                   <div key={r.id} className="group relative rounded-xl overflow-hidden bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 hover:border-accent/50 hover:scale-105 transition-all duration-200">
-                    <div className="aspect-square overflow-hidden">
-                      <img src={r.imageUrl} alt={r.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300" />
+                    <div className="relative aspect-square overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
+                      {/* Blurred background */}
+                      <img src={r.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover blur-xl opacity-50" />
+                      {/* Main image (no crop) */}
+                      <img src={r.imageUrl} alt={r.name} className="relative w-full h-full object-contain p-2 group-hover:scale-105 transition-transform duration-300" />
                     </div>
                     <div className="p-3 space-y-2">
                       <p className="text-sm font-medium text-slate-900 dark:text-slate-100 line-clamp-2 leading-tight">{r.name}</p>

@@ -4,6 +4,7 @@ import { useGameStore } from '@/lib/state/gameStore';
 import { performTryOn } from '@/lib/adapters/fashn';
 import { GlassButton } from '@/components/GlassButton';
 import { TryOnResultsModal } from '@/components/TryOnResultsModal';
+import { selectImage } from '@/lib/services/stateActions';
 
 interface WardrobeContentProps {
   onClose?: () => void;
@@ -62,7 +63,12 @@ export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {wardrobe.map((item) => (
           <div key={item.id} className="group relative rounded-lg overflow-hidden bg-white/20 dark:bg-black/20 backdrop-blur-sm border border-white/30 dark:border-white/10 hover:border-accent/50 transition-colors">
-            <img src={item.imageUrl} alt={item.name} className="w-full aspect-square object-cover" />
+            <div className="relative w-full aspect-square overflow-hidden bg-gradient-to-br from-slate-100 to-slate-200">
+              {/* Blurred background */}
+              <img src={item.imageUrl} alt="" className="absolute inset-0 w-full h-full object-cover blur-xl opacity-50" />
+              {/* Main image */}
+              <img src={item.imageUrl} alt={item.name} className="relative w-full h-full object-contain p-2" />
+            </div>
             <div className="p-3">
               <p className="text-sm font-medium text-slate-900 dark:text-slate-100 mb-2 line-clamp-2">{item.name}</p>
               <div className="flex gap-2">
@@ -78,13 +84,8 @@ export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) 
                 <GlassButton
                   size="sm"
                   variant="ghost"
-                  onClick={() => {
-                    setCurrentImage(item.imageUrl);
-                    addToHistory({
-                      imageUrl: item.imageUrl,
-                      type: 'tryOn',
-                      description: `Direct use: ${item.name}`
-                    });
+                  onClick={async () => {
+                    await selectImage(item.imageUrl, { type: 'tryOn', description: `Direct use: ${item.name}`, addToHistory: true });
                   }}
                   title="Use directly"
                 >
@@ -101,13 +102,8 @@ export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) 
         isOpen={showTryOnModal}
         onClose={() => setShowTryOnModal(false)}
         results={variants}
-        onSelect={(imageUrl) => {
-          setCurrentImage(imageUrl);
-          addToHistory({
-            imageUrl,
-            type: 'tryOn',
-            description: 'Try-on result'
-          });
+        onSelect={async (imageUrl) => {
+          await selectImage(imageUrl, { type: 'tryOn', description: 'Try-on result', addToHistory: true });
           onClose?.();
         }}
       />
