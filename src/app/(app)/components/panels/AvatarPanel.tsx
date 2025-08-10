@@ -259,7 +259,7 @@ export default function AvatarPanel() {
             <img
               src="/FASHN%20ASSETS/Logos/Logo%20Text%20Light.svg"
               alt="FASHN AI"
-              className="h-8 w-auto"
+              className="h-10 sm:h-10 w-auto"
             />
           </div>
             {/* Main content area, vertically centered */}

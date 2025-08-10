@@ -51,36 +51,45 @@ export default function ClosetNineGrid() {
       <div className="flex items-center justify-center mb-3">
         <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100">Add clothes here</h3>
       </div>
-      <div
-        className="grid grid-cols-3 gap-4 md:gap-5 h-[60vh] md:h-[70vh]"
-        onDragOver={(e) => e.preventDefault()}
-        onDrop={onDropIntoGrid}
-      >
-        {slots.map((item, idx) => (
-          <div key={idx} className="relative rounded-xl border border-dashed border-slate-300/70 dark:border-slate-600/50 bg-white/30 dark:bg-white/5 overflow-hidden">
-            <div className="relative w-full h-full aspect-square flex items-center justify-center">
-              {item ? (
-                <>
-                  <img src={item.imageUrl} alt={item.name} className="absolute inset-0 w-full h-full object-contain p-2" />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity">
-                    <div className="absolute bottom-2 left-2 right-2 flex gap-2">
-                      <GlassButton
-                        size="sm"
-                        variant="secondary"
-                        className="flex-1"
-                        onClick={() => setPickerForItemId(item.id)}
-                      >
-                        Try On
-                      </GlassButton>
+      <div className="relative h-[60vh] md:h-[70vh] flex items-center justify-center">
+        {/* Centered closet background */}
+        <img
+          src="/FASHN%20ASSETS/Closet.png"
+          alt="Closet"
+          className="absolute inset-0 m-auto max-w-full max-h-full object-contain pointer-events-none select-none scale-110 translate-y-2 md:translate-y-4"
+          />
+        {/* Existing grid overlayed on top */}
+        <div
+          className="relative z-10 grid grid-cols-3 gap-2 md:gap-3 w-[50%] h-[50%] md:w-[45%] md:h-[45%]"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={onDropIntoGrid}
+        >
+          {slots.map((item, idx) => (
+            <div key={idx} className="relative rounded-xl border border-dashed border-slate-300/70 dark:border-slate-600/50 bg-white/30 dark:bg-white/5 overflow-hidden">
+              <div className="relative w-full h-full aspect-square flex items-center justify-center">
+                {item ? (
+                  <>
+                    <img src={item.imageUrl} alt={item.name} className="absolute inset-0 w-full h-full object-contain p-2" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity">
+                      <div className="absolute bottom-2 left-2 right-2 flex gap-2">
+                        <GlassButton
+                          size="sm"
+                          variant="secondary"
+                          className="flex-1"
+                          onClick={() => setPickerForItemId(item.id)}
+                        >
+                          Try On
+                        </GlassButton>
+                      </div>
                     </div>
-                  </div>
-                </>
-              ) : (
-                <div className="text-slate-500 text-xs">Empty</div>
-              )}
+                  </>
+                ) : (
+                  <div className="text-slate-500 text-xs">Empty</div>
+                )}
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       {/* Try-On Results Modal */}
