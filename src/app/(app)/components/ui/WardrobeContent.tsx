@@ -68,6 +68,9 @@ export default function WardrobeContent({ onClose }: WardrobeContentProps = {}) 
     React.useEffect(() => {
       const unsub = tryOnQueue.onChange((job) => {
         if (job.status === 'succeeded' && job.images && job.images.length > 0) {
+          // Defensive: if this ever renders during ShoppingSpree, suppress results UI
+          const currentPhase = require('@/lib/state/gameStore').useGameStore.getState().phase as string;
+          if (currentPhase === 'ShoppingSpree') return;
           setVariants(job.images);
           setTryOnItemId(job.itemId);
           setShowTryOnModal(true);

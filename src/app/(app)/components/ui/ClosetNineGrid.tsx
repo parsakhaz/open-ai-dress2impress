@@ -1,5 +1,5 @@
 "use client";
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { GlassPanel } from '@/components/GlassPanel';
 import { GlassButton } from '@/components/GlassButton';
 import { useGameStore } from '@/lib/state/gameStore';
@@ -16,6 +16,10 @@ export default function ClosetNineGrid() {
   const [resultsOpen, setResultsOpen] = useState(false);
   const [results, setResults] = useState<string[]>([]);
   const [tryOnItemId, setTryOnItemId] = useState<string | null>(null);
+  const phase = useGameStore((s) => s.phase);
+  const [previewItemId, setPreviewItemId] = useState<string | null>(null);
+  const [previewActive, setPreviewActive] = useState<boolean>(false);
+  const previewCloseTimerRef = useRef<number | null>(null);
 
   // listen for queue results
   (function useQueueListener() {
@@ -23,6 +27,9 @@ export default function ClosetNineGrid() {
     React.useEffect(() => {
       const unsub = tryOnQueue.onChange((job) => {
         if (job.status === 'succeeded' && job.images && job.images.length > 0) {
+          // Suppress results UI during ShoppingSpree; only surface during Styling
+          const currentPhase = useGameStore.getState().phase;
+          if (currentPhase === 'ShoppingSpree') return;
           setResults(job.images);
           setTryOnItemId(job.itemId);
           setResultsOpen(true);
@@ -33,6 +40,41 @@ export default function ClosetNineGrid() {
   })();
 
   const slots = useMemo(() => Array.from({ length: 9 }).map((_, i) => wardrobe[i] || null), [wardrobe]);
+
+  const canHover = () => typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+  const closePreview = () => {
+    setPreviewActive(false);
+    window.setTimeout(() => setPreviewItemId(null), 180);
+  };
+
+  const openPreview = (id: string) => {
+    if (previewItemId === id && previewActive) return;
+    if (previewCloseTimerRef.current) {
+      window.clearTimeout(previewCloseTimerRef.current);
+      previewCloseTimerRef.current = null;
+    }
+    setPreviewItemId(id);
+    setPreviewActive(false);
+    // Next frame to enable transition-in
+    requestAnimationFrame(() => setPreviewActive(true));
+  };
+
+  const schedulePreviewClose = (id: string) => {
+    if (previewItemId !== id) return;
+    if (previewCloseTimerRef.current) window.clearTimeout(previewCloseTimerRef.current);
+    previewCloseTimerRef.current = window.setTimeout(() => {
+      closePreview();
+      previewCloseTimerRef.current = null;
+    }, 120);
+  };
+
+  // Close preview on Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape' && previewItemId) closePreview(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [previewItemId]);
 
   const onDropIntoGrid = (e: React.DragEvent<HTMLDivElement>) => {
     try {
@@ -66,22 +108,32 @@ export default function ClosetNineGrid() {
         >
           {slots.map((item, idx) => (
             <div key={idx} className="relative rounded-xl border border-dashed border-slate-300/70 dark:border-slate-600/50 bg-white/30 dark:bg-white/5 overflow-hidden">
-              <div className="relative w-full h-full aspect-square flex items-center justify-center">
+              <div
+                className="relative w-full h-full aspect-square flex items-center justify-center"
+                onMouseLeave={() => { if (item) schedulePreviewClose(item.id); }}
+              >
                 {item ? (
                   <>
-                    <img src={item.imageUrl} alt={item.name} className="absolute inset-0 w-full h-full object-contain p-2" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity">
-                      <div className="absolute bottom-2 left-2 right-2 flex gap-2">
-                        <GlassButton
-                          size="sm"
-                          variant="secondary"
-                          className="flex-1"
-                          onClick={() => setPickerForItemId(item.id)}
-                        >
-                          Try On
-                        </GlassButton>
+                    <img
+                      src={item.imageUrl}
+                      alt={item.name}
+                      className="absolute inset-0 w-full h-full object-contain p-2"
+                      onMouseEnter={() => { if (canHover()) openPreview(item.id); }}
+                    />
+                    {phase !== 'ShoppingSpree' && (
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-0 hover:opacity-100 transition-opacity">
+                        <div className="absolute bottom-2 left-2 right-2 flex gap-2">
+                          <GlassButton
+                            size="sm"
+                            variant="secondary"
+                            className="flex-1"
+                            onClick={() => setPickerForItemId(item.id)}
+                          >
+                            Try On
+                          </GlassButton>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </>
                 ) : (
                   <div className="text-slate-500 text-xs">Empty</div>
@@ -91,6 +143,27 @@ export default function ClosetNineGrid() {
           ))}
         </div>
       </div>
+
+      {/* Hover Preview Modal (smaller with smooth animation) */}
+      {previewItemId && (() => {
+        const item = wardrobe.find((w) => w.id === previewItemId);
+        if (!item) return null;
+        return (
+          <div
+            className={`fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex items-center justify-center transition-opacity duration-200 ease-out pointer-events-none ${previewActive ? 'opacity-100' : 'opacity-0'}`}
+          >
+            <div
+              className={`relative transition-transform duration-200 ease-out pointer-events-none ${previewActive ? 'scale-100' : 'scale-95'}`}
+            >
+              <img
+                src={item.imageUrl}
+                alt={item.name}
+                className="max-w-[56vw] max-h-[60vh] object-contain rounded-2xl shadow-2xl border border-white/10"
+              />
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Try-On Results Modal */}
       <TryOnResultsModal
@@ -112,7 +185,11 @@ export default function ClosetNineGrid() {
           const item = wardrobe.find((w) => w.id === pickerForItemId!);
           if (!item) return;
           try {
-            await selectImage(base.imageUrl, { type: 'avatar', description: 'Base image selection', addToHistory: false });
+            // Do not change the center image during ShoppingSpree; only queue try-on
+            const currentPhase = useGameStore.getState().phase;
+            if (currentPhase !== 'ShoppingSpree') {
+              await selectImage(base.imageUrl, { type: 'avatar', description: 'Base image selection', addToHistory: false });
+            }
             await tryOnQueue.enqueue({ baseImageId: base.imageId ?? null, baseImageUrl: base.imageUrl, item });
           } finally {
             setPickerForItemId(null);

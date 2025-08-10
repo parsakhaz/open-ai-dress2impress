@@ -16,7 +16,7 @@ export default function GameBoard() {
           <ClosetNineGrid />
         </div>
         <div className="pointer-events-auto h-full min-h-0 flex flex-col">
-          <AIConsole inline autoRunOnMount showTryOnThumbs />
+          <AIConsole inline autoRunOnMount showTryOnThumbs={false} />
         </div>
       </div>
     </div>
