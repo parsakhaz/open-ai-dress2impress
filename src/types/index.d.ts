@@ -4,6 +4,7 @@ export type GamePhase =
   | 'ShoppingSpree'
   | 'StylingRound'
   | 'Accessorize'
+  | 'Evaluation'
   | 'WalkoutAndEval'
   | 'Results';
 

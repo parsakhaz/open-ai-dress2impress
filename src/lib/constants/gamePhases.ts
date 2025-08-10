@@ -6,6 +6,7 @@ export const GAME_PHASES: GamePhase[] = [
   'ShoppingSpree',
   'StylingRound',
   'Accessorize',
+  'Evaluation',
   'WalkoutAndEval',
   'Results',
 ];
