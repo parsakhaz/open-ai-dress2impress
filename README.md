@@ -7,14 +7,13 @@
   <img src="https://img.shields.io/badge/Tailwind%20CSS-4-38bdf8?style=for-the-badge&logo=tailwindcss" alt="Tailwind CSS" />
   <img src="https://img.shields.io/badge/OpenAI-API-74aa9c?style=for-the-badge&logo=openai" alt="OpenAI" />
   <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" alt="MIT" />
-  <br/>
-  <sub><b>Built at the SF OpenAI × Cerebral Valley GPT‑5 Hackathon in 24 hours.</b></sub>
-  <br/>
 </div>
 
 <div align="center">
-  <img src="dress-2-impress.png" alt="Dress to Impress" width="600" style="border-radius: 10px; margin: 20px 0; padding-top: 10px;" />
+  <img src="dress-2-impress.png" alt="Dress to Impress" width="600" style="border-radius: 10px; margin: 20px 0;" />
 </div>
+
+###### Built at the SF OpenAI × Cerebral Valley GPT‑5 Hackathon in 24 hours.
 
 ---
 
