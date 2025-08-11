@@ -10,7 +10,9 @@
 </div>
 
 <div align="center">
-  <img src="dress-2-impress.png" alt="Dress to Impress" width="600" style="border-radius: 10px; margin: 20px 0;" />
+
+![Dress to Impress](dress-2-impress.png)
+
 </div>
 
 ###### Built at the SF OpenAI × Cerebral Valley GPT‑5 Hackathon in 24 hours.
