@@ -482,7 +482,7 @@ export default function AIConsole({ onClose, autoRunOnMount = false, inline = fa
               const isThisDoneMessage = r.phase === 'DONE';
               const shouldBlur = isDone && !isThisDoneMessage;
               return (
-              <div key={r.id} className={`mb-2 last:mb-0 transition-all duration-500 ${shouldBlur ? 'opacity-30 blur-[1px]' : ''} ${isThisDoneMessage ? 'bg-foreground/5 rounded-lg p-3 border border-foreground/20' : ''}`}>
+              <div key={r.id} className={`mb-2 last:mb-0 transition-all duration-500 ${shouldBlur ? 'opacity-70 blur-[0.5px]' : ''} ${isThisDoneMessage ? 'bg-foreground/5 rounded-lg p-3 border border-foreground/20' : ''}`}>
                 <div className="flex items-start gap-2">
                   <div className="flex-1 min-w-0">
                     <div className={`flex items-center gap-2 ${density === 'compact' ? 'mb-1' : 'mb-2'}`}>
