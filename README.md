@@ -2,7 +2,6 @@
 
 <div align="center">
   <img src="https://img.shields.io/badge/Next.js-15.4.6-black?style=for-the-badge&logo=nextdotjs" alt="Next.js" />
-  <img src="https://img.shields.io/badge/React-19.1.0-61dafb?style=for-the-badge&logo=react" alt="React" />
   <img src="https://img.shields.io/badge/TypeScript-5-blue?style=for-the-badge&logo=typescript" alt="TypeScript" />
   <img src="https://img.shields.io/badge/Tailwind%20CSS-4-38bdf8?style=for-the-badge&logo=tailwindcss" alt="Tailwind CSS" />
   <img src="https://img.shields.io/badge/OpenAI-API-74aa9c?style=for-the-badge&logo=openai" alt="OpenAI" />
