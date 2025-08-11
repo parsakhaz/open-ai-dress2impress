@@ -13,7 +13,7 @@
 </div>
 
 <div align="center">
-  <img src="dress-2-impress.png" alt="Dress to Impress" width="600" style="border-radius: 10px; margin: 20px 0;" />
+  <img src="dress-2-impress.png" alt="Dress to Impress" width="600" style="border-radius: 10px; margin: 20px 0; padding-top: 10px;" />
 </div>
 
 ---
