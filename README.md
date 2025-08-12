@@ -137,19 +137,42 @@ Debugging:
 
 ## Deployment
 
-Vercel recommended:
+### Option A: Docker (Coolify/VPS) — recommended for full demo
 
+Why: No serverless timeouts; long-running routes (avatars/edits/try-on/video) run reliably.
+
+1) Build & run locally (optional):
 ```bash
-npm i -g vercel
-vercel
+docker build -t dress2impress:latest .
+docker run --rm -p 3000:3000 \
+  -e OPENAI_API_KEY=... \
+  -e FASHN_AI_API_KEY=... \
+  -e RAPIDAPI_KEY=... \
+  -e RAPIDAPI_HOST=real-time-amazon-data.p.rapidapi.com \
+  dress2impress:latest
 ```
 
-Set env vars from `.env.local`. `NODE_ENV=production` is implied on Vercel builds.
+2) Coolify setup:
+- Create new app from your repo; Dockerfile is included.
+- Expose port 3000. Set env vars above in the app settings.
+- If placing behind a reverse proxy, ensure `client_max_body_size 20m`.
 
-Performance
-- Configure image domains in `next.config.ts`
-- API route `maxDuration` up to 600s where used
-- CDN for static assets
+3) Optional Nginx (example in `deploy/nginx.conf`):
+- TLS termination (LetsEncrypt)
+- Increase `client_max_body_size`
+- Basic per-IP rate limits (optional)
+
+4) Health check:
+- `/api/health` returns `{ ok: true }` for uptime monitoring.
+
+### Option B: Vercel (UI only) + separate heavy API (Docker)
+
+Use Vercel for UI and deploy a second container for heavy APIs, then point UI to that API via env vars. This requires minor client tweaks; see comments in `src/lib/api/client.ts` if you choose this path later.
+
+Performance tips
+- API routes already use `runtime='nodejs'` and long `maxDuration`.
+- Avoid sending very large base64 payloads; URLs are preferred.
+- Static assets served via Next; consider CDN if high traffic.
 
 ## License
 
