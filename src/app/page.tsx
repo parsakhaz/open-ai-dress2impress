@@ -13,6 +13,8 @@ import EvaluationBoard from '@/app/(app)/components/game/EvaluationBoard';
 import AvatarPanel from '@/app/(app)/components/panels/AvatarPanel';
 import EditWithAIPanel from '@/app/(app)/components/panels/EditWithAIPanel';
 import { DebugPanel } from '@/components/DebugPanel';
+import { GlassButton } from '@/components/GlassButton';
+import { RotateCcw } from 'lucide-react';
 import { useToast } from '@/hooks/useToast';
 import ThemeDrawModal from '@/app/(app)/components/ui/ThemeDrawModal';
 import UrgencyVignette from '@/app/(app)/components/game/UrgencyVignette';
@@ -69,6 +71,41 @@ export default function GamePage() {
   const editTooltip = editTooltipFor(phase);
   const wardrobeTooltip = wardrobeTooltipFor(phase);
   
+  // Auto-reset once every 3 hours on first visit in that window, after hydration
+  useEffect(() => {
+    const RESET_KEY = 'dti:lastResetAt';
+    const THREE_HOURS_MS = 3 * 60 * 60 * 1000;
+
+    const maybeReset = () => {
+      try {
+        const last = Number(localStorage.getItem(RESET_KEY) || '0');
+        const now = Date.now();
+        if (!last || now - last >= THREE_HOURS_MS) {
+          resetGame();
+          localStorage.setItem(RESET_KEY, String(now));
+        }
+      } catch {
+        // no-op
+      }
+    };
+
+    try {
+      const persistApi = (useGameStore as any)?.persist;
+      // If already hydrated, run now
+      if (persistApi?.hasHydrated?.()) {
+        maybeReset();
+      }
+      // Also run after hydration completes
+      const unsub = persistApi?.onFinishHydration?.(() => {
+        maybeReset();
+      });
+      return () => { try { unsub?.(); } catch {} };
+    } catch {
+      // Fallback: best effort single run
+      maybeReset();
+    }
+  }, [resetGame]);
+
   useEffect(() => {
     console.log('🚀 DRESS TO IMPRESS: Application started');
     console.log('🎯 INITIAL STATE:', { 
@@ -314,6 +351,26 @@ export default function GamePage() {
 
   return (
     <main className="relative w-screen h-screen overflow-hidden">
+      {/* Tiny reset button (top-left) */}
+      <div className="fixed top-3 left-3 z-[100]">
+        <GlassButton
+          size="sm"
+          title="Reset game"
+          aria-label="Reset game"
+          onClick={() => {
+            if (confirm('Reset game and reload?')) {
+              try {
+                const now = Date.now();
+                localStorage.setItem('dti:lastResetAt', String(now));
+                resetGame();
+              } catch {}
+              window.location.reload();
+            }
+          }}
+        >
+          <RotateCcw className="w-4 h-4" />
+        </GlassButton>
+      </div>
       {/* Canvas Background - CenterStage takes full viewport */}
       <CenterStage />
       {/* Urgency vignette overlay during last seconds */}

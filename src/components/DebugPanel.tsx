@@ -146,7 +146,9 @@ export function DebugPanel() {
     setPhase(phase);
     if (!muteToasts && isTimedPhase(phase) && resetTimerOnJump) {
       const t = defaultTimeForPhase(phase);
-      showToast(`Jumped to ${phase} — timer set to ${t === 120 ? '2:00' : '1:30'}.`, 'info', 2000);
+      const mins = Math.floor(t / 60);
+      const secs = (t % 60).toString().padStart(2, '0');
+      showToast(`Jumped to ${phase} — timer set to ${mins}:${secs}.`, 'info', 2000);
     }
   };
 

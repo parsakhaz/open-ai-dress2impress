@@ -77,7 +77,8 @@ export class AIPlayerAgent {
         const full = `${this.baseUrl()}${url}`;
         const res = await fetch(full);
         if (!res.ok) throw new Error(`Failed to fetch local image: ${res.status}`);
-        let buf = Buffer.from(await res.arrayBuffer());
+        const ab = await res.arrayBuffer();
+        let buf = Buffer.from(ab as any);
         try {
           buf = await sharp(buf).resize({ width: 512, height: 512, fit: 'inside' }).webp({ quality: 60 }).toBuffer();
         } catch {}

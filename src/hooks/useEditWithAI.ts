@@ -3,8 +3,9 @@ import { editImage } from '@/lib/adapters/edit';
 import { useGameStore } from '@/lib/state/gameStore';
 import { useToast } from '@/hooks/useToast';
 import { selectImage } from '@/lib/services/stateActions';
+import type { GamePhase } from '@/types';
 
-export function useEditWithAI(baseImageUrl: string | null | undefined, phase: ReturnType<typeof useGameStore>['phase']) {
+export function useEditWithAI(baseImageUrl: string | null | undefined, phase: GamePhase) {
   const [instruction, setInstruction] = useState('');
   const [variants, setVariants] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);

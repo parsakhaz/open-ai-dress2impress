@@ -16,7 +16,7 @@ export function isTimedPhase(phase: GamePhase): boolean {
 }
 
 export function defaultTimeForPhase(phase: GamePhase): number {
-  if (phase === 'ShoppingSpree') return 120;
+  if (phase === 'ShoppingSpree') return 105;
   if (phase === 'StylingRound') return 90;
   return 0;
 }
