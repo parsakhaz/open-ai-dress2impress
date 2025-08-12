@@ -147,8 +147,8 @@ export default function ThemeDrawModal({ open, onClose }: ThemeDrawModalProps) {
       <div className="absolute inset-0" onClick={() => (spinning ? null : onClose())} />
       <div className="relative w-full max-w-4xl mx-auto min-h-[80vh] flex flex-col">
         <div className="mb-4 md:mb-6 text-center space-y-2">
-          <h2 className="text-3xl font-extrabold text-foreground">Draw Today&apos;s Theme</h2>
-          <p className="text-foreground/70 text-sm">Randomly pick one of 15 game categories</p>
+          <h2 className="text-3xl font-extrabold text-white">Draw Today&apos;s Theme</h2>
+          <p className="text-white/90 text-sm">Randomly pick one of 15 game categories</p>
           {showResult && resultTheme && (
             <div
               className="mx-auto w-fit mt-2 px-4 py-2 rounded-full bg-pink-600/30 border border-pink-400/40 text-white font-semibold shadow-[0_0_0_0_rgba(236,72,153,0.6)] animate-[pulseRing_1.2s_ease-out_1] transition-transform duration-500 scale-110"

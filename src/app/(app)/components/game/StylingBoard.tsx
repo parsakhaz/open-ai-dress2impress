@@ -24,13 +24,13 @@ export default function StylingBoard() {
   };
 
   return (
-    <div className="absolute inset-0 z-20 bg-background/95 backdrop-blur-sm">
-      <div className="h-full w-full min-h-0 grid grid-cols-1 lg:grid-cols-[420px_1fr_360px] gap-4 p-4 md:p-6 max-w-[1800px] mx-auto">
+    <div className="absolute inset-0 z-20 bg-transparent">
+      <div className="h-full w-full min-h-0 grid grid-cols-1 lg:grid-cols-[600px_1fr_360px] xl:grid-cols-[640px_1fr_360px] gap-4 p-4 md:p-6 max-w-[1800px] mx-auto">
         <div className="pointer-events-auto h-full min-h-0 flex flex-col max-h-[85vh]">
           <ClosetNineGrid />
         </div>
-        <div className="pointer-events-auto h-full min-h-0 flex flex-col max-h-[85vh] relative">
-          <CenterStage />
+        <div className="pointer-events-none h-full min-h-0 flex flex-col max-h-[85vh]">
+          {/* Center left empty so global CenterStage (page.tsx) remains perfectly centered in viewport */}
         </div>
         <div className="pointer-events-auto h-full min-h-0 flex flex-col max-h-[85vh]">
           <AIConsole inline autoRunOnMount showTryOnThumbs />

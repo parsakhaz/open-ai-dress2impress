@@ -11,8 +11,8 @@ export default function CenterStage() {
     : 'max-h-[50vh] max-w-[50vw] object-contain rounded-2xl';
 
   const containerClasses = phase === 'StylingRound'
-    ? 'absolute inset-0 w-full h-full flex items-center justify-center bg-background z-0 pt-24'
-    : 'absolute inset-0 w-full h-full flex items-center justify-center bg-background z-0';
+    ? 'absolute inset-0 w-full h-full flex items-center justify-center bg-transparent z-0'
+    : 'absolute inset-0 w-full h-full flex items-center justify-center bg-transparent z-0';
 
   return (
     <div className={containerClasses}>

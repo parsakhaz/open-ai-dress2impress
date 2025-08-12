@@ -321,7 +321,7 @@ export default function GamePage() {
       
       {/* Fixed positioned overlay elements */}
       {phase !== 'CharacterSelect' && phase !== 'ThemeSelect' && phase !== 'Evaluation' && <TopBar />}
-      {phase !== 'WalkoutAndEval' && phase !== 'Results' && phase !== 'Evaluation' && <HistoryStrip />}
+      {phase !== 'WalkoutAndEval' && phase !== 'Results' && phase !== 'Evaluation' && phase !== 'StylingRound' && <HistoryStrip />}
       
       {/* Board layout (single screen) during gameplay phases */}
       {phase !== 'CharacterSelect' && phase !== 'ThemeSelect' && phase !== 'Evaluation' && (

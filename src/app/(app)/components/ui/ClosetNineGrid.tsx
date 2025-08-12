@@ -108,7 +108,7 @@ export default function ClosetNineGrid() {
   };
 
   return (
-    <GlassPanel className="h-full flex flex-col">      
+    <GlassPanel className={`h-full flex flex-col ${phase === 'StylingRound' ? 'bg-transparent border-0 shadow-none' : ''}`}>      
       {/* Show empty state if no wardrobe items in StylingRound */}
       {phase === 'StylingRound' && wardrobe.length === 0 && (
         <div className="flex-1 flex items-center justify-center">
@@ -125,7 +125,7 @@ export default function ClosetNineGrid() {
       {/* Show grid if there are items or in ShoppingSpree */}
       {(wardrobe.length > 0 || phase !== 'StylingRound') && (
         <div className={phase === 'StylingRound' 
-          ? "relative flex-1 min-h-0 h-full flex items-center justify-center py-2 mt-4 md:mt-6"
+          ? "relative h-[60vh] md:h-[70vh] flex items-center justify-center py-2 mt-4 md:mt-6"
           : `relative h-[60vh] md:h-[70vh] flex items-center justify-center ${isShoppingSpree ? 'mt-14 md:mt-20' : ''}`
         }>
         {/* Centered closet background */}
@@ -134,14 +134,14 @@ export default function ClosetNineGrid() {
           alt="Closet"
           aria-hidden
           className={phase === 'StylingRound' 
-            ? "absolute inset-0 z-[1] m-auto max-w-full max-h-full object-contain pointer-events-none select-none scale-125 translate-y-6 md:translate-y-8"
+            ? "absolute inset-0 z-[1] m-auto max-w-full max-h-full object-contain pointer-events-none select-none scale-110 translate-y-4 md:translate-y-6"
             : `absolute inset-0 z-0 m-auto max-w-full max-h-full object-contain pointer-events-none select-none scale-110 ${isShoppingSpree ? 'translate-y-4 md:translate-y-6' : 'translate-y-2 md:translate-y-4'}`
           }
         />
         {/* Existing grid overlayed on top */}
         <div
           className={phase === 'StylingRound' 
-            ? "relative z-[2] grid grid-cols-3 gap-3 md:gap-4 w-[75%] h-[75%] md:w-[78%] md:h-[78%]"
+            ? "relative z-[2] grid grid-cols-3 gap-3 md:gap-4 w-[60%] h-[60%] md:w-[58%] md:h-[58%]"
             : "relative z-10 grid grid-cols-3 gap-2 md:gap-3 w-[50%] h-[50%] md:w-[45%] md:h-[45%]"
           }
           onDragOver={(e) => e.preventDefault()}
