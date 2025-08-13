@@ -33,7 +33,7 @@
 ### Game phases
 1. **Character Select** — capture and generate avatars
 2. **Theme Select** — get a theme challenge
-3. **Shopping Spree (1:00)** — search and add items (max 9)
+3. **Shopping Spree (1:45)** — search and add items (max 9)
 4. **Styling Round (1:30)** — mix and match try-ons
 5. **Accessorize** — AI edit for final touches
 6. **Evaluation** — AI judge scores both looks
@@ -114,7 +114,7 @@ Service setup:
 - **GET `/api/debug/env`** (dev only) → presence flags for env vars
 
 Notes:
-- Shopping is 1:00; Styling is 1:30. If the wardrobe hits capacity (9), Shopping may clamp to a shorter remaining timer.
+- Shopping is 1:45; Styling is 1:30. If the wardrobe hits capacity (9), Shopping may clamp to a shorter remaining timer.
 - Wardrobe capacity: **9 items**.
 
 ## Development
@@ -173,6 +173,55 @@ Performance tips
 - API routes already use `runtime='nodejs'` and long `maxDuration`.
 - Avoid sending very large base64 payloads; URLs are preferred.
 - Static assets served via Next; consider CDN if high traffic.
+
+### First-time deployment checklist (Option A)
+
+1) Prepare infrastructure
+- Point your domain (A/AAAA records) to the VPS IP.
+- Ensure ports 80/443 are open; set up TLS (Coolify or Nginx with LetsEncrypt).
+
+2) Gather environment variables
+- Required: `OPENAI_API_KEY`, `RAPIDAPI_KEY`, `RAPIDAPI_HOST=real-time-amazon-data.p.rapidapi.com`, `FASHN_AI_API_KEY`.
+- Optional: `KLING_ACCESS_KEY`, `KLING_SECRET_KEY`, `NEXT_PUBLIC_APP_URL=https://your-domain.com`.
+
+3) Local sanity check (optional but recommended)
+```bash
+docker build -t dress2impress:latest .
+docker run --rm -p 3000:3000 \
+  -e OPENAI_API_KEY=... \
+  -e FASHN_AI_API_KEY=... \
+  -e RAPIDAPI_KEY=... \
+  -e RAPIDAPI_HOST=real-time-amazon-data.p.rapidapi.com \
+  dress2impress:latest
+
+# In another terminal
+curl -s http://localhost:3000/api/health
+# -> {"ok":true,"ts":...}
+```
+
+4) Deploy with Coolify
+- Create a new App from this repo; Dockerfile is auto-detected.
+- Expose port `3000` and set the environment variables.
+- Deploy, then watch logs; the app will listen on port 3000.
+
+5) Reverse proxy (if applicable)
+- If using an external Nginx/Traefik, increase upload size:
+  - Nginx: `client_max_body_size 20m;`
+- Proxy to `http://app:3000` or the container IP.
+
+6) Post-deploy smoke tests
+- Health: `curl -s https://your-domain.com/api/health` should return `{ ok: true }`.
+- Open the site in a browser. On first visit in a 3‑hour window, the game auto-resets.
+- Verify Shopping timer shows 1:45 and Styling shows 1:30.
+- Optional: test a small avatar/edit operation. If external APIs are not configured, expect a graceful error.
+
+7) Monitoring & logs
+- Use Coolify logs or `docker logs -f <container>`.
+- Consider enabling uptime checks against `/api/health`.
+
+8) Scaling tips
+- Start with 1 vCPU / 1–2 GB RAM. Increase if many concurrent users.
+- Add simple rate limits at the proxy if exposing publicly.
 
 ## License
 
