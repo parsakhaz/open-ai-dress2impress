@@ -2,14 +2,22 @@ import type { NextRequest } from 'next/server';
 import { getServerEnv } from './env';
 import { logger } from './logger';
 import { ErrorHandler } from './errorHandling';
+import { checkRateLimit, type RateLimitType } from './rateLimit';
 
 export function createHandler<TReq, TRes>(opts: {
   parse: (req: NextRequest) => Promise<TReq>;
   handle: (reqBody: TReq, ctx: { env: ReturnType<typeof getServerEnv> }) => Promise<TRes>;
+  rateLimit?: RateLimitType | false; // Default to 'standard', set to false to disable
 }) {
   return async function handler(req: NextRequest): Promise<Response> {
     const start = performance.now();
     try {
+      // Apply rate limiting if enabled (default to 'standard')
+      const rateLimitType = opts.rateLimit !== false ? (opts.rateLimit || 'standard') : null;
+      if (rateLimitType) {
+        await checkRateLimit(req, rateLimitType);
+      }
+      
       const body = await opts.parse(req);
       const env = getServerEnv();
       const data = await opts.handle(body, { env });

@@ -119,6 +119,7 @@ async function runSingleTryOn(characterImageUrl: string, clothingImageUrl: strin
 
 export const POST = createHandler<{ characterImageUrl: string; clothingImageUrl: string }, { images: string[] }>({
   parse: async (req: NextRequest) => guards.tryon(await req.json()),
+  rateLimit: 'aiOperations', // Stricter rate limiting for AI operations
   handle: async ({ characterImageUrl, clothingImageUrl }) => {
     const { FASHN_AI_API_KEY } = getServerEnv();
     const images = await parallel(1, () => runSingleTryOn(characterImageUrl, clothingImageUrl, FASHN_AI_API_KEY));

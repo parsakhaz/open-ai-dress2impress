@@ -176,52 +176,93 @@ Performance tips
 
 ### First-time deployment checklist (Option A)
 
-1) Prepare infrastructure
+1) **Prepare infrastructure**
 - Point your domain (A/AAAA records) to the VPS IP.
 - Ensure ports 80/443 are open; set up TLS (Coolify or Nginx with LetsEncrypt).
 
-2) Gather environment variables
+2) **Gather environment variables**
 - Required: `OPENAI_API_KEY`, `RAPIDAPI_KEY`, `RAPIDAPI_HOST=real-time-amazon-data.p.rapidapi.com`, `FASHN_AI_API_KEY`.
 - Optional: `KLING_ACCESS_KEY`, `KLING_SECRET_KEY`, `NEXT_PUBLIC_APP_URL=https://your-domain.com`.
 
-3) Local sanity check (optional but recommended)
+3) **Local Docker testing (recommended)**
+
+**Option 3A: Quick test build (may have static generation issues)**
 ```bash
+# Build the image (note: static generation may fail due to Next.js 15 build issues)
 docker build -t dress2impress:latest .
+
+# If build succeeds, run with your API keys
 docker run --rm -p 3000:3000 \
-  -e OPENAI_API_KEY=... \
-  -e FASHN_AI_API_KEY=... \
-  -e RAPIDAPI_KEY=... \
+  -e OPENAI_API_KEY=your_actual_openai_key_here \
+  -e FASHN_AI_API_KEY=your_actual_fashn_key_here \
+  -e RAPIDAPI_KEY=your_actual_rapidapi_key_here \
   -e RAPIDAPI_HOST=real-time-amazon-data.p.rapidapi.com \
   dress2impress:latest
-
-# In another terminal
-curl -s http://localhost:3000/api/health
-# -> {"ok":true,"ts":...}
 ```
 
-4) Deploy with Coolify
+**Option 3B: Development mode testing (recommended)**
+```bash
+# Copy your real API keys to .env.local (don't commit this file)
+cp .env.example .env.local
+
+# Edit .env.local with your real keys
+nano .env.local
+
+# Run in development mode
+npm install
+npm run dev
+
+# Test health endpoint
+curl -s http://localhost:3000/api/health
+# Should return: {"ok":false/true,"timestamp":"...","services":{...}}
+```
+
+**Option 3C: Manual production build (if Docker fails)**
+```bash
+# Build production version locally
+npm run build
+npm start
+
+# Test health endpoint
+curl -s http://localhost:3000/api/health
+```
+
+4) **Deploy with Coolify**
 - Create a new App from this repo; Dockerfile is auto-detected.
-- Expose port `3000` and set the environment variables.
+- Expose port `3000` and set the environment variables in Coolify dashboard.
+- **Important**: If Docker build fails in Coolify due to Next.js static generation, use the "Build Command" override:
+  ```bash
+  npm install && npm run build -- --no-lint
+  ```
 - Deploy, then watch logs; the app will listen on port 3000.
 
-5) Reverse proxy (if applicable)
+5) **Reverse proxy (if applicable)**
 - If using an external Nginx/Traefik, increase upload size:
   - Nginx: `client_max_body_size 20m;`
 - Proxy to `http://app:3000` or the container IP.
 
-6) Post-deploy smoke tests
-- Health: `curl -s https://your-domain.com/api/health` should return `{ ok: true }`.
+6) **Post-deploy smoke tests**
+- Health: `curl -s https://your-domain.com/api/health` should return comprehensive status
+- Verify service status shows `"openai":"ok"` for configured APIs
 - Open the site in a browser. On first visit in a 3‑hour window, the game auto-resets.
 - Verify Shopping timer shows 1:45 and Styling shows 1:30.
-- Optional: test a small avatar/edit operation. If external APIs are not configured, expect a graceful error.
+- Optional: test a small avatar/edit operation. If external APIs are not configured, expect graceful error messages.
 
-7) Monitoring & logs
+7) **Monitoring & logs**
 - Use Coolify logs or `docker logs -f <container>`.
-- Consider enabling uptime checks against `/api/health`.
+- Monitor `/api/health` endpoint for service health.
+- Rate limiting is active: 30 req/min standard, 10 req/5min for AI operations.
 
-8) Scaling tips
+8) **Security features active**
+- ✅ Rate limiting (per-IP)
+- ✅ Security headers (CORS, CSP, XSS protection)
+- ✅ API key validation
+- ✅ Environment variable checks
+
+9) **Scaling tips**
 - Start with 1 vCPU / 1–2 GB RAM. Increase if many concurrent users.
-- Add simple rate limits at the proxy if exposing publicly.
+- Rate limiting helps prevent API abuse.
+- Monitor `/api/health` for service availability.
 
 ## License
 

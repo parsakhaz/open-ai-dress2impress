@@ -35,6 +35,7 @@ const styleVariations = [
 
 export const POST = createHandler<{ imageDataUrl: string }, { images: string[]}>({
   parse: async (req: NextRequest) => guards.avatar(await req.json()),
+  rateLimit: 'aiOperations', // Stricter rate limiting for AI operations
   handle: async ({ imageDataUrl }) => {
     const start = performance.now();
     const blob = await fetchBlob(imageDataUrl);

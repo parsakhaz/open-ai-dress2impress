@@ -1,0 +1,9 @@
+M	README.md
+M	next.config.ts
+D	plan.md
+M	src/app/api/avatar/route.ts
+M	src/app/api/debug/env/route.ts
+M	src/app/api/health/route.ts
+M	src/app/api/tryon/route.ts
+M	src/lib/util/apiRoute.ts
+M	src/lib/util/env.ts
