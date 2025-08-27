@@ -94,6 +94,22 @@ FASHN_AI_API_KEY=your_fashn_api_key
 # KLING_SECRET_KEY=your_kling_secret_key
 ```
 
+### Optional: Agent base URL configuration
+
+The AI agent performs server-to-server requests (e.g., calling `/api/tryon`) using an absolute base URL. In development, if your Next.js dev server runs on a non-default port, configure one of the following:
+
+- **APP_BASE_URL**: Preferred. Set to the full origin, for example `http://localhost:3002`.
+- **APP_PORT** (or **PORT**): Alternatively, set the port; the agent will use `http://localhost:${APP_PORT || PORT || 3000}` as a fallback.
+
+Example `.env.local` entries:
+
+```env
+# Agent/API base URL (dev)
+APP_BASE_URL=http://localhost:3002
+# Alternatively:
+# APP_PORT=3002
+```
+
 Service setup:
 - RapidAPI: subscribe to Real-Time Amazon Data
 - OpenAI: Images API + chat completions

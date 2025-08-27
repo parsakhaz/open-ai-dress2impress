@@ -26,8 +26,11 @@ export async function searchRapid(query: string, category: Category): Promise<Pr
 }
 
 function baseUrl(): string {
-  const fromEnv = process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
-  return fromEnv.endsWith('/') ? fromEnv.slice(0, -1) : fromEnv;
+  const envUrl = process.env.APP_BASE_URL || process.env.NEXT_PUBLIC_APP_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : undefined);
+  if (envUrl) return envUrl.endsWith('/') ? envUrl.slice(0, -1) : envUrl;
+  const port = process.env.APP_PORT || process.env.PORT || '3000';
+  const base = `http://localhost:${port}`;
+  return base.endsWith('/') ? base.slice(0, -1) : base;
 }
 
 export async function tryOnFashn(avatarUrl: string, clothingImageUrl: string): Promise<string[]> {
