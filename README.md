@@ -14,6 +14,8 @@
 
 </div>
 
+Demo: https://youtu.be/s8o59vPj6kY?si=FAzVuD84BG3KDWsQ
+
 ###### Built at the SF OpenAI × Cerebral Valley GPT‑5 Hackathon in 24 hours.
 
 ---
